@@ -274,8 +274,6 @@ enum MessageClasses : uint8_t {
 	MESSAGE_OFFLINE_TRAINING = 50, /* White message on the game window and in the console*/
 	MESSAGE_TRANSACTION = 51, /* White message on the game window and in the console*/
 	MESSAGE_POTION = 52, /* Orange creature say*/
-	MESSAGE_STATUS_CONSOLE_ORANGE = 37,  /*Orange message in the console*/
-	MESSAGE_STATUS_CONSOLE_BLUE = 4, /* Blue Message */
 };
 
 enum FluidColors_t : uint8_t {
