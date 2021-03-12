@@ -2117,56 +2117,44 @@ bool Game::removeMoney(Cylinder* cylinder, uint64_t money, uint32_t flags /*= 0*
 void Game::addMoney(Cylinder* cylinder, uint64_t money, uint32_t flags /*= 0*/)
 {
 	if (money == 0) {
-        return;
-    }
- 
-    uint32_t goldBars = money / 1000000;
-    money -= goldBars * 1000000;
-    while (goldBars > 0) {
-        const uint16_t count = std::min<uint32_t>(100, goldBars);
- 
-        Item* remaindItem = Item::CreateItem(ITEM_GOLD_BAR, count);
- 
-        ReturnValue ret = internalAddItem(cylinder, remaindItem, INDEX_WHEREEVER, flags);
-        if (ret != RETURNVALUE_NOERROR) {
-            internalAddItem(cylinder->getTile(), remaindItem, INDEX_WHEREEVER, FLAG_NOLIMIT);
-        }
- 
-        goldBars -= count;
-    }
- 
-    uint32_t crystalCoins = money / 10000;
-    if (crystalCoins != 0) {
-        Item* remaindItem = Item::CreateItem(ITEM_CRYSTAL_COIN, crystalCoins);
- 
-        ReturnValue ret = internalAddItem(cylinder, remaindItem, INDEX_WHEREEVER, flags);
-        if (ret != RETURNVALUE_NOERROR) {
-            internalAddItem(cylinder->getTile(), remaindItem, INDEX_WHEREEVER, FLAG_NOLIMIT);
-        }
- 
-        money -= crystalCoins * 10000;
-    }
- 
-    uint16_t platinumCoins = money / 100;
-    if (platinumCoins != 0) {
-        Item* remaindItem = Item::CreateItem(ITEM_PLATINUM_COIN, platinumCoins);
- 
-        ReturnValue ret = internalAddItem(cylinder, remaindItem, INDEX_WHEREEVER, flags);
-        if (ret != RETURNVALUE_NOERROR) {
-            internalAddItem(cylinder->getTile(), remaindItem, INDEX_WHEREEVER, FLAG_NOLIMIT);
-        }
- 
-        money -= platinumCoins * 100;
-    }
- 
-    if (money != 0) {
-        Item* remaindItem = Item::CreateItem(ITEM_GOLD_COIN, money);
- 
-        ReturnValue ret = internalAddItem(cylinder, remaindItem, INDEX_WHEREEVER, flags);
-        if (ret != RETURNVALUE_NOERROR) {
-            internalAddItem(cylinder->getTile(), remaindItem, INDEX_WHEREEVER, FLAG_NOLIMIT);
-        }
-    }
+		return;
+	}
+
+	uint32_t crystalCoins = money / 10000;
+	money -= crystalCoins * 10000;
+	while (crystalCoins > 0) {
+		const uint16_t count = std::min<uint32_t>(100, crystalCoins);
+
+		Item* remaindItem = Item::CreateItem(ITEM_CRYSTAL_COIN, count);
+
+		ReturnValue ret = internalAddItem(cylinder, remaindItem, INDEX_WHEREEVER, flags);
+		if (ret != RETURNVALUE_NOERROR) {
+			internalAddItem(cylinder->getTile(), remaindItem, INDEX_WHEREEVER, FLAG_NOLIMIT);
+		}
+
+		crystalCoins -= count;
+	}
+
+	uint16_t platinumCoins = money / 100;
+	if (platinumCoins != 0) {
+		Item* remaindItem = Item::CreateItem(ITEM_PLATINUM_COIN, platinumCoins);
+
+		ReturnValue ret = internalAddItem(cylinder, remaindItem, INDEX_WHEREEVER, flags);
+		if (ret != RETURNVALUE_NOERROR) {
+			internalAddItem(cylinder->getTile(), remaindItem, INDEX_WHEREEVER, FLAG_NOLIMIT);
+		}
+
+		money -= platinumCoins * 100;
+	}
+
+	if (money != 0) {
+		Item* remaindItem = Item::CreateItem(ITEM_GOLD_COIN, money);
+
+		ReturnValue ret = internalAddItem(cylinder, remaindItem, INDEX_WHEREEVER, flags);
+		if (ret != RETURNVALUE_NOERROR) {
+			internalAddItem(cylinder->getTile(), remaindItem, INDEX_WHEREEVER, FLAG_NOLIMIT);
+		}
+	}
 }
 
 Item* Game::transformItem(Item* item, uint16_t newId, int32_t newCount /*= -1*/)
