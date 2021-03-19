@@ -246,7 +246,7 @@
     <ClCompile Include="..\src\xtea.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="sublime-engine.rc" />
+    <ResourceCompile Include="thornia-engine.rc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\account.hpp" />

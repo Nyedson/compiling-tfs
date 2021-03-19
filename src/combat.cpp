@@ -28,7 +28,6 @@
 #include "monster.h"
 #include "iobestiary.h"
 #include "monsters.h"
-#include "monster.h"
 
 extern Game g_game;
 extern Weapons* g_weapons;
