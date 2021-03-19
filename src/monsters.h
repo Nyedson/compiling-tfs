@@ -192,6 +192,7 @@ class MonsterType
 		bool isAttackable = true;
 		bool isHostile = true;
 		bool hiddenHealth = false;
+		bool isPet = false;
 		bool isMonsterAttacker = false;
 		bool cantAttackPlayers = false;
 		bool isRewardBoss = false;
