@@ -28,6 +28,7 @@
 #include "monster.h"
 #include "iobestiary.h"
 #include "monsters.h"
+#include "monster.h"
 
 extern Game g_game;
 extern Weapons* g_weapons;
@@ -345,13 +346,20 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
 			} else if (attacker->getMonster()) {
-				const Creature* targetMaster = target->getMaster();
+				/* Monsters can attack each other but only if they are monsters attackers */
+				const Monster* monster = attacker->getMonster();
 
-				if (!targetMaster || !targetMaster->getPlayer()) {
-					const Creature* attackerMaster = attacker->getMaster();
+				if (monster) {
+					if (!monster->isMonsterAttacker()) {
+						const Creature* targetMaster = target->getMaster();
 
-					if (!attackerMaster || !attackerMaster->getPlayer()) {
-						return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
+					if (!targetMaster || !targetMaster->getPlayer()) {
+							const Creature* attackerMaster = attacker->getMaster();
+
+							if (!attackerMaster || !attackerMaster->getPlayer()) {
+								return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
+							}
+						}
 					}
 				}
 			}

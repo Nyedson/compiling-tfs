@@ -95,7 +95,7 @@ BedItem* BedItem::getNextBedItem() const
 
 bool BedItem::canUse(Player* player)
 {
-	if ((player == nullptr) || (house == nullptr) || !player->isPremium()) {
+	if ((player == nullptr) || (house == nullptr)) {
 		return false;
 	}
 

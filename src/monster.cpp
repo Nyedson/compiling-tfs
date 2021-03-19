@@ -725,6 +725,11 @@ bool Monster::isTarget(const Creature* creature) const
 	if (creature->getPosition().z != getPosition().z) {
 		return false;
 	}
+
+	if (cantAttackPlayers() && creature->getPlayer()) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -774,6 +779,10 @@ void Monster::updateIdleStatus()
 		if (!isSummon() && targetList.empty()) {
 			idle = true;
 		}
+	}
+
+	if (isMonsterAttacker()) {
+		idle = false;
 	}
 
 	setIdle(idle);
@@ -846,7 +855,7 @@ void Monster::onThink(uint32_t interval)
 
 	if (!isInSpawnRange(position)) {
 		g_game.internalTeleport(this, masterPos);
-		setIdle(true);
+		setIdle(false);
 	} else {
 		updateIdleStatus();
 

@@ -1529,6 +1529,8 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(MESSAGE_OFFLINE_TRAINING)
 	registerEnum(MESSAGE_TRANSACTION)
 	registerEnum(MESSAGE_POTION)
+	registerEnum(MESSAGE_STATUS_CONSOLE_ORANGE)
+	registerEnum(MESSAGE_STATUS_CONSOLE_BLUE)
 
 	registerEnum(CREATURETYPE_PLAYER)
 	registerEnum(CREATURETYPE_MONSTER)
