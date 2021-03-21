@@ -814,10 +814,6 @@ class Player final : public Creature, public Cylinder
 			secureMode = mode;
 		}
 
-		Faction_t getFaction() const override {
-			return FACTION_PLAYER;
-		}
-
 		//combat functions
 		bool setAttackedCreature(Creature* creature) override;
 		bool isImmune(CombatType_t type) const override;

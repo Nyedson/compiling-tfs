@@ -297,7 +297,6 @@ bool Combat::isProtected(const Player* attacker, const Player* target)
 ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 {
 	if (attacker) {
-		const Creature* attackerMaster = attacker->getMaster();
 		if (const Player* targetPlayer = target->getPlayer()) {
 			if (targetPlayer->hasFlag(PlayerFlag_CannotBeAttacked)) {
 				return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
@@ -321,8 +320,8 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 				}
 			}
 
-			if (attackerMaster) {
-				if (const Player* masterAttackerPlayer = attackerMaster->getPlayer()) {
+			if (attacker->isSummon()) {
+				if (const Player* masterAttackerPlayer = attacker->getMaster()->getPlayer()) {
 					if (masterAttackerPlayer->hasFlag(PlayerFlag_CannotAttackPlayer)) {
 						return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
 					}
@@ -336,17 +335,7 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 					}
 				}
 			}
-			if (attacker->getMonster() && (!attackerMaster || attackerMaster->getMonster())) {
-				if (attacker->getFaction() != FACTION_DEFAULT && !attacker->getMonster()->isEnemyFaction(targetPlayer->getFaction())) {
-					return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
-				}
-			}
 		} else if (target->getMonster()) {
-
-			if (attacker->getFaction() != FACTION_DEFAULT && attacker->getFaction() != FACTION_PLAYER && !attacker->getMonster()->isEnemyFaction(target->getFaction())) {
-				return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
-			}
-
 			if (const Player* attackerPlayer = attacker->getPlayer()) {
 				if (attackerPlayer->hasFlag(PlayerFlag_CannotAttackMonster)) {
 					return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
@@ -355,22 +344,28 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 				if (target->isSummon() && target->getMaster()->getPlayer() && target->getZone() == ZONE_NOPVP) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
-
-				
 			} else if (attacker->getMonster()) {
-				const Creature* targetMaster = target->getMaster();
+				/* Monsters can attack each other but only if they are monsters attackers */
+				const Monster* monster = attacker->getMonster();
 
-				if ((!targetMaster || !targetMaster->getPlayer()) && attacker->getFaction() == FACTION_DEFAULT) {
+				if (monster) {
+					if (!monster->isMonsterAttacker()) {
+						const Creature* targetMaster = target->getMaster();
 
-					if (!attackerMaster || !attackerMaster->getPlayer()) {
-						return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
+					if (!targetMaster || !targetMaster->getPlayer()) {
+							const Creature* attackerMaster = attacker->getMaster();
+
+							if (!attackerMaster || !attackerMaster->getPlayer()) {
+								return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
+							}
+						}
 					}
 				}
 			}
 		}
 
 		if (g_game.getWorldType() == WORLD_TYPE_NO_PVP) {
-			if (attacker->getPlayer() || (attackerMaster && attackerMaster->getPlayer())) {
+			if (attacker->getPlayer() || (attacker->isSummon() && attacker->getMaster()->getPlayer())) {
 				if (target->getPlayer()) {
 					if (!isInPvpZone(attacker, target)) {
 						return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;

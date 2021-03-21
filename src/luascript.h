@@ -1403,6 +1403,8 @@ class LuaScriptInterface
 		static int luaMonsterTypeIsBlockable(lua_State* L);
 
 		static int luaMonsterTypeIsPet(lua_State* L);
+		static int luaMonsterTypeIsMonsterAttacker(lua_State* L);
+		static int luaMonsterTypeCantAttackPlayers (lua_State* L);
 		static int luaMonsterTypeIsRewardBoss(lua_State* L);
 		static int luaMonsterTypeRespawnType(lua_State* L);
         static int luaMonsterTypeCanSpawn(lua_State* L);
@@ -1419,11 +1421,6 @@ class LuaScriptInterface
 		static int luaMonsterTypeMaxHealth(lua_State* L);
 		static int luaMonsterTypeRunHealth(lua_State* L);
 		static int luaMonsterTypeExperience(lua_State* L);
-
-		static int luaMonsterTypeFaction(lua_State* L);
-		static int luaMonsterTypeEnemyFactions(lua_State* L);
-		static int luaMonsterTypeTargetPreferPlayer(lua_State* L);
-		static int luaMonsterTypeTargetPreferMaster(lua_State* L);
 
 		// Bestiary
 		static int luaMonsterTypeRaceid(lua_State* L);

@@ -182,11 +182,6 @@ class MonsterType
 		int32_t targetStrategiesLowerHPPercent = 0;
 		int32_t targetStrategiesMostDamagePercent = 0;
 		int32_t targetStrategiesRandom = 0;
-		bool targetPreferPlayer = false;
-		bool targetPreferMaster = false;
-
-		Faction_t faction = FACTION_DEFAULT;
-		std::unordered_set<Faction_t> enemyFactions;
 
 		bool canPushItems = false;
 		bool canPushCreatures = false;
@@ -199,6 +194,8 @@ class MonsterType
 		bool hiddenHealth = false;
 		bool isBlockable = false;
 		bool isPet = false;
+		bool isMonsterAttacker = false;
+		bool cantAttackPlayers = false;
 		bool isRewardBoss = false;
 		bool canWalkOnEnergy = true;
 		bool canWalkOnFire = true;
