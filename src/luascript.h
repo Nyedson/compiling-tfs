@@ -1403,8 +1403,6 @@ class LuaScriptInterface
 		static int luaMonsterTypeIsBlockable(lua_State* L);
 
 		static int luaMonsterTypeIsPet(lua_State* L);
-		static int luaMonsterTypeIsMonsterAttacker(lua_State* L);
-		static int luaMonsterTypeCantAttackPlayers (lua_State* L);
 		static int luaMonsterTypeIsRewardBoss(lua_State* L);
 		static int luaMonsterTypeRespawnType(lua_State* L);
         static int luaMonsterTypeCanSpawn(lua_State* L);
