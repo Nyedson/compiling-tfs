@@ -345,20 +345,13 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
 			} else if (attacker->getMonster()) {
-				/* Monsters can attack each other but only if they are monsters attackers */
-				const Monster* monster = attacker->getMonster();
+				const Creature* targetMaster = target->getMaster();
 
-				if (monster) {
-					if (!monster->isMonsterAttacker()) {
-						const Creature* targetMaster = target->getMaster();
+				if (!targetMaster || !targetMaster->getPlayer()) {
+					const Creature* attackerMaster = attacker->getMaster();
 
-					if (!targetMaster || !targetMaster->getPlayer()) {
-							const Creature* attackerMaster = attacker->getMaster();
-
-							if (!attackerMaster || !attackerMaster->getPlayer()) {
-								return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
-							}
-						}
+					if (!attackerMaster || !attackerMaster->getPlayer()) {
+						return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
 					}
 				}
 			}

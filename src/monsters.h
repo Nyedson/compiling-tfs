@@ -194,8 +194,6 @@ class MonsterType
 		bool hiddenHealth = false;
 		bool isBlockable = false;
 		bool isPet = false;
-		bool isMonsterAttacker = false;
-		bool cantAttackPlayers = false;
 		bool isRewardBoss = false;
 		bool canWalkOnEnergy = true;
 		bool canWalkOnFire = true;

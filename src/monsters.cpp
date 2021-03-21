@@ -850,10 +850,6 @@ MonsterType* Monsters::loadMonster(const std::string& file, const std::string& m
 				mType->info.isHostile = attr.as_bool();
 			} else if (strcasecmp(attrName, "pet") == 0) {
 				mType->info.isPet = attr.as_bool();
-			} else if (strcasecmp(attrName, "monsterattacker") == 0) {
-				mType->info.isMonsterAttacker = attr.as_bool();
-			} else if (strcasecmp(attrName, "cantattackplayers") == 0) {
-				mType->info.cantAttackPlayers = attr.as_bool();
 			} else if (strcasecmp(attrName, "illusionable") == 0) {
 				mType->info.isIllusionable = attr.as_bool();
 			} else if (strcasecmp(attrName, "convinceable") == 0) {
