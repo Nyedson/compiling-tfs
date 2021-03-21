@@ -15098,6 +15098,7 @@ int LuaScriptInterface::luaMonsterTypeIsPet(lua_State* L)
 
 int LuaScriptInterface::luaMonsterTypeIsMonsterAttacker (lua_State* L)
 {
+	// get: monsterType:isPet() set: monsterType:isPet(bool)
 	MonsterType* monsterType = getUserdata<MonsterType>(L, 1);
 	if (monsterType) {
 		if (lua_gettop(L) == 1) {
@@ -15114,12 +15115,30 @@ int LuaScriptInterface::luaMonsterTypeIsMonsterAttacker (lua_State* L)
 
 int LuaScriptInterface::luaMonsterTypeCantAttackPlayers (lua_State* L)
 {
+	// get: monsterType:isPet() set: monsterType:isPet(bool)
 	MonsterType* monsterType = getUserdata<MonsterType>(L, 1);
 	if (monsterType) {
 		if (lua_gettop(L) == 1) {
 			pushBoolean(L, monsterType->info.cantAttackPlayers );
 		} else {
 			monsterType->info.cantAttackPlayers  = getBoolean(L, 2);
+			pushBoolean(L, true);
+		}
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaMonsterTypeIsPet(lua_State* L)
+{
+	// get: monsterType:isPet() set: monsterType:isPet(bool)
+	MonsterType* monsterType = getUserdata<MonsterType>(L, 1);
+	if (monsterType) {
+		if (lua_gettop(L) == 1) {
+			pushBoolean(L, monsterType->info.isPet);
+		} else {
+			monsterType->info.isPet = getBoolean(L, 2);
 			pushBoolean(L, true);
 		}
 	} else {
