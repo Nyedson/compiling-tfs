@@ -24,15 +24,11 @@
 #include "outputmessage.h"
 #include "rsa.h"
 #include "tasks.h"
-#include "account.hpp"
+
 #include "configmanager.h"
 #include "iologindata.h"
 #include "ban.h"
 #include "game.h"
-
-#include <algorithm>
-#include <limits>
-#include <vector>
 
 extern ConfigManager g_config;
 extern Game g_game;
@@ -50,27 +46,21 @@ void ProtocolLogin::disconnectClient(const std::string& message, uint16_t versio
 
 void ProtocolLogin::getCharacterList(const std::string& accountName, const std::string& password, uint16_t version)
 {
-	// Load Account Information
-  int result = 0;
-  account::Account account;
-  result = account.LoadAccountDB(accountName);
-  if (result) {
-    return;
-  }
-
-  // Check Login Password
-	if (!IOLoginData::LoginServerAuthentication(accountName, password)) {
+	//dispatcher thread
+	Account account;
+	if (!IOLoginData::loginserverAuthentication(accountName, password, account)) {
 		disconnectClient("Account name or password is not correct.", version);
 		return;
 	}
 
 	auto output = OutputMessagePool::getOutputMessage();
-	// Update premium days
+	//Update premium days
 	Game::updatePremium(account);
 
+	//
 	const std::string& motd = g_config.getString(ConfigManager::MOTD);
 	if (!motd.empty()) {
-		// Add MOTD
+		//Add MOTD
 		output->addByte(0x14);
 
 		std::ostringstream ss;
@@ -78,44 +68,39 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 		output->addString(ss.str());
 	}
 
-	// Add session key
+	//Add session key
 	output->addByte(0x28);
 	output->addString(accountName + "\n" + password);
 
-	// Add char list
-  std::vector<account::Player> players;
-  account.GetAccountPlayers(&players);
-  output->addByte(0x64);
+	//Add char list
+	output->addByte(0x64);
 
-  output->addByte(1);  // number of worlds
+	output->addByte(1); // number of worlds
 
-	output->addByte(0);  // world id
+	output->addByte(0); // world id
 	output->addString(g_config.getString(ConfigManager::SERVER_NAME));
 	output->addString(g_config.getString(ConfigManager::IP));
 
 	output->add<uint16_t>(g_config.getShortNumber(ConfigManager::GAME_PORT));
 
 	output->addByte(0);
-
-	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(),
-                                  players.size());
+	//
+	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), account.characters.size());
 	output->addByte(size);
 	for (uint8_t i = 0; i < size; i++) {
 		output->addByte(0);
-		output->addString(players[i].name);
+		output->addString(account.characters[i]);
 	}
 
-	// Add premium days
+	//Add premium days
 	output->addByte(0);
 	if (g_config.getBoolean(ConfigManager::FREE_PREMIUM)) {
 		output->addByte(1);
 		output->add<uint32_t>(0);
 	} else {
-    uint32_t days;
-    account.GetPremiumRemaningDays(&days);
-    output->addByte(0);
-    output->add<uint32_t>(time(nullptr) + (days * 86400));
-  }
+		output->addByte(0);
+		output->add<uint32_t>(time(nullptr) + (account.premiumDays * 86400));
+	}
 
 	send(output);
 
@@ -129,19 +114,28 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 		return;
 	}
 
-	OperatingSystem_t operatingSystem = static_cast<OperatingSystem_t>(msg.get<uint16_t>());
+	msg.skipBytes(2); // client OS
+	// OperatingSystem_t operatingSystem = static_cast<OperatingSystem_t>(msg.get<uint16_t>());
 
 	uint16_t version = msg.get<uint16_t>();
-	if (version >= 1200 && operatingSystem <= CLIENTOS_NEW_MAC) 
+	if (version >= 1111) {
 		enableCompact();
+	}
 
 	msg.skipBytes(17);
 	/*
 	 * Skipped bytes:
-	 * 4 bytes: client version
+	 * 4 bytes: protocolVersion
 	 * 12 bytes: dat, spr, pic signatures (4 bytes each)
 	 * 1 byte: 0
 	 */
+
+	if (version <= 760) {
+		std::ostringstream ss;
+		ss << "Only clients with protocol " << g_config.getString(ConfigManager::VERSION_STR) << " allowed!";
+		disconnectClient(ss.str(), version);
+		return;
+	}
 
 	if (!Protocol::RSA_decrypt(msg)) {
 		std::cout << "[ProtocolLogin::onRecvFirstMessage] RSA Decrypt Failed" << std::endl;
@@ -156,6 +150,13 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	key[3] = msg.get<uint32_t>();
 	enableXTEAEncryption();
 	setXTEAKey(std::move(key));
+
+	if (version < g_config.getNumber(ConfigManager::VERSION_MIN) || version > g_config.getNumber(ConfigManager::VERSION_MAX)) {
+		std::ostringstream ss;
+		ss << "Only clients with protocol " << g_config.getString(ConfigManager::VERSION_STR) << " allowed!";
+		disconnectClient(ss.str(), version);
+		return;
+	}
 
 	if (g_game.getGameState() == GAME_STATE_STARTUP) {
 		disconnectClient("Gameworld is starting up. Please wait.", version);

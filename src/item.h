@@ -20,9 +20,6 @@
 #ifndef FS_ITEM_H_009A319FB13D477D9EEFFBBD9BB83562
 #define FS_ITEM_H_009A319FB13D477D9EEFFBBD9BB83562
 
-#include <utility>
-#include <vector>
-
 #include "cylinder.h"
 #include "thing.h"
 #include "items.h"
@@ -108,9 +105,7 @@ enum AttrTypes_t {
 	ATTR_SPECIAL = 34,
 	ATTR_IMBUINGSLOTS = 35,
 	ATTR_OPENCONTAINER = 36,
-	ATTR_CUSTOM_ATTRIBUTES = 37,
-
-	ATTR_QUICKLOOTCONTAINER = 38
+	ATTR_CUSTOM_ATTRIBUTES = 37
 };
 
 enum Attr_ReadValue {
@@ -505,22 +500,12 @@ class ItemAttributes
 			return false;
 		}
 
-		const static uint32_t intAttributeTypes = ITEM_ATTRIBUTE_ACTIONID | ITEM_ATTRIBUTE_UNIQUEID | ITEM_ATTRIBUTE_DATE
-			| ITEM_ATTRIBUTE_WEIGHT | ITEM_ATTRIBUTE_ATTACK | ITEM_ATTRIBUTE_DEFENSE | ITEM_ATTRIBUTE_EXTRADEFENSE
-			| ITEM_ATTRIBUTE_ARMOR | ITEM_ATTRIBUTE_HITCHANCE | ITEM_ATTRIBUTE_SHOOTRANGE | ITEM_ATTRIBUTE_OWNER
-			| ITEM_ATTRIBUTE_DURATION | ITEM_ATTRIBUTE_DECAYSTATE | ITEM_ATTRIBUTE_CORPSEOWNER | ITEM_ATTRIBUTE_CHARGES
-			| ITEM_ATTRIBUTE_FLUIDTYPE | ITEM_ATTRIBUTE_DOORID | ITEM_ATTRIBUTE_IMBUINGSLOTS
-			| ITEM_ATTRIBUTE_OPENCONTAINER | ITEM_ATTRIBUTE_QUICKLOOTCONTAINER;
-
-		const static uint32_t stringAttributeTypes = ITEM_ATTRIBUTE_DESCRIPTION | ITEM_ATTRIBUTE_TEXT | ITEM_ATTRIBUTE_WRITER
-			| ITEM_ATTRIBUTE_NAME | ITEM_ATTRIBUTE_ARTICLE | ITEM_ATTRIBUTE_PLURALNAME | ITEM_ATTRIBUTE_SPECIAL;
-
 	public:
 		static bool isIntAttrType(itemAttrTypes type) {
-			return (type & intAttributeTypes) == type;
+			return (type & 0x27FFE13) != 0;
 		}
 		static bool isStrAttrType(itemAttrTypes type) {
-			return (type & stringAttributeTypes) == type;
+			return (type & 0x8001EC) != 0;
 		}
 		inline static bool isCustomAttrType(itemAttrTypes type) {
 			return (type & 0x80000000) != 0;
@@ -626,6 +611,29 @@ class Item : virtual public Thing
 
 		bool getIsLootTrackeable() {
 			return isLootTrackeable;
+		}
+
+		uint32_t getQuickLootFlags() const
+		{
+			if (!attributes) {
+				return 0;
+			}
+
+			if (!attributes->hasAttribute(ITEM_ATTRIBUTE_CUSTOM)) {
+				return 0;
+			}
+
+			uint32_t flags = 0;
+			for (uint8_t i = LOOT_START; i < LOOT_END; i++)
+			{
+				const ItemAttributes::CustomAttribute* attr = getCustomAttribute("quickLootCategory" + std::to_string(i));
+				if (attr != nullptr) {
+					flags |= (1 << i);
+					continue;
+				}
+			}
+
+			return flags;
 		}
 
 		void removeAttribute(itemAttrTypes type) {
@@ -814,8 +822,6 @@ class Item : virtual public Thing
 			return static_cast<ItemDecayState_t>(getIntAttr(ITEM_ATTRIBUTE_DECAYSTATE));
 		}
 
-    static std::vector<std::pair<std::string, std::string>> getDescriptions(const ItemType& it,
-																						const Item* item = nullptr);
 		static std::string getDescription(const ItemType& it, int32_t lookDistance, const Item* item = nullptr, int32_t subType = -1, bool addArticle = true);
 		static std::string getNameDescription(const ItemType& it, const Item* item = nullptr, int32_t subType = -1, bool addArticle = true);
 		static std::string getWeightDescription(const ItemType& it, uint32_t weight, uint32_t count = 1);
@@ -849,6 +855,9 @@ class Item : virtual public Thing
 		// Returns the player that is holding this item in his inventory
 		Player* getHoldingPlayer() const;
 
+		QuickLootCategory_t getLootCategory() const {
+			return items[id].quickLootCategory;
+		}
 		WeaponType_t getWeaponType() const {
 			return items[id].weaponType;
 		}
@@ -908,12 +917,6 @@ class Item : virtual public Thing
 			}
 			return items[id].hitChance;
 		}
-		uint32_t getQuicklootAttr() const {
-			if (hasAttribute(ITEM_ATTRIBUTE_QUICKLOOTCONTAINER)) {
-				return getIntAttr(ITEM_ATTRIBUTE_QUICKLOOTCONTAINER);
-			}
-			return 0;
-		}
 
 		uint32_t getWorth() const;
 		LightInfo getLightInfo() const;
@@ -924,9 +927,6 @@ class Item : virtual public Thing
 		}
 		bool isStackable() const {
 			return items[id].stackable;
-		}
-		bool isStowable() const {
-			return items[id].stackable && items[id].wareId > 0;
 		}
 		bool isAlwaysOnTop() const {
 			return items[id].alwaysOnTop;

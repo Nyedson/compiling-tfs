@@ -16,7 +16,6 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-#include <string>
 
 #include "otpch.h"
 
@@ -46,8 +45,7 @@ bool Mounts::loadFromXml()
 			pugi::cast<uint16_t>(mountNode.attribute("clientid").value()),
 			mountNode.attribute("name").as_string(),
 			pugi::cast<int32_t>(mountNode.attribute("speed").value()),
-			mountNode.attribute("premium").as_bool(),
-			mountNode.attribute("type").as_string()
+			mountNode.attribute("premium").as_bool()
 		);
 	}
 	mounts.shrink_to_fit();

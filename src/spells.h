@@ -251,9 +251,6 @@ class Spell : public BaseSpell
 		bool getNeedTarget() const {
 			return needTarget;
 		}
-		bool getPzOnUse() const {
-			return pzLocked;
-		}		
 		void setNeedTarget(bool n) {
 			needTarget = n;
 		}
@@ -331,7 +328,6 @@ class Spell : public BaseSpell
 		bool learnable = false;
 		bool enabled = true;
 		bool premium = false;
-		bool pzLocked = false;
 
 
 	private:
