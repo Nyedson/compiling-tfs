@@ -20,9 +20,9 @@
 #ifndef FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 #define FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 
-static constexpr auto STATUS_SERVER_NAME = "The Forgotten Server";
-static constexpr auto STATUS_SERVER_VERSION = "1.3";
-static constexpr auto STATUS_SERVER_DEVELOPERS = "OTServBR, Mark Samman and The Forgotten Server Developers";
+static constexpr auto STATUS_SERVER_NAME = "Thornia Engine";
+static constexpr auto STATUS_SERVER_VERSION = "2.0";
+static constexpr auto STATUS_SERVER_DEVELOPERS = "Thornia Team, Mark Samman and The Forgotten Server Developers";
 
 static constexpr auto CLIENT_VERSION_MIN = 1200;
 static constexpr auto CLIENT_VERSION_MAX = 1200;
