@@ -107,7 +107,7 @@ bool Events::load()
 			} else if (methodName == "onItemMoved") {
 				info.playerOnItemMoved = event;
 			} else if (methodName == "onChangeZone") {
-+				info.playerOnChangeZone = event;
+				info.playerOnChangeZone = event;
 			} else if (methodName == "onMoveCreature") {
 				info.playerOnMoveCreature = event;
 			} else if (methodName == "onReportRuleViolation") {
