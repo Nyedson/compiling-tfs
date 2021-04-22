@@ -1016,10 +1016,6 @@ void LuaScriptInterface::registerFunctions()
 	//getWorldUpTime()
 	lua_register(luaState, "getWorldUpTime", LuaScriptInterface::luaGetWorldUpTime);
 
-	//Auto Loot()
-	lua_register(luaState, "getLoot", LuaScriptInterface::luaMonsterTypeGetLoot);
-	lua_register(luaState, "addLoot", LuaScriptInterface::luaMonsterTypeAddLoot);
-
 	//createCombatArea( {area}, <optional> {extArea} )
 	lua_register(luaState, "createCombatArea", LuaScriptInterface::luaCreateCombatArea);
 
