@@ -1016,6 +1016,10 @@ void LuaScriptInterface::registerFunctions()
 	//getWorldUpTime()
 	lua_register(luaState, "getWorldUpTime", LuaScriptInterface::luaGetWorldUpTime);
 
+	//Auto Loot()
+	lua_register(luaState, "getLoot", LuaScriptInterface::luaMonsterTypeGetLoot);
+	lua_register(luaState, "addLoot", LuaScriptInterface::luaMonsterTypeAddLoot);
+
 	//createCombatArea( {area}, <optional> {extArea} )
 	lua_register(luaState, "createCombatArea", LuaScriptInterface::luaCreateCombatArea);
 
@@ -3437,6 +3441,39 @@ int LuaScriptInterface::luaGetWorldUpTime(lua_State* L)
 	uint64_t uptime = (OTSYS_TIME() - ProtocolStatus::start) / 1000;
 	lua_pushnumber(L, uptime);
 	return 1;
+}
+
+// Auto Loot
+int LuaScriptInterface::luaMonsterTypeGetLoot(lua_State* L)
+{
+    // monsterType:getLoot()
+    MonsterType* monsterType = getUserdata<MonsterType>(L, 1);
+    if (!monsterType) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    pushLoot(L, monsterType->info.lootItems);
+    return 1;
+}
+
+ 
+int LuaScriptInterface::luaMonsterTypeAddLoot(lua_State* L)
+{
+    // monsterType:addLoot(loot)
+    MonsterType* monsterType = getUserdata<MonsterType>(L, 1);
+    if (monsterType) {
+        Loot* loot = getUserdata<Loot>(L, 2);
+        if (loot) {
+            monsterType->loadLoot(monsterType, loot->lootBlock);
+            pushBoolean(L, true);
+        } else {
+            lua_pushnil(L);
+        }
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 bool LuaScriptInterface::getArea(lua_State* L, std::list<uint32_t>& list, uint32_t& rows)

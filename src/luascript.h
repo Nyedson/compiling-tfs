@@ -1579,6 +1579,10 @@ class LuaScriptInterface
 		static int luaImbuementGetElementDamage(lua_State* L);
 		static int luaImbuementGetCombatType(lua_State* L);
 
+		// Auto Loot
+		static int luaMonsterTypeGetLoot(lua_State* L);
+		static int luaMonsterTypeAddLoot(lua_State* L);
+
 		//
 		std::string lastLuaError;
 
