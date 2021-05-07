@@ -261,7 +261,6 @@ enum MessageClasses : uint8_t {
 	MESSAGE_GUILD = 33, /* White message in channel (+ channelId)*/
 	MESSAGE_PARTY_MANAGEMENT = 34, /* Green message in game window and in the console*/
 	MESSAGE_PARTY = 35, /* White message on the console*/
-
 	MESSAGE_REPORT = 38, /* White message on the game window and in the console*/
 	MESSAGE_HOTKEY_PRESSED = 39, /* Green message in game window and in the console*/
 	MESSAGE_TUTORIAL_HINT = 40, /* no effect (?)*/
@@ -274,6 +273,8 @@ enum MessageClasses : uint8_t {
 	MESSAGE_OFFLINE_TRAINING = 50, /* White message on the game window and in the console*/
 	MESSAGE_TRANSACTION = 51, /* White message on the game window and in the console*/
 	MESSAGE_POTION = 52, /* Orange creature say*/
+	MESSAGE_STATUS_CONSOLE_ORANGE = 37,  /*Orange message in the console*/
+	MESSAGE_STATUS_CONSOLE_BLUE = 4, /* Blue Message */
 };
 
 enum FluidColors_t : uint8_t {

@@ -45,12 +45,12 @@ build:
 
 # scripts to run after build (working directory and environment changes are persisted from the previous steps)
 after_build:
-  - 7z a -tzip zanera-engine.zip -r .\vc14\*.exe -ir!.\vc14\*.dll
+  - 7z a -tzip thornia-engine.zip -r .\vc14\*.exe -ir!.\vc14\*.dll
 
 cache:
   - c:\tools\vcpkg\installed\
 
 artifacts:
-  - path: vc14\**\zanera-engine*.exe
+  - path: vc14\**\thornia-engine*.exe
   - path: vc14\**\*.dll
-  - path: zanera-engine.zip
+  - path: thornia-engine.zip

@@ -246,7 +246,7 @@
     <ClCompile Include="..\src\xtea.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="zanera-engine.rc" />
+    <ResourceCompile Include="prometheus-server.rc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\account.hpp" />

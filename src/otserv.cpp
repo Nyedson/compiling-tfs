@@ -105,10 +105,10 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
-//__attribute__ ((used)) void saveServer() {
-//	g_game.saveGameState();
-//}
-
+// No RB
+__attribute__ ((used)) void saveServer() {
+	g_game.saveGameState();
+}
 #endif
 
 void mainLoader(int, char*[], ServiceManager* services) {
@@ -153,8 +153,6 @@ void mainLoader(int, char*[], ServiceManager* services) {
 
 	std::cout << "A server developed by " << STATUS_SERVER_DEVELOPERS
 																<< std::endl;
-	std::cout << "Visit our forum for updates, support, and resources: "
-		"https://otserv.com.br/ and https://forums.otserv.com.br" << std::endl;
 	std::cout << std::endl;
 
 	// check if config.lua or config.lua.dist exist

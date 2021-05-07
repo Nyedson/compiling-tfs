@@ -20,9 +20,9 @@
 #ifndef FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 #define FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 
-static constexpr auto STATUS_SERVER_NAME = "Zanera Engine";
-static constexpr auto STATUS_SERVER_VERSION = "1.1";
-static constexpr auto STATUS_SERVER_DEVELOPERS = "OTServBR, Mark Samman and The Forgotten Server Developers";
+static constexpr auto STATUS_SERVER_NAME = "Prometheus Server";
+static constexpr auto STATUS_SERVER_VERSION = "1.0";
+static constexpr auto STATUS_SERVER_DEVELOPERS = "Prometheus Team, Mark Samman and The Forgotten Server Developers";
 
 static constexpr auto AUTHENTICATOR_DIGITS = 6U;
 static constexpr auto AUTHENTICATOR_PERIOD = 30U;

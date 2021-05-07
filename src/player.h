@@ -813,10 +813,6 @@ class Player final : public Creature, public Cylinder
 		void setSecureMode(bool mode) {
 			secureMode = mode;
 		}
-		
-		Faction_t getFaction() const override {
-			return FACTION_PLAYER;
-		}
 
 		//combat functions
 		bool setAttackedCreature(Creature* creature) override;

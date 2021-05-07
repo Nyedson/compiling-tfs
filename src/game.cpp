@@ -4995,10 +4995,10 @@ bool Game::playerSaySpell(Player* player, SpeakClasses type, const std::string& 
 		player->cancelPush();
 
 		if (!g_config.getBoolean(ConfigManager::EMOTE_SPELLS)) {
-            return internalCreatureSay(player, TALKTYPE_SAY, words, false, nullptr, nullptr, true);
-        } else {
-            return internalCreatureSay(player, TALKTYPE_MONSTER_SAY, words, false, nullptr, nullptr, true);
-        }
+			return internalCreatureSay(player, TALKTYPE_SPELL_USE, words, false);
+		} else {
+			return internalCreatureSay(player, TALKTYPE_MONSTER_SAY, words, false);
+		}
 
 	} else if (result == TALKACTION_FAILED) {
 		return true;
@@ -5124,7 +5124,7 @@ bool Game::internalCreatureTurn(Creature* creature, Direction dir)
 }
 
 bool Game::internalCreatureSay(Creature* creature, SpeakClasses type, const std::string& text,
-                               bool ghostMode, SpectatorHashSet* spectatorsPtr/* = nullptr*/, const Position* pos/* = nullptr*/, bool isSpell/*= false */)
+							   bool ghostMode, SpectatorHashSet* spectatorsPtr/* = nullptr*/, const Position* pos/* = nullptr*/)
 {
 	if (text.empty()) {
 		return false;
@@ -5156,10 +5156,7 @@ bool Game::internalCreatureSay(Creature* creature, SpeakClasses type, const std:
 	for (Creature* spectator : spectators) {
 		if (Player* tmpPlayer = spectator->getPlayer()) {
 			if (!ghostMode || tmpPlayer->canSeeCreature(creature)) {
-				int32_t value = -1;
-                if(isSpell)
-                   tmpPlayer->getStorageValue(203500, value);
-                tmpPlayer->sendCreatureSay(creature, value == 1 ? TALKTYPE_MONSTER_SAY : type, text, pos);
+				tmpPlayer->sendCreatureSay(creature, type, text, pos);
 			}
 		}
 	}
