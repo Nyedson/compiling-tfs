@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@
 #include "condition.h"
 #include "map.h"
 #include "baseevents.h"
-#include "monster.h"
 
 class Condition;
 class Creature;
@@ -36,10 +35,10 @@ struct Position;
 class ValueCallback final : public CallBack
 {
 	public:
-		explicit ValueCallback(formulaType_t type): type(type) {}
-		void getMinMaxValues(Player* player, CombatDamage& damage) const;
+		explicit ValueCallback(formulaType_t initType): type(initType) {}
+		void getMinMaxValues(Player* player, CombatDamage& damage, bool useCharges) const;
 
-	protected:
+	private:
 		formulaType_t type;
 };
 
@@ -84,10 +83,12 @@ struct CombatParams {
 	bool useCharges = false;
 };
 
+using CombatFunction = std::function<void(Creature*, Creature*, const CombatParams&, CombatDamage*)>;
+
 class MatrixArea
 {
 	public:
-		MatrixArea(uint32_t rows, uint32_t cols): centerX(0), centerY(0), rows(rows), cols(cols) {
+		MatrixArea(uint32_t initRows, uint32_t initCols): centerX(0), centerY(0), rows(initRows), cols(initCols) {
 			data_ = new bool*[rows];
 
 			for (uint32_t row = 0; row < rows; ++row) {
@@ -157,7 +158,7 @@ class MatrixArea
 			return data_[i];
 		}
 
-	protected:
+	private:
 		uint32_t centerX;
 		uint32_t centerY;
 
@@ -187,7 +188,7 @@ class AreaCombat
 		void setupExtArea(const std::list<uint32_t>& list, uint32_t rows);
 		void clear();
 
-	protected:
+	private:
 		enum MatrixOperation_t {
 			MATRIXOPERATION_COPY,
 			MATRIXOPERATION_MIRROR,
@@ -247,6 +248,18 @@ class Combat
 		Combat(const Combat&) = delete;
 		Combat& operator=(const Combat&) = delete;
 
+		static void doCombatHealth(Creature* caster, Creature* target, CombatDamage& damage, const CombatParams& params);
+		static void doCombatHealth(Creature* caster, const Position& position, const AreaCombat* area, CombatDamage& damage, const CombatParams& params);
+
+		static void doCombatMana(Creature* caster, Creature* target, CombatDamage& damage, const CombatParams& params);
+		static void doCombatMana(Creature* caster, const Position& position, const AreaCombat* area, CombatDamage& damage, const CombatParams& params);
+
+		static void doCombatCondition(Creature* caster, Creature* target, const CombatParams& params);
+		static void doCombatCondition(Creature* caster, const Position& position, const AreaCombat* area, const CombatParams& params);
+
+		static void doCombatDispel(Creature* caster, Creature* target, const CombatParams& params);
+		static void doCombatDispel(Creature* caster, const Position& position, const AreaCombat* area, const CombatParams& params);
+
 		static void getCombatArea(const Position& centerPos, const Position& targetPos, const AreaCombat* area, std::forward_list<Tile*>& list);
 
 		static bool isInPvpZone(const Creature* attacker, const Creature* target);
@@ -264,27 +277,18 @@ class Combat
 		void doCombat(Creature* caster, Creature* target) const;
 		void doCombat(Creature* caster, const Position& pos) const;
 
-		static void doTargetCombat(Creature* caster, Creature* target, CombatDamage& damage, const CombatParams& params);
-		static void doAreaCombat(Creature* caster, const Position& position, const AreaCombat* area, CombatDamage& damage, const CombatParams& params);
-
-		static void checkCriticalHit(Player* caster, CombatDamage& damage);
-		static void checkLeech(Player* caster, CombatDamage& damage, uint8_t affecteds = 1);
-
 		bool setCallback(CallBackParam_t key);
 		CallBack* getCallback(CallBackParam_t key);
 
 		bool setParam(CombatParam_t param, uint32_t value);
-		void setArea(AreaCombat* area) {
-			this->area.reset(area);
+		void setArea(AreaCombat* newArea) {
+			this->area.reset(newArea);
 		}
 		bool hasArea() const {
 			return area != nullptr;
 		}
 		void addCondition(const Condition* condition) {
 			params.conditionList.emplace_front(condition);
-		}
-		void clearConditions() {
-			params.conditionList.clear();
 		}
 		void setPlayerCombatValues(formulaType_t formulaType, double mina, double minb, double maxa, double maxb);
 		void postCombatEffects(Creature* caster, const Position& pos) const {
@@ -295,7 +299,17 @@ class Combat
 			params.origin = origin;
 		}
 
-	protected:
+	private:
+		static void doCombatDefault(Creature* caster, Creature* target, const CombatParams& params);
+
+		static void CombatFunc(Creature* caster, const Position& pos, const AreaCombat* area, const CombatParams& params, CombatFunction func, CombatDamage* data);
+
+		static void CombatHealthFunc(Creature* caster, Creature* target, const CombatParams& params, CombatDamage* data);
+		static void CombatManaFunc(Creature* caster, Creature* target, const CombatParams& params, CombatDamage* damage);
+		static void CombatConditionFunc(Creature* caster, Creature* target, const CombatParams& params, CombatDamage* data);
+		static void CombatDispelFunc(Creature* caster, Creature* target, const CombatParams& params, CombatDamage* data);
+		static void CombatNullFunc(Creature* caster, Creature* target, const CombatParams& params, CombatDamage* data);
+
 		static void combatTileEffects(const SpectatorHashSet& spectators, Creature* caster, Tile* tile, const CombatParams& params);
 		CombatDamage getCombatDamage(Creature* creature, Creature* target) const;
 
@@ -317,10 +331,10 @@ class MagicField final : public Item
 	public:
 		explicit MagicField(uint16_t type) : Item(type), createTime(OTSYS_TIME()) {}
 
-		MagicField* getMagicField() final {
+		MagicField* getMagicField() override {
 			return this;
 		}
-		const MagicField* getMagicField() const final {
+		const MagicField* getMagicField() const override {
 			return this;
 		}
 

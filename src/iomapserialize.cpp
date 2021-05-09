@@ -1,6 +1,6 @@
-﻿/**
+/**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,14 +61,13 @@ void IOMapSerialize::loadHouseItems(Map* map)
 			loadItem(propStream, tile);
 		}
 	} while (result->next());
-	std::cout << "> Loaded house items in: " << (OTSYS_TIME() - start) / (1000.) << " s" << std::endl;
+	std::cout << "> Loaded house items in: " << (OTSYS_TIME() - start) / (1000.) << " seconds" << std::endl;
 }
 
 bool IOMapSerialize::saveHouseItems()
 {
 	int64_t start = OTSYS_TIME();
 	Database& db = Database::getInstance();
-
 	std::ostringstream query;
 
 	//Start the transaction
@@ -82,10 +81,10 @@ bool IOMapSerialize::saveHouseItems()
 		return false;
 	}
 
+	DBInsert stmt("INSERT INTO `tile_store` (`house_id`, `data`) VALUES ");
 
 	PropWriteStream stream;
 	for (const auto& it : g_game.map.houses.getHouses()) {
-		DBInsert stmt("INSERT INTO `tile_store` (`house_id`, `data`) VALUES ");
 		//save house items
 		House* house = it.second;
 		for (HouseTile* tile : house->getTiles()) {
@@ -101,16 +100,16 @@ bool IOMapSerialize::saveHouseItems()
 				stream.clear();
 			}
 		}
-		if (!stmt.execute()) {
-			return false;
-		}
 	}
 
+	if (!stmt.execute()) {
+		return false;
+	}
 
 	//End the transaction
 	bool success = transaction.commit();
 	std::cout << "> Saved house items in: " <<
-			  (OTSYS_TIME() - start) / (1000.) << " s" << std::endl;
+			  (OTSYS_TIME() - start) / (1000.) << " seconds" << std::endl;
 	return success;
 }
 
@@ -158,14 +157,6 @@ bool IOMapSerialize::loadItem(PropStream& propStream, Cylinder* parent)
 
 				parent->internalAddThing(item);
 				item->startDecaying();
-
-				// Fix bug for the wrap system
-				bool isWrapable = item->isWrapable() || item->getID() == TRANSFORM_BOX_ID;
-				if (item->hasAttribute(ITEM_ATTRIBUTE_ACTIONID) && isWrapable) {
-					uint16_t newId = item->getID() == TRANSFORM_BOX_ID ? item->getIntAttr(ITEM_ATTRIBUTE_ACTIONID) : Item::items[item->getID()].wrapableTo;;
-					item->setIntAttr(ITEM_ATTRIBUTE_WRAPID, newId);
-					item->removeAttribute(ITEM_ATTRIBUTE_ACTIONID);
-				}
 			} else {
 				std::cout << "WARNING: Unserialization error in IOMapSerialize::loadItem()" << id << std::endl;
 				delete item;
@@ -195,14 +186,6 @@ bool IOMapSerialize::loadItem(PropStream& propStream, Cylinder* parent)
 				Container* container = item->getContainer();
 				if (container && !loadContainer(propStream, container)) {
 					return false;
-				}
-
-				// Fix bug for the wrap system
-				bool isWrapable = item->isWrapable() || item->getID() == TRANSFORM_BOX_ID;
-				if (item->hasAttribute(ITEM_ATTRIBUTE_ACTIONID) && isWrapable) {
-					uint16_t newId = item->getID() == TRANSFORM_BOX_ID ? item->getIntAttr(ITEM_ATTRIBUTE_ACTIONID) : Item::items[item->getID()].wrapableTo;;
-					item->setIntAttr(ITEM_ATTRIBUTE_WRAPID, newId);
-					item->removeAttribute(ITEM_ATTRIBUTE_ACTIONID);
 				}
 
 				g_game.transformItem(item, id);
@@ -264,7 +247,8 @@ void IOMapSerialize::saveTile(PropWriteStream& stream, const Tile* tile)
 		const ItemType& it = Item::items[item->getID()];
 
 		// Note that these are NEGATED, ie. these are the items that will be saved.
-		if (!(it.moveable || it.isCarpet() || item->getDoor() || (item->getContainer() && !item->getContainer()->empty()) || it.canWriteText || item->getBed())) {
+		if (!(it.moveable || it.isCarpet() || item->getDoor() || (item->getContainer() &&
+											!item->getContainer()->empty()) || it.canWriteText || item->getBed())) {
 			continue;
 		}
 

@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -186,6 +186,15 @@ std::string transformToSHA1(const std::string& input)
 	return std::string(hexstring, 40);
 }
 
+uint16_t getStashSize(StashItemList itemList)
+{
+	uint16_t size = 0;
+	for (auto item : itemList) {
+		size += ceil(item.second / 100.0);
+	}
+	return size;
+}
+
 std::string generateToken(const std::string& key, uint32_t ticks)
 {
 	// generate message from ticks
@@ -211,17 +220,17 @@ std::string generateToken(const std::string& key, uint32_t ticks)
 
 	// hmac concat outer pad with message, conversion from hex to int needed
 	for (uint8_t i = 0; i < message.length(); i += 2) {
-		oKeyPad.push_back(static_cast<char>(std::strtoul(message.substr(i, 2).c_str(), nullptr, 16)));
+		oKeyPad.push_back(static_cast<char>(std::stol(message.substr(i, 2), nullptr, 16)));
 	}
 
 	// hmac second pass
 	message.assign(transformToSHA1(oKeyPad));
 
 	// calculate hmac offset
-	uint32_t offset = static_cast<uint32_t>(std::strtoul(message.substr(39, 1).c_str(), nullptr, 16) & 0xF);
+	uint32_t offset = static_cast<uint32_t>(std::stol(message.substr(39, 1), nullptr, 16) & 0xF);
 
 	// get truncated hash
-	uint32_t truncHash = static_cast<uint32_t>(std::strtoul(message.substr(2 * offset, 8).c_str(), nullptr, 16)) & 0x7FFFFFFF;
+	uint32_t truncHash = std::stol(message.substr(2 * offset, 8), nullptr, 16) & 0x7FFFFFFF;
 	message.assign(std::to_string(truncHash));
 
 	// return only last AUTHENTICATOR_DIGITS (default 6) digits, also asserts exactly 6 digits
@@ -503,6 +512,11 @@ using CombatTypeNames = std::unordered_map<CombatType_t, std::string, std::hash<
 using AmmoTypeNames = std::unordered_map<std::string, Ammo_t>;
 using WeaponActionNames = std::unordered_map<std::string, WeaponAction_t>;
 using SkullNames = std::unordered_map<std::string, Skulls_t>;
+
+/**
+ * @Deprecated
+ * It will be dropped with monsters. Use RespawnPeriod_t instead.
+ */
 using SpawnTypeNames = std::unordered_map<std::string, SpawnType_t>;
 
 MagicEffectNames magicEffectNames = {
@@ -731,6 +745,10 @@ SkullNames skullNames = {
 	{"white",				SKULL_WHITE},
 };
 
+/**
+ * @Deprecated
+ * It will be dropped with monsters. Use RespawnPeriod_t instead.
+ */
 SpawnTypeNames spawnTypeNames = {
 	{"all",					RESPAWN_IN_ALL },
 	{"day",					RESPAWN_IN_DAY },
@@ -802,6 +820,10 @@ Skulls_t getSkullType(const std::string& strValue)
 	return SKULL_NONE;
 }
 
+/**
+ * @Deprecated
+ * It will be dropped with monsters. Use RespawnPeriod_t instead.
+ */
 SpawnType_t getSpawnType(const std::string& strValue)
 {
 	auto spawnType = spawnTypeNames.find(strValue);
@@ -1046,8 +1068,6 @@ itemAttrTypes stringToItemAttribute(const std::string& str)
 		return ITEM_ATTRIBUTE_FLUIDTYPE;
 	} else if (str == "doorid") {
 		return ITEM_ATTRIBUTE_DOORID;
-	} else if (str == "wrapid") {
-		return ITEM_ATTRIBUTE_WRAPID;
 	}
 	return ITEM_ATTRIBUTE_NONE;
 }
@@ -1109,6 +1129,9 @@ const char* getReturnMessage(ReturnValue value)
 
 		case RETURNVALUE_CONTAINERNOTENOUGHROOM:
 			return "You cannot put more objects in this container.";
+
+    case RETURNVALUE_ONLYAMMOINQUIVER:
+      return "This quiver only holds arrows and bolts.\nYou cannot put any other items in it.";
 
 		case RETURNVALUE_NEEDEXCHANGE:
 		case RETURNVALUE_NOTENOUGHROOM:
@@ -1207,9 +1230,6 @@ const char* getReturnMessage(ReturnValue value)
 		case RETURNVALUE_YOUNEEDPREMIUMACCOUNT:
 			return "You need a premium account.";
 
-		case RETURNVALUE_YOUNEEDVIPACCOUNT:
-			return "You need a vip account.";
-
 		case RETURNVALUE_YOUNEEDTOLEARNTHISSPELL:
 			return "You need to learn this spell first.";
 
@@ -1279,18 +1299,6 @@ const char* getReturnMessage(ReturnValue value)
 		case RETURNVALUE_YOUDONTHAVEREQUIREDPROFESSION:
 			return "You don't have the required profession.";
 
-		case RETURNVALUE_PREYINTERNALERROR:
-			return "An internal error occurred. Please try again.";
-
-		case RETURNVALUE_CHOSENMONSTERISALREADYINUSE:
-			return "Chosen monster is already in use.";
-
-		case RETURNVALUE_NOTENOUGHMONEYFORREROLL:
-			return "Not enough money for reroll.";
-
-		case RETURNVALUE_NOAVAILABLEBONUSREROLL:
-			return "You don't have any available bonus reroll.";
-
 		case RETURNVALUE_NOTENOUGHFISTLEVEL:
 			return "You do not have enough fist level";
 
@@ -1317,18 +1325,9 @@ const char* getReturnMessage(ReturnValue value)
 	}
 }
 
-int64_t OTSYS_TIME(bool useTime)
+int64_t OTSYS_TIME()
 {
-	if (useTime) {
-		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	}
-	int64_t time = (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()) + (g_config.getNumber(ConfigManager::TIME_GMT) * 1000);
-	return time;
-}
-
-int32_t OS_TIME(time_t* timer)
-{
-	return (time(timer) + g_config.getNumber(ConfigManager::TIME_GMT));
+	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 SpellGroup_t stringToSpellGroup(std::string value)
@@ -1342,8 +1341,12 @@ SpellGroup_t stringToSpellGroup(std::string value)
 		return SPELLGROUP_SUPPORT;
 	} else if (tmpStr == "special" || tmpStr == "4") {
 		return SPELLGROUP_SPECIAL;
-	} else if (tmpStr == "ultimate" || tmpStr == "6") {
-		return SPELLGROUP_ULTIMATE;
+	} else if (tmpStr == "crippling" || tmpStr == "6") {
+		return SPELLGROUP_CRIPPLING;
+	} else if (tmpStr == "focus" || tmpStr == "7") {
+		return SPELLGROUP_FOCUS;
+	} else if (tmpStr == "ultimatestrikes" || tmpStr == "8") {
+		return SPELLGROUP_ULTIMATESTRIKES;
 	}
 
 	return SPELLGROUP_NONE;
@@ -1404,46 +1407,33 @@ bool isCaskItem(uint16_t itemId)
 std::string getObjectCategoryName(ObjectCategory_t category)
 {
 	switch (category) {
-		case OBJECTCATEGORY_ARMORS: return "armors";
-		case OBJECTCATEGORY_NECKLACES: return "amulets";
-		case OBJECTCATEGORY_BOOTS: return "boots";
-		case OBJECTCATEGORY_CONTAINERS: return "containers";
-		case OBJECTCATEGORY_DECORATION: return "decoration";
-		case OBJECTCATEGORY_FOOD: return "food";
-		case OBJECTCATEGORY_HELMETS: return "helmets";
-		case OBJECTCATEGORY_LEGS: return "legs";
-		case OBJECTCATEGORY_OTHERS: return "others";
-		case OBJECTCATEGORY_POTIONS: return "potions";
-		case OBJECTCATEGORY_RINGS: return "rings";
-		case OBJECTCATEGORY_RUNES: return "runes";
-		case OBJECTCATEGORY_SHIELDS: return "shields";
-		case OBJECTCATEGORY_TOOLS: return "tools";
-		case OBJECTCATEGORY_VALUABLES: return "valuables";
-		case OBJECTCATEGORY_AMMO: return "weapons: ammunition";
-		case OBJECTCATEGORY_AXES: return "weapons: axes";
-		case OBJECTCATEGORY_CLUBS: return "weapons: clubs";
-		case OBJECTCATEGORY_DISTANCEWEAPONS: return "weapons: distance";
-		case OBJECTCATEGORY_SWORDS: return "weapons: swords";
-		case OBJECTCATEGORY_WANDS: return "weapons: wands";
-		case OBJECTCATEGORY_PREMIUMSCROLLS: return "premium scrolls";
-		case OBJECTCATEGORY_TIBIACOINS: return "tibia coins";
-		case OBJECTCATEGORY_CREATUREPRODUCTS: return "creature products";
-		case OBJECTCATEGORY_STASHRETRIEVE: return "stash retrieve";
-		case OBJECTCATEGORY_GOLD: return "gold";
-		case OBJECTCATEGORY_DEFAULT: return "unassigned loot";
+		case OBJECTCATEGORY_ARMORS: return "Armors";
+		case OBJECTCATEGORY_NECKLACES: return "Amulets";
+		case OBJECTCATEGORY_BOOTS: return "Boots";
+		case OBJECTCATEGORY_CONTAINERS: return "Containers";
+		case OBJECTCATEGORY_DECORATION: return "Decoration";
+		case OBJECTCATEGORY_FOOD: return "Food";
+		case OBJECTCATEGORY_HELMETS: return "Helmets";
+		case OBJECTCATEGORY_LEGS: return "Legs";
+		case OBJECTCATEGORY_OTHERS: return "Others";
+		case OBJECTCATEGORY_POTIONS: return "Potions";
+		case OBJECTCATEGORY_RINGS: return "Rings";
+		case OBJECTCATEGORY_RUNES: return "Runes";
+		case OBJECTCATEGORY_SHIELDS: return "Shields";
+		case OBJECTCATEGORY_TOOLS: return "Tools";
+		case OBJECTCATEGORY_VALUABLES: return "Valuables";
+		case OBJECTCATEGORY_AMMO: return "Weapons: Ammunition";
+		case OBJECTCATEGORY_AXES: return "Weapons: Axes";
+		case OBJECTCATEGORY_CLUBS: return "Weapons: Clubs";
+		case OBJECTCATEGORY_DISTANCEWEAPONS: return "Weapons: Distance";
+		case OBJECTCATEGORY_SWORDS: return "Weapons: Swords";
+		case OBJECTCATEGORY_WANDS: return "Weapons: Wands";
+		case OBJECTCATEGORY_PREMIUMSCROLLS: return "Premium Scrolls";
+		case OBJECTCATEGORY_TIBIACOINS: return "Tibia Coins";
+		case OBJECTCATEGORY_CREATUREPRODUCTS: return "Creature Products";
+		case OBJECTCATEGORY_STASHRETRIEVE: return "Stash Retrieve";
+		case OBJECTCATEGORY_GOLD: return "Gold";
+		case OBJECTCATEGORY_DEFAULT: return "Unassigned Loot";
 		default: return std::string();
 	}
 }
-
-std::string generateRK(size_t length)
-{
-	std::ostringstream newkey;
-	std::string consonants = "ABCDEFGHIJLMNOPQRSTUVWXYZ0123456789";
-	while (newkey.str().length() < length)
-	{
-		uint8_t pos = uniform_random(1, consonants.length());
-		newkey << consonants.substr(pos, 1);
-	}
-	return newkey.str();
-}
-

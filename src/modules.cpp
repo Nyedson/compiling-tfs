@@ -1,4 +1,6 @@
- /*
+/**
+ * @file modules.cpp
+ * 
  * The Forgotten Server - a free and open-source MMORPG server emulator
  * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
@@ -173,7 +175,10 @@ void Module::executeOnRecvbyte(Player* player, NetworkMessage& msg)
 {
 	//onAdvance(player, skill, oldLevel, newLevel)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - CreatureEvent::executeAdvance] Call stack overflow" << std::endl;
+		std::cout << "[Error - CreatureEvent::executeAdvance"
+				<< " Player "
+				<< player->getName()
+				<< "] Call stack overflow. Too many lua script calls being nested." << std::endl;
 		return;
 	}
 
@@ -186,7 +191,7 @@ void Module::executeOnRecvbyte(Player* player, NetworkMessage& msg)
 	LuaScriptInterface::pushUserdata<Player>(L, player);
 	LuaScriptInterface::setMetatable(L, -1, "Player");
 	
-	LuaScriptInterface::pushUserdata<NetworkMessage>(L, const_cast<NetworkMessage*>(&msg));
+	LuaScriptInterface::pushUserdata<NetworkMessage>(L, &msg);
 	LuaScriptInterface::setWeakMetatable(L, -1, "NetworkMessage");
 
 	lua_pushnumber(L, recvbyte);

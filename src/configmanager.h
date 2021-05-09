@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,15 +23,6 @@
 class ConfigManager
 {
 	public:
-		struct ProxyInfo {
-			std::string ip;
-			uint16_t port;
-			std::string name;
-
-			ProxyInfo() : ip(""), port(0), name("") {}
-			ProxyInfo(const std::string& ip, uint16_t port, const std::string& name) : ip(ip), port(port), name(name) {}
-		};
-
 		enum boolean_config_t {
 			ALLOW_CHANGEOUTFIT,
 			ONE_PLAYER_ON_ACCOUNT,
@@ -51,19 +42,26 @@ class ConfigManager
 			CLASSIC_EQUIPMENT_SLOTS,
 			CLASSIC_ATTACK_SPEED,
 			SCRIPTS_CONSOLE_LOGS,
-			ALLOW_BLOCK_SPAWN,
 			REMOVE_WEAPON_AMMO,
 			REMOVE_WEAPON_CHARGES,
 			REMOVE_POTION_CHARGES,
-			STOREMODULES,
-			QUEST_LUA,
-			SHOW_PACKETS,
-			ENABLE_LIVE_CASTING,
-			PROTO_BUFF,
-			MAINTENANCE,
+			SERVER_SAVE_NOTIFY_MESSAGE,
+			SERVER_SAVE_CLEAN_MAP,
+			SERVER_SAVE_CLOSE,
+			SERVER_SAVE_SHUTDOWN,
 			FORCE_MONSTERTYPE_LOAD,
-			YELL_ALLOW_PREMIUM,
-			BLESS_RUNE,
+			HOUSE_OWNED_BY_ACCOUNT,
+			CLEAN_PROTECTION_ZONES,
+			STOREMODULES,
+			ALLOW_BLOCK_SPAWN,
+			ONLY_INVITED_CAN_MOVE_HOUSE_ITEMS,
+			WEATHER_RAIN,
+			WEATHER_THUNDER,
+			FREE_QUESTS,
+			ONLY_PREMIUM_ACCOUNT,
+			ALLOW_CLIENT_OLD,
+			MAP_CUSTOM_ENABLED,
+			ALL_CONSOLE_LOG,
 
 			LAST_BOOLEAN_CONFIG /* this must be the last one */
 		};
@@ -87,12 +85,12 @@ class ConfigManager
 			DEFAULT_PRIORITY,
 			MAP_AUTHOR,
 			STORE_IMAGES_URL,
-			VERSION_STR,
-			DEFAULT_OFFER,
-			PROXY_LIST,
-			BLOCK_WORD,
-			MONSTER_URL,
-			ITEM_URL,
+			CLIENT_VERSION_STR,
+			MAP_CUSTOM_NAME,
+			MAP_CUSTOM_FILE,
+			MAP_CUSTOM_SPAWN,
+			MAP_CUSTOM_AUTHOR,
+      DISCORD_WEBHOOK_URL,
 
 			LAST_STRING_CONFIG /* this must be the last one */
 		};
@@ -121,33 +119,29 @@ class ConfigManager
 			GAME_PORT,
 			LOGIN_PORT,
 			STATUS_PORT,
-			CHECK_PORT,
 			STAIRHOP_DELAY,
 			MAX_CONTAINER,
 			MAX_ITEM,
 			MARKET_OFFER_DURATION,
+			CLIENT_VERSION,
+			DEPOT_BOXES,
+			FREE_DEPOT_LIMIT,
+			PREMIUM_DEPOT_LIMIT,
 			CHECK_EXPIRED_MARKET_OFFERS_EACH_MINUTES,
 			MAX_MARKET_OFFERS_AT_A_TIME_PER_PLAYER,
 			EXP_FROM_PLAYERS_LEVEL_RANGE,
 			MAX_PACKETS_PER_SECOND,
-			STORE_COINS_PACKET_SIZE,
-			VERSION_MIN,
-			VERSION_MAX,
-			FREE_DEPOT_LIMIT,
-			PREMIUM_DEPOT_LIMIT,
-			DEPOT_BOXES,
-			AUTOLOOT_MODE, //Autoloot
+			STORE_COIN_PACKET,
 			DAY_KILLS_TO_RED,
 			WEEK_KILLS_TO_RED,
 			MONTH_KILLS_TO_RED,
 			RED_SKULL_DURATION,
 			BLACK_SKULL_DURATION,
 			ORANGE_SKULL_DURATION,
-			NETWORK_ATTACK_THRESHOLD,
-			LIVE_CAST_PORT,
 			SERVER_SAVE_NOTIFY_DURATION,
-			YELL_MINIMUM_LEVEL,
-			TIME_GMT,
+			PUSH_DELAY,
+			PUSH_DISTANCE_DELAY,
+			STASH_ITEMS,
 
 			LAST_INTEGER_CONFIG /* this must be the last one */
 		};
@@ -160,22 +154,14 @@ class ConfigManager
 			LAST_FLOATING_CONFIG
 		};
 
-		enum doubling_config_t {
-			RATE_MONSTER_SPEED,
-			SPAWN_SPEED,
-
-			LAST_DOUBLING_CONFIG
-		};
-
 		bool load();
 		bool reload();
 
 		const std::string& getString(string_config_t what) const;
 		int32_t getNumber(integer_config_t what) const;
+		int16_t getShortNumber(integer_config_t what) const;
 		bool getBoolean(boolean_config_t what) const;
 		float getFloat(floating_config_t what) const;
-		double getDouble(doubling_config_t what) const;
-		std::pair<bool, const ConfigManager::ProxyInfo&> getProxyInfo(uint16_t proxyId);
 
 		std::string const& setConfigFileLua(const std::string& what) {
 			configFileLua = { what };
@@ -191,8 +177,6 @@ class ConfigManager
 		int32_t integer[LAST_INTEGER_CONFIG] = {};
 		bool boolean[LAST_BOOLEAN_CONFIG] = {};
 		float floating[LAST_FLOATING_CONFIG] = {};
-		double doubling[LAST_DOUBLING_CONFIG] = {};
-		std::map<uint16_t, ProxyInfo> proxyList;
 
 		bool loaded = false;
 };

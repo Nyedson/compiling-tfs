@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 
 #include "monsters.h"
 #include "monster.h"
-#include "bestiary.h"
 #include "spells.h"
 #include "combat.h"
 #include "weapons.h"
@@ -34,7 +33,6 @@ extern Game g_game;
 extern Spells* g_spells;
 extern Monsters g_monsters;
 extern ConfigManager g_config;
-extern Bestiaries g_bestiaries;
 
 spellBlock_t::~spellBlock_t()
 {
@@ -62,32 +60,20 @@ bool Monsters::loadFromXml(bool reloading /*= false*/)
 {
 	unloadedMonsters = {};
 	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_file("data/monster/monsters.xml");
-	if (!result) {
-		printXMLError("Error - Monsters::loadFromXml", "data/monster/monsters.xml", result);
-		return false;
-	}
 
 	loaded = true;
-	std::map<std::string, uint16_t> bestiaryMonsters = g_bestiaries.getMonsterNameMap();
+
 	for (auto monsterNode : doc.child("monsters").children()) {
 		std::string name = asLowerCaseString(monsterNode.attribute("name").as_string());
-		uint16_t race = 0;
-		auto it = bestiaryMonsters.find(name);
-		if (it != bestiaryMonsters.end()) {
-			race = it->second;
-		}
-		if (race != 0) {
-			raceidMonsters[race] = name;
-		}
 		std::string file = "data/monster/" + std::string(monsterNode.attribute("file").as_string());
 		auto forceLoad = g_config.getBoolean(ConfigManager::FORCE_MONSTERTYPE_LOAD);
 		if (forceLoad) {
-			loadMonster(file, name, true, race);
+			loadMonster(file, name, true);
 			continue;
 		}
+
 		if (reloading && monsters.find(name) != monsters.end()) {
-			loadMonster(file, name, true, race);
+			loadMonster(file, name, true);
 		} else {
 			unloadedMonsters.emplace(name, file);
 		}
@@ -97,15 +83,16 @@ bool Monsters::loadFromXml(bool reloading /*= false*/)
 
 bool MonsterType::canSpawn(const Position& pos)
 {
-	bool canspawn = true;
-	bool isday = g_game.gameIsDay();
-	if ((info.respawnType == RESPAWN_IN_DAY && !isday) ||
-		(info.respawnType == RESPAWN_IN_NIGHT && isday) ||
-		(info.respawnType == RESPAWN_IN_DAY_CAVE && !isday && pos.z == 7) ||
-		(info.respawnType == RESPAWN_IN_NIGHT_CAVE && isday && pos.z == 7)) {
-		canspawn = false;
+	bool canSpawn = true;
+	bool isDay = g_game.gameIsDay();
+
+	if ((isDay && info.respawnType.period == RESPAWNPERIOD_NIGHT) ||
+		(!isDay && info.respawnType.period == RESPAWNPERIOD_DAY)) {
+		// It will ignore day and night if underground
+		canSpawn = (pos.z > 7 && info.respawnType.underground);
 	}
-	return canspawn;
+
+	return canSpawn;
 }
 
 bool Monsters::reload()
@@ -541,27 +528,12 @@ bool Monsters::deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std
 	}
 
 	sb.speed = spell->interval;
-
-	if (spell->chance > 100) {
-		sb.chance = 100;
-	} else {
-		sb.chance = spell->chance;
-	}
-
-	if (spell->range > (Map::maxViewportX * 2)) {
-		spell->range = Map::maxViewportX * 2;
-	}
-	sb.range = spell->range;
-
-	sb.minCombatValue = spell->minCombatValue;
-	sb.maxCombatValue = spell->maxCombatValue;
-	if (std::abs(sb.minCombatValue) > std::abs(sb.maxCombatValue)) {
-		int32_t value = sb.maxCombatValue;
-		sb.maxCombatValue = sb.minCombatValue;
-		sb.minCombatValue = value;
-	}
-
+	sb.chance = std::min((int) spell->chance, 100);
+	sb.range = std::min((int) spell->range, Map::maxViewportX * 2);
+	sb.minCombatValue = std::min(spell->minCombatValue, spell->maxCombatValue);
+	sb.maxCombatValue = std::max(spell->minCombatValue, spell->maxCombatValue);
 	sb.spell = g_spells->getSpellByName(spell->name);
+
 	if (sb.spell) {
 		return true;
 	}
@@ -609,24 +581,6 @@ bool Monsters::deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std
 			if (spell->attack > 0 && spell->skill > 0) {
 				sb.minCombatValue = 0;
 				sb.maxCombatValue = -Weapons::getMaxMeleeDamage(spell->skill, spell->attack);
-			}
-
-			ConditionType_t conditionType = CONDITION_NONE;
-			int32_t minDamage = 0;
-			int32_t maxDamage = 0;
-			uint32_t tickInterval = 2000;
-
-			if (spell->conditionType != CONDITION_NONE) {
-				conditionType = spell->conditionType;
-
-				minDamage = spell->conditionMinDamage;
-				maxDamage = minDamage;
-				if (spell->tickInterval != 0) {
-					tickInterval = spell->tickInterval;
-				}
-
-				Condition* condition = getDamageCondition(conditionType, maxDamage, minDamage, spell->conditionStartDamage, tickInterval);
-				combat->addCondition(condition);
 			}
 
 			sb.range = 1;
@@ -677,7 +631,18 @@ bool Monsters::deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std
 			}
 
 			ConditionOutfit* condition = static_cast<ConditionOutfit*>(Condition::createCondition(CONDITIONID_COMBAT, CONDITION_OUTFIT, duration, 0));
-			condition->setOutfit(spell->outfit);
+			
+			if (spell->outfitMonster != "") {
+				condition->setLazyMonsterOutfit(spell->outfitMonster);
+			} else if (spell->outfitItem > 0) {
+				Outfit_t outfit;
+				outfit.lookTypeEx = spell->outfitItem;
+				condition->setOutfit(outfit);
+			} else {
+				std::cout << "[Error - Monsters::deserializeSpell] Missing outfit monster or item in outfit spell for: " << description << std::endl;
+				return false;
+			}
+
 			combat->setParam(COMBAT_PARAM_AGGRESSIVE, 0);
 			combat->addCondition(condition);
 		} else if (tmpName == "invisible") {
@@ -706,32 +671,9 @@ bool Monsters::deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std
 		} else if (tmpName == "energyfield") {
 			combat->setParam(COMBAT_PARAM_CREATEITEM, ITEM_ENERGYFIELD_PVP);
 		} else if (tmpName == "condition") {
-			uint32_t tickInterval = 2000;
-
 			if (spell->conditionType == CONDITION_NONE) {
 				std::cout << "[Error - Monsters::deserializeSpell] - " << description << " - Condition is not set for: " << spell->name << std::endl;
 			}
-
-			if (spell->tickInterval != 0) {
-				int32_t value = spell->tickInterval;
-				if (value > 0) {
-					tickInterval = value;
-				}
-			}
-
-			int32_t minDamage = std::abs(spell->conditionMinDamage);
-			int32_t maxDamage = std::abs(spell->conditionMaxDamage);
-			int32_t startDamage = 0;
-
-			if (spell->conditionStartDamage != 0) {
-				int32_t value = std::abs(spell->conditionStartDamage);
-				if (value <= minDamage) {
-					startDamage = value;
-				}
-			}
-
-			Condition* condition = getDamageCondition(spell->conditionType, maxDamage, minDamage, startDamage, tickInterval);
-			combat->addCondition(condition);
 		} else if (tmpName == "strength") {
 			//
 		} else if (tmpName == "effect") {
@@ -740,14 +682,35 @@ bool Monsters::deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std
 			std::cout << "[Error - Monsters::deserializeSpell] - " << description << " - Unknown spell name: " << spell->name << std::endl;
 		}
 
-		if (spell->needTarget) {
-			if (spell->shoot != CONST_ANI_NONE) {
-				combat->setParam(COMBAT_PARAM_DISTANCEEFFECT, spell->shoot);
-			}
+		if (spell->shoot != CONST_ANI_NONE) {
+			combat->setParam(COMBAT_PARAM_DISTANCEEFFECT, spell->shoot);
 		}
 
 		if (spell->effect != CONST_ME_NONE) {
 			combat->setParam(COMBAT_PARAM_EFFECT, spell->effect);
+		}
+
+		// If a spell has a condition, it always applies, no matter what kind of spell it is
+		if (spell->conditionType != CONDITION_NONE) {
+			int32_t minDamage = std::abs(spell->conditionMinDamage);
+			int32_t maxDamage = std::abs(spell->conditionMaxDamage);
+			int32_t startDamage = std::abs(spell->conditionStartDamage);
+			uint32_t tickInterval = 2000;
+
+			if (spell->tickInterval > 0) {
+				tickInterval = spell->tickInterval;
+			}
+
+			if (startDamage > minDamage) {
+				startDamage = 0;
+			}
+
+			if (maxDamage == 0) {
+				maxDamage = minDamage;
+			}
+
+			Condition* condition = getDamageCondition(spell->conditionType, maxDamage, minDamage, startDamage, tickInterval);
+			combat->addCondition(condition);
 		}
 
 		combat->setPlayerCombatValues(COMBAT_FORMULA_DAMAGE, sb.minCombatValue, 0, sb.maxCombatValue, 0);
@@ -761,14 +724,13 @@ bool Monsters::deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std
 	return true;
 }
 
-MonsterType* Monsters::loadMonster(const std::string& file, const std::string& monsterName, bool reloading /*= false*/, uint16_t raceid)
+MonsterType* Monsters::loadMonster(const std::string& file, const std::string& monsterName, bool reloading /*= false*/)
 {
 	MonsterType* mType = nullptr;
 
 	pugi::xml_document doc;
 	pugi::xml_parse_result result = doc.load_file(file.c_str());
 	if (!result) {
-		std::cout << "[Monster - " << monsterName << "] ";
 		printXMLError("Error - Monsters::loadMonster", file, result);
 		return nullptr;
 	}
@@ -828,17 +790,11 @@ MonsterType* Monsters::loadMonster(const std::string& file, const std::string& m
 	}
 
 	if ((attr = monsterNode.attribute("speed"))) {
-		mType->info.baseSpeed = pugi::cast<int32_t>(attr.value()) * g_config.getDouble(ConfigManager::RATE_MONSTER_SPEED);
+		mType->info.baseSpeed = pugi::cast<int32_t>(attr.value());
 	}
 
 	if ((attr = monsterNode.attribute("manacost"))) {
 		mType->info.manaCost = pugi::cast<uint32_t>(attr.value());
-	}
-
-	if ((attr = monsterNode.attribute("raceid"))) {
-		mType->info.raceid = pugi::cast<uint16_t>(attr.value());
-	} else if (raceid > 0) {
-		mType->info.raceid = raceid;
 	}
 
 	if ((attr = monsterNode.attribute("skull"))) {
@@ -888,16 +844,12 @@ MonsterType* Monsters::loadMonster(const std::string& file, const std::string& m
 				mType->info.isSummonable = attr.as_bool();
 			} else if (strcasecmp(attrName, "rewardboss") == 0) {
 				mType->info.isRewardBoss = attr.as_bool();
-			} else if (strcasecmp(attrName, "preyable") == 0) {
-				mType->info.isPreyable = attr.as_bool();
 			} else if (strcasecmp(attrName, "attackable") == 0) {
 				mType->info.isAttackable = attr.as_bool();
 			} else if (strcasecmp(attrName, "hostile") == 0) {
 				mType->info.isHostile = attr.as_bool();
 			} else if (strcasecmp(attrName, "pet") == 0) {
 				mType->info.isPet = attr.as_bool();
-			} else if (strcasecmp(attrName, "passive") == 0) {
-				mType->info.isPassive = attr.as_bool();
 			} else if (strcasecmp(attrName, "illusionable") == 0) {
 				mType->info.isIllusionable = attr.as_bool();
 			} else if (strcasecmp(attrName, "convinceable") == 0) {
@@ -935,7 +887,20 @@ MonsterType* Monsters::loadMonster(const std::string& file, const std::string& m
 			} else if (strcasecmp(attrName, "canwalkonpoison") == 0) {
 				mType->info.canWalkOnPoison = attr.as_bool();
 			} else if (strcasecmp(attrName, "respawntype") == 0) {
-				mType->info.respawnType = getSpawnType(asLowerCaseString(attr.as_string()));
+				SpawnType_t spawnType = getSpawnType(asLowerCaseString(attr.as_string()));
+				if (spawnType == RESPAWN_IN_ALL) {
+					mType->info.respawnType.period = RESPAWNPERIOD_ALL;
+				} else if (spawnType == RESPAWN_IN_DAY) {
+					mType->info.respawnType.period = RESPAWNPERIOD_DAY;
+				} else if (spawnType == RESPAWN_IN_NIGHT) {
+					mType->info.respawnType.period = RESPAWNPERIOD_NIGHT;
+				} else if (spawnType == RESPAWN_IN_DAY_CAVE) {
+					mType->info.respawnType.period = RESPAWNPERIOD_DAY;
+					mType->info.respawnType.underground = true;
+				} else if (spawnType == RESPAWN_IN_NIGHT_CAVE) {
+					mType->info.respawnType.period = RESPAWNPERIOD_NIGHT;
+					mType->info.respawnType.underground = true;
+				}
 			} else {
 				std::cout << "[Warning - Monsters::loadMonster] Unknown flag attribute: " << attrName << ". " << file << std::endl;
 			}
@@ -959,6 +924,32 @@ MonsterType* Monsters::loadMonster(const std::string& file, const std::string& m
 			mType->info.changeTargetChance = pugi::cast<int32_t>(attr.value());
 		} else {
 			std::cout << "[Warning - Monsters::loadMonster] Missing targetchange chance. " << file << std::endl;
+		}
+	}
+
+	if ((node = monsterNode.child("targetstrategies"))) {
+		if ((attr = node.attribute("nearest"))) {
+			mType->info.targetStrategiesNearestPercent = pugi::cast<int32_t>(attr.value());
+		} else {
+			std::cout << "[Warning - Monsters::loadMonster] Missing targetStrategiesNearestPercent. " << file << std::endl;
+		}
+
+		if ((attr = node.attribute("health"))) {
+			mType->info.targetStrategiesLowerHPPercent = pugi::cast<int32_t>(attr.value());
+		} else {
+			std::cout << "[Warning - Monsters::loadMonster] Missing targetStrategiesLowerHPPercent. " << file << std::endl;
+		}
+
+		if ((attr = node.attribute("damage"))) {
+			mType->info.targetStrategiesMostDamagePercent = pugi::cast<int32_t>(attr.value());
+		} else {
+			std::cout << "[Warning - Monsters::loadMonster] Missing targetStrategiesMostDamagePercent. " << file << std::endl;
+		}
+
+		if ((attr = node.attribute("random"))) {
+			mType->info.targetStrategiesRandom = pugi::cast<int32_t>(attr.value());
+		} else {
+			std::cout << "[Warning - Monsters::loadMonster] Missing targetStrategiesRandom. " << file << std::endl;
 		}
 	}
 
@@ -1332,22 +1323,6 @@ bool Monsters::loadLootItem(const pugi::xml_node& node, LootBlock& lootBlock)
 		return false;
 	}
 
-	if ((attr = node.attribute("countmax"))) {
-		lootBlock.countmax = std::max<int32_t>(1, pugi::cast<int32_t>(attr.value()));
-	} else {
-		lootBlock.countmax = 1;
-	}
-
-	if ((attr = node.attribute("chance")) || (attr = node.attribute("chance1"))) {
-		lootBlock.chance = std::min<int32_t>(MAX_LOOTCHANCE, pugi::cast<int32_t>(attr.value()));
-	} else {
-		lootBlock.chance = MAX_LOOTCHANCE;
-	}
-
-	if (Item::items[lootBlock.id].isContainer()) {
-		loadLootContainer(node, lootBlock);
-	}
-
 	//optional
 	if ((attr = node.attribute("subtype"))) {
 		lootBlock.subType = pugi::cast<int32_t>(attr.value());
@@ -1356,6 +1331,30 @@ bool Monsters::loadLootItem(const pugi::xml_node& node, LootBlock& lootBlock)
 		if (charges != 0) {
 			lootBlock.subType = charges;
 		}
+	}
+
+	if ((attr = node.attribute("chance")) || (attr = node.attribute("chance1"))) {
+		lootBlock.chance = std::min<int32_t>(MAX_LOOTCHANCE, pugi::cast<int32_t>(attr.value()));
+	} else {
+		lootBlock.chance = MAX_LOOTCHANCE;
+	}
+
+	//optional
+	if ((attr = node.attribute("countmin"))) {
+		lootBlock.countmin = std::max<int32_t>(1, pugi::cast<int32_t>(attr.value()));
+	} else {
+		lootBlock.countmin = 1;
+	}
+
+	//optional
+	if ((attr = node.attribute("countmax"))) {
+		lootBlock.countmax = std::max<int32_t>(1, pugi::cast<int32_t>(attr.value()));
+	} else {
+		lootBlock.countmax = 1;
+	}
+
+	if (Item::items[lootBlock.id].isContainer()) {
+		loadLootContainer(node, lootBlock);
 	}
 
 	if ((attr = node.attribute("actionId"))) {
@@ -1401,9 +1400,6 @@ bool Monsters::loadLootItem(const pugi::xml_node& node, LootBlock& lootBlock)
 	if ((attr = node.attribute("unique"))) {
 		lootBlock.unique = attr.as_bool();
 	}
-	if ((attr = node.attribute("raid"))) {
-		lootBlock.raid = attr.as_bool();
-	}
 	return true;
 }
 
@@ -1415,19 +1411,6 @@ void Monsters::loadLootContainer(const pugi::xml_node& node, LootBlock& lBlock)
 			lBlock.childLoot.emplace_back(std::move(lootBlock));
 		}
 	}
-}
-
-// Prey Monsters
-std::vector<std::string> Monsters::getPreyMonsters()
-{
-	std::vector<std::string> monsterList;
-	for (const auto& m : monsters) {
-		if (m.second.info.experience > 0 && m.second.info.isPreyable && !m.second.info.isRewardBoss && m.second.info.staticAttackChance > 0) {
-			monsterList.push_back(m.first);
-		}
-	}
-
-	return monsterList;
 }
 
 MonsterType* Monsters::getMonsterType(const std::string& name)
@@ -1446,17 +1429,20 @@ MonsterType* Monsters::getMonsterType(const std::string& name)
 	return &it->second;
 }
 
-MonsterType* Monsters::getMonsterTypeByRace(uint16_t raceid)
-{
-	auto it = raceidMonsters.find(raceid);
-	if (it != raceidMonsters.end()) {
-		return getMonsterType(it->second);
+MonsterType* Monsters::getMonsterTypeByRaceId(uint16_t thisrace) {
+	std::map<uint16_t, std::string> raceid_list = g_game.getBestiaryList();
+	auto it = raceid_list.find(thisrace);
+	if (it == raceid_list.end()) {
+		return nullptr;
 	}
-
-	return nullptr;
+	MonsterType* mtype = g_monsters.getMonsterType(it->second);
+	return (mtype ? mtype : nullptr);
 }
 
 void Monsters::addMonsterType(const std::string& name, MonsterType* mType)
 {
+	// Suppress [-Werror=unused-but-set-parameter]
+	// https://stackoverflow.com/questions/1486904/how-do-i-best-silence-a-warning-about-unused-variables
+	(void) mType;
 	mType = &monsters[asLowerCaseString(name)];
 }

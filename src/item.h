@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,9 @@
 
 #ifndef FS_ITEM_H_009A319FB13D477D9EEFFBBD9BB83562
 #define FS_ITEM_H_009A319FB13D477D9EEFFBBD9BB83562
+
+#include <utility>
+#include <vector>
 
 #include "cylinder.h"
 #include "thing.h"
@@ -103,15 +106,11 @@ enum AttrTypes_t {
 	ATTR_HITCHANCE = 32,
 	ATTR_SHOOTRANGE = 33,
 	ATTR_SPECIAL = 34,
-	ATTR_IMBUINGSLOTS = 35, // removido (causa crash)
+	ATTR_IMBUINGSLOTS = 35,
+	ATTR_OPENCONTAINER = 36,
+	ATTR_CUSTOM_ATTRIBUTES = 37,
 
-	ATTR_CUSTOM_ATTRIBUTES = 36,
-
-	ATTR_QUICKLOOTCONTAINER = 37,
-	ATTR_OPENED = 38,
-	ATTR_DECAYTO = 39,
-	ATTR_IMBUED = 40,
-	ATTR_WRAPID = 41,
+	ATTR_QUICKLOOTCONTAINER = 38
 };
 
 enum Attr_ReadValue {
@@ -151,7 +150,7 @@ class ItemAttributes
 			removeAttribute(ITEM_ATTRIBUTE_DATE);
 		}
 		time_t getDate() const {
-			return static_cast<time_t>(getIntAttr(ITEM_ATTRIBUTE_DATE));
+			return getIntAttr(ITEM_ATTRIBUTE_DATE);
 		}
 
 		void setWriter(const std::string& writer) {
@@ -171,10 +170,7 @@ class ItemAttributes
 			return static_cast<uint16_t>(getIntAttr(ITEM_ATTRIBUTE_ACTIONID));
 		}
 
-		void setUniqueId(uint16_t n, bool force = false) {
-			if (force) {
-				// algo?
-			}
+		void setUniqueId(uint16_t n) {
 			setIntAttr(ITEM_ATTRIBUTE_UNIQUEID, n);
 		}
 		uint16_t getUniqueId() const {
@@ -350,7 +346,7 @@ class ItemAttributes
 			}
 		};
 
-	protected:
+	private:
 		bool hasAttribute(itemAttrTypes type) const {
 			return (type & attributeBits) != 0;
 		}
@@ -360,6 +356,7 @@ class ItemAttributes
 		static int64_t emptyInt;
 		static double emptyDouble;
 		static bool emptyBool;
+
 		typedef std::unordered_map<std::string, CustomAttribute> CustomAttributeMap;
 
 		struct Attribute
@@ -371,8 +368,7 @@ class ItemAttributes
 			} value;
 			itemAttrTypes type;
 
-			//non-copyable
-			explicit Attribute(itemAttrTypes type) : type(type) {
+			explicit Attribute(itemAttrTypes initType) : type(initType) {
 				memset(&value, 0, sizeof(value));
 			}
 			Attribute(const Attribute& i) {
@@ -513,8 +509,9 @@ class ItemAttributes
 			| ITEM_ATTRIBUTE_WEIGHT | ITEM_ATTRIBUTE_ATTACK | ITEM_ATTRIBUTE_DEFENSE | ITEM_ATTRIBUTE_EXTRADEFENSE
 			| ITEM_ATTRIBUTE_ARMOR | ITEM_ATTRIBUTE_HITCHANCE | ITEM_ATTRIBUTE_SHOOTRANGE | ITEM_ATTRIBUTE_OWNER
 			| ITEM_ATTRIBUTE_DURATION | ITEM_ATTRIBUTE_DECAYSTATE | ITEM_ATTRIBUTE_CORPSEOWNER | ITEM_ATTRIBUTE_CHARGES
-			| ITEM_ATTRIBUTE_FLUIDTYPE | ITEM_ATTRIBUTE_DOORID | ITEM_ATTRIBUTE_DECAYTO | ITEM_ATTRIBUTE_IMBUINGSLOTS
-			| ITEM_ATTRIBUTE_OPENED | ITEM_ATTRIBUTE_QUICKLOOTCONTAINER | ITEM_ATTRIBUTE_IMBUED | ITEM_ATTRIBUTE_WRAPID;
+			| ITEM_ATTRIBUTE_FLUIDTYPE | ITEM_ATTRIBUTE_DOORID | ITEM_ATTRIBUTE_IMBUINGSLOTS
+			| ITEM_ATTRIBUTE_OPENCONTAINER | ITEM_ATTRIBUTE_QUICKLOOTCONTAINER;
+
 		const static uint32_t stringAttributeTypes = ITEM_ATTRIBUTE_DESCRIPTION | ITEM_ATTRIBUTE_TEXT | ITEM_ATTRIBUTE_WRITER
 			| ITEM_ATTRIBUTE_NAME | ITEM_ATTRIBUTE_ARTICLE | ITEM_ATTRIBUTE_PLURALNAME | ITEM_ATTRIBUTE_SPECIAL;
 
@@ -526,7 +523,7 @@ class ItemAttributes
 			return (type & stringAttributeTypes) == type;
 		}
 		inline static bool isCustomAttrType(itemAttrTypes type) {
-			return (type & ITEM_ATTRIBUTE_CUSTOM) == type;
+			return (type & 0x80000000) != 0;
 		}
 
 		const std::forward_list<Attribute>& getList() const {
@@ -557,10 +554,10 @@ class Item : virtual public Thing
 
 		bool equals(const Item* otherItem) const;
 
-		Item* getItem() final {
+		Item* getItem() override final {
 			return this;
 		}
-		const Item* getItem() const final {
+		const Item* getItem() const override final {
 			return this;
 		}
 		virtual Teleport* getTeleport() {
@@ -623,6 +620,14 @@ class Item : virtual public Thing
 			getAttributes()->increaseIntAttr(type, value);
 		}
 
+		void setIsLootTrackeable(bool value) {
+			isLootTrackeable = value;
+		}
+
+		bool getIsLootTrackeable() {
+			return isLootTrackeable;
+		}
+
 		void removeAttribute(itemAttrTypes type) {
 			if (attributes) {
 				attributes->removeAttribute(type);
@@ -650,6 +655,27 @@ class Item : virtual public Thing
 
 		const ItemAttributes::CustomAttribute* getCustomAttribute(const std::string& key) {
 			return getAttributes()->getCustomAttribute(key);
+		}
+		const ItemAttributes::CustomAttribute* getCustomAttribute(const std::string& key) const {
+			if (!attributes) {
+				return nullptr;
+			}
+
+			if (!attributes->hasAttribute(ITEM_ATTRIBUTE_CUSTOM)) {
+				return nullptr;
+			}
+
+			ItemAttributes::CustomAttributeMap* customAttrMap = attributes->getAttr(ITEM_ATTRIBUTE_CUSTOM).value.custom;
+			if (!customAttrMap) {
+				return nullptr;
+			}
+
+			auto it = customAttrMap->find(asLowerCaseString(key));
+			if (it != customAttrMap->end()) {
+				return &(it->second);
+			}
+
+			return nullptr;
 		}
 
 		bool removeCustomAttribute(int64_t key) {
@@ -788,21 +814,13 @@ class Item : virtual public Thing
 			return static_cast<ItemDecayState_t>(getIntAttr(ITEM_ATTRIBUTE_DECAYSTATE));
 		}
 
-		void setDecayTo(int32_t decayTo) {
-			setIntAttr(ITEM_ATTRIBUTE_DECAYTO, decayTo);
-		}
-		int32_t getDecayTo() const {
-			if (hasAttribute(ITEM_ATTRIBUTE_DECAYTO)) {
-				return getIntAttr(ITEM_ATTRIBUTE_DECAYTO);
-			}
-			return items[id].decayTo;
-		}
-
+    static std::vector<std::pair<std::string, std::string>> getDescriptions(const ItemType& it,
+																						const Item* item = nullptr);
 		static std::string getDescription(const ItemType& it, int32_t lookDistance, const Item* item = nullptr, int32_t subType = -1, bool addArticle = true);
 		static std::string getNameDescription(const ItemType& it, const Item* item = nullptr, int32_t subType = -1, bool addArticle = true);
 		static std::string getWeightDescription(const ItemType& it, uint32_t weight, uint32_t count = 1);
 
-		std::string getDescription(int32_t lookDistance) const final;
+		std::string getDescription(int32_t lookDistance) const override final;
 		std::string getNameDescription() const;
 		std::string getWeightDescription() const;
 
@@ -813,10 +831,10 @@ class Item : virtual public Thing
 
 		virtual void serializeAttr(PropWriteStream& propWriteStream) const;
 
-		bool isPushable() const final {
+		bool isPushable() const override final {
 			return isMoveable();
 		}
-		int32_t getThrowRange() const final {
+		int32_t getThrowRange() const override final {
 			return (isPickupable() ? 15 : 2);
 		}
 
@@ -869,12 +887,6 @@ class Item : virtual public Thing
 			}
 			return items[id].defense;
 		}
-		uint32_t getQuicklootAttr() const {
-			if (hasAttribute(ITEM_ATTRIBUTE_QUICKLOOTCONTAINER)) {
-				return static_cast<uint32_t>(getIntAttr(ITEM_ATTRIBUTE_QUICKLOOTCONTAINER));
-			}
-			return 0;
-		}
 		int32_t getExtraDefense() const {
 			if (hasAttribute(ITEM_ATTRIBUTE_EXTRADEFENSE)) {
 				return getIntAttr(ITEM_ATTRIBUTE_EXTRADEFENSE);
@@ -882,6 +894,9 @@ class Item : virtual public Thing
 			return items[id].extraDefense;
 		}
 		int32_t getImbuingSlots() const {
+			if (hasAttribute(ITEM_ATTRIBUTE_IMBUINGSLOTS)) {
+				return getIntAttr(ITEM_ATTRIBUTE_IMBUINGSLOTS);
+			}
 			return items[id].imbuingSlots;
 		}
 		int32_t getSlotPosition() const {
@@ -893,6 +908,12 @@ class Item : virtual public Thing
 			}
 			return items[id].hitChance;
 		}
+		uint32_t getQuicklootAttr() const {
+			if (hasAttribute(ITEM_ATTRIBUTE_QUICKLOOTCONTAINER)) {
+				return getIntAttr(ITEM_ATTRIBUTE_QUICKLOOTCONTAINER);
+			}
+			return 0;
+		}
 
 		uint32_t getWorth() const;
 		LightInfo getLightInfo() const;
@@ -903,6 +924,9 @@ class Item : virtual public Thing
 		}
 		bool isStackable() const {
 			return items[id].stackable;
+		}
+		bool isStowable() const {
+			return items[id].stackable && items[id].wareId > 0;
 		}
 		bool isAlwaysOnTop() const {
 			return items[id].alwaysOnTop;
@@ -919,6 +943,9 @@ class Item : virtual public Thing
 		bool isMoveable() const {
 			return items[id].moveable;
 		}
+		bool isCorpse() const {
+			return items[id].corpseType != RACE_NONE;
+		}
 		bool isPickupable() const {
 			return items[id].pickupable;
 		}
@@ -929,12 +956,10 @@ class Item : virtual public Thing
 			return items[id].isHangable;
 		}
 		bool isRotatable() const {
-			const ItemType& it = items[id];
-			return it.rotatable && it.rotateTo;
+			return items[id].rotatable && items[id].rotateTo;
 		}
 		bool isWrapable() const {
-			const ItemType& it = items[id];
-			return it.wrapable && it.wrapableTo;
+			return items[id].wrapable && items[id].wrapableTo;
 		}
 		bool hasWalkStack() const {
 			return items[id].walkStack;
@@ -979,7 +1004,7 @@ class Item : virtual public Thing
 		uint16_t getSubType() const;
 		void setSubType(uint16_t n);
 
-		void setUniqueId(uint16_t n, bool force = false);
+		void setUniqueId(uint16_t n);
 
 		void setDefaultDuration() {
 			uint32_t duration = getDefaultDuration();
@@ -1028,7 +1053,7 @@ class Item : virtual public Thing
 			}
 		}
 
-		Cylinder* getParent() const {
+		Cylinder* getParent() const override {
 			return parent;
 		}
 		void setParent(Cylinder* cylinder) override {
@@ -1036,8 +1061,8 @@ class Item : virtual public Thing
 		}
 		Cylinder* getTopParent();
 		const Cylinder* getTopParent() const;
-		Tile* getTile();
-		const Tile* getTile() const;
+		Tile* getTile() override;
+		const Tile* getTile() const override;
 		bool isRemoved() const override {
 			return !parent || parent->isRemoved();
 		}
@@ -1057,6 +1082,7 @@ class Item : virtual public Thing
 		uint8_t count = 1; // number of stacked items
 
 		bool loadedFromMap = false;
+		bool isLootTrackeable = false;
 
 		//Don't add variables here, use the ItemAttribute class.
 };

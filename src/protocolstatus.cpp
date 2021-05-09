@@ -1,4 +1,6 @@
 /**
+ * @file protocolstatus.cpp
+ * 
  * The Forgotten Server - a free and open-source MMORPG server emulator
  * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
@@ -28,7 +30,7 @@ extern ConfigManager g_config;
 extern Game g_game;
 
 std::map<uint32_t, int64_t> ProtocolStatus::ipConnectMap;
-const uint64_t ProtocolStatus::start = OTSYS_TIME(true);
+const uint64_t ProtocolStatus::start = OTSYS_TIME();
 
 enum RequestedInfo_t : uint16_t {
 	REQUEST_BASIC_SERVER_INFO = 1 << 0,
@@ -110,7 +112,7 @@ void ProtocolStatus::sendStatusString()
 	serverinfo.append_attribute("url") = g_config.getString(ConfigManager::URL).c_str();
 	serverinfo.append_attribute("server") = STATUS_SERVER_NAME;
 	serverinfo.append_attribute("version") = STATUS_SERVER_VERSION;
-	serverinfo.append_attribute("client") = CLIENT_VERSION_STR;
+	serverinfo.append_attribute("client") = g_config.getString(ConfigManager::CLIENT_VERSION_STR).c_str();
 
 	pugi::xml_node owner = tsqp.append_child("owner");
 	owner.append_attribute("name") = g_config.getString(ConfigManager::OWNER_NAME).c_str();
@@ -237,7 +239,7 @@ void ProtocolStatus::sendInfo(uint16_t requestedInfo, const std::string& charact
 		output->addByte(0x23); // server software info
 		output->addString(STATUS_SERVER_NAME);
 		output->addString(STATUS_SERVER_VERSION);
-		output->addString(CLIENT_VERSION_STR);
+		output->addString(g_config.getString(ConfigManager::CLIENT_VERSION_STR));
 	}
 	send(output);
 	disconnect();

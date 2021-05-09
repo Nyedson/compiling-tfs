@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ ReturnValue Mailbox::queryMaxCount(int32_t, const Thing&, uint32_t count, uint32
 	return RETURNVALUE_NOERROR;
 }
 
-ReturnValue Mailbox::queryRemove(const Thing&, uint32_t, uint32_t) const
+ReturnValue Mailbox::queryRemove(const Thing&, uint32_t, uint32_t, Creature* /*= nullptr */) const
 {
 	return RETURNVALUE_NOTPOSSIBLE;
 }
@@ -101,10 +101,23 @@ bool Mailbox::sendItem(Item* item) const
 	}
 
 	Player* player = g_game.getPlayerByName(receiver);
+	std::string writer;
+	time_t date = time(0);
+	std::string text;
+	if (item && item->getID() == ITEM_LETTER && item->getWriter() != "") {
+		writer = item->getWriter();
+		date = item->getDate();
+		text = item->getText();
+	}
 	if (player) {
 		if (g_game.internalMoveItem(item->getParent(), player->getInbox(), INDEX_WHEREEVER,
-									item, item->getItemCount(), nullptr, FLAG_NOLIMIT) == RETURNVALUE_NOERROR) {
-			g_game.transformItem(item, item->getID() + 1);
+		                            item, item->getItemCount(), nullptr, FLAG_NOLIMIT) == RETURNVALUE_NOERROR) {
+			Item* newItem = g_game.transformItem(item, item->getID() + 1);
+			if (newItem && newItem->getID() == ITEM_LETTER_STAMPED && writer != "") {
+				newItem->setWriter(writer);
+				newItem->setDate(date);
+				newItem->setText(text);
+			}
 			player->onReceiveMail();
 			return true;
 		}
@@ -115,8 +128,13 @@ bool Mailbox::sendItem(Item* item) const
 		}
 
 		if (g_game.internalMoveItem(item->getParent(), tmpPlayer.getInbox(), INDEX_WHEREEVER,
-									item, item->getItemCount(), nullptr, FLAG_NOLIMIT) == RETURNVALUE_NOERROR) {
-			g_game.transformItem(item, item->getID() + 1);
+		                            item, item->getItemCount(), nullptr, FLAG_NOLIMIT) == RETURNVALUE_NOERROR) {
+			Item* newItem = g_game.transformItem(item, item->getID() + 1);
+			if (newItem && newItem->getID() == ITEM_LETTER_STAMPED && writer != "") {
+				newItem->setWriter(writer);
+				newItem->setDate(date);
+				newItem->setText(text);
+			}
 			IOLoginData::savePlayer(&tmpPlayer);
 			return true;
 		}

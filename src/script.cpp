@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,32 @@ Scripts::Scripts() :
 Scripts::~Scripts()
 {
 	scriptInterface.reInitState();
+}
+
+bool Scripts::loadEventSchedulerScripts(const std::string& fileName)
+{
+	namespace fs = boost::filesystem;
+
+	const auto dir = fs::current_path() / "data" / "events" / "scripts" / "scheduler";
+	if(!fs::exists(dir) || !fs::is_directory(dir)) {
+		std::cout << "[Warning - Scripts::loadEventSchedulerScripts] Can not load folder 'scheduler' on '/data/events/scripts'." << std::endl;
+		return false;
+	}
+
+	fs::recursive_directory_iterator endit;
+	for(fs::recursive_directory_iterator it(dir); it != endit; ++it) {
+		if(fs::is_regular_file(*it) && it->path().extension() == ".lua") {
+			if (it->path().filename().string() == fileName) {
+				if(scriptInterface.loadFile(it->path().string()) == -1) {
+					std::cout << "> " << it->path().string() << " [error]" << std::endl;
+					std::cout << "^ " << scriptInterface.getLastLuaError() << std::endl;
+					continue;
+				}
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 bool Scripts::loadScripts(std::string folderName, bool isLib, bool reload)
@@ -72,7 +98,7 @@ bool Scripts::loadScripts(std::string folderName, bool isLib, bool reload)
 		const std::string scriptFile = it->string();
 		if (!isLib) {
 			if (redir.empty() || redir != it->parent_path().string()) {
-				auto p = fs::path(it->relative_path());
+				auto p = it->relative_path();
 				if (g_config.getBoolean(ConfigManager::SCRIPTS_CONSOLE_LOGS)) {
 					std::cout << ">> [" << p.parent_path().filename() << "]" << std::endl;
 				}

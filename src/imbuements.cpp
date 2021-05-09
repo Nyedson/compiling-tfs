@@ -1,7 +1,10 @@
 /**
-* Credits: Yamaken
-* Credits: Cjaker
-*/
+ * @file imbuements.cpp
+ * 
+ * Credits: Yamaken
+ * Credits: Cjaker
+ * Rewritten and adapted: LucasCPrazeres
+ */
 
 #include "otpch.h"
 #include "events.h"
@@ -58,8 +61,7 @@ bool Imbuements::loadFromXml(bool /* reloading */) {
 			}
 			categories.emplace_back(
 				pugi::cast<uint16_t>(id.value()),
-				baseNode.attribute("name").as_string(),
-				baseNode.attribute("agressive").as_bool(true)
+				baseNode.attribute("name").as_string()
 			);
 
 		// Imbuements

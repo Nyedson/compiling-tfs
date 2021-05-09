@@ -1,6 +1,6 @@
 ﻿/**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,18 +24,6 @@
 #include "enums.h"
 #include "itemloader.h"
 #include "position.h"
-
-// #include "protobuf/appearances.pb.h"
-
-// struct Appearance {
-// 	bool cumulative = false;
-// 	bool liquidcontainer = false;
-// 	bool liquidpool = false;
-// 	bool isAnimation = false;
-// 	bool isContainer = false;
-// 	bool isCorpse = false;
-// 	bool isPlayerCorpse = false;
-// };
 
 enum SlotPositionBits : uint32_t {
 	SLOTP_WHEREEVER = 0xFFFFFFFF,
@@ -66,6 +54,7 @@ enum ItemTypes_t {
 	ITEM_TYPE_BED,
 	ITEM_TYPE_KEY,
 	ITEM_TYPE_RUNE,
+	ITEM_TYPE_SUPPLY,
 	ITEM_TYPE_REWARDCHEST,
 	ITEM_TYPE_CARPET,
 	ITEM_TYPE_CREATUREPRODUCT,
@@ -337,7 +326,6 @@ class Items
 		void clear();
 
 		FILELOADER_ERRORS loadFromOtb(const std::string& file);
-		// bool loadFromProtobuf(const std::string& file);
 
 		const ItemType& operator[](size_t id) const {
 			return getItemType(id);
@@ -365,14 +353,12 @@ class Items
 		}
 
 		NameMap nameToItems;
-		// std::map<uint16_t, Appearance> appearancesMap;
 
-	protected:
+	private:
 		ItemTypes_t getLootType(const std::string& strValue);
 
 		std::map<uint16_t, uint16_t> reverseItemMap;
 		std::vector<ItemType> items;
 		InventoryVector inventory;
-		// tibia::protobuf::appearances::Appearances appearances;
 };
 #endif
