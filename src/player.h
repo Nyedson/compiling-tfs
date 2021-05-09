@@ -1852,7 +1852,8 @@ class Player final : public Creature, public Cylinder
 			return raceid;
 		}
 
-		uint16_t getFreeBackpackSlots() const;}
+		uint16_t getFreeBackpackSlots() const;
+
 
   /*****************************************************************************
    * Interfaces
