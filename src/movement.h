@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,8 +61,8 @@ class MoveEvents final : public BaseEvents
 		MoveEvents& operator=(const MoveEvents&) = delete;
 
 		uint32_t onCreatureMove(Creature* creature, const Tile* tile, MoveEvent_t eventType);
-		uint32_t onPlayerEquip(Player* player, Item* item, slots_t slot, bool isCheck);
-		uint32_t onPlayerDeEquip(Player* player, Item* item, slots_t slot);
+		ReturnValue onPlayerEquip(Player* player, Item* item, slots_t slot, bool isCheck);
+		ReturnValue onPlayerDeEquip(Player* player, Item* item, slots_t slot);
 		uint32_t onItemMove(Item* item, Tile* tile, bool isAdd);
 
 		MoveEvent* getEvent(Item* item, MoveEvent_t eventType);
@@ -101,7 +101,7 @@ class MoveEvents final : public BaseEvents
 
 using StepFunction = std::function<uint32_t(Creature* creature, Item* item, const Position& pos)>;
 using MoveFunction = std::function<uint32_t(Item* item, Item* tileItem, const Position& pos)>;
-using EquipFunction = std::function<uint32_t(MoveEvent* moveEvent, Player* player, Item* item, slots_t slot, bool boolean)>;
+using EquipFunction = std::function<ReturnValue(MoveEvent* moveEvent, Player* player, Item* item, slots_t slot, bool boolean)>;
 
 class MoveEvent final : public Event
 {
@@ -116,7 +116,7 @@ class MoveEvent final : public Event
 
 		uint32_t fireStepEvent(Creature* creature, Item* item, const Position& pos);
 		uint32_t fireAddRemItem(Item* item, Item* tileItem, const Position& pos);
-		uint32_t fireEquip(Player* player, Item* item, slots_t slot, bool isCheck);
+		ReturnValue fireEquip(Player* player, Item* item, slots_t slot, bool isCheck);
 
 		uint32_t getSlot() const {
 			return slot;
@@ -186,6 +186,12 @@ class MoveEvent final : public Event
 		void addPosList(Position pos) {
 			posList.emplace_back(pos);
 		}
+		std::string getSlotName() {
+			return slotName;
+		}
+		void setSlotName(std::string name) {
+			slotName = name;
+		}
 		void setSlot(uint32_t s) {
 			slot = s;
 		}
@@ -220,8 +226,8 @@ class MoveEvent final : public Event
 		static uint32_t AddItemField(Item* item, Item* tileItem, const Position& pos);
 		static uint32_t RemoveItemField(Item* item, Item* tileItem, const Position& pos);
 
-		static uint32_t EquipItem(MoveEvent* moveEvent, Player* player, Item* item, slots_t slot, bool boolean);
-		static uint32_t DeEquipItem(MoveEvent* moveEvent, Player* player, Item* item, slots_t slot, bool boolean);
+		static ReturnValue EquipItem(MoveEvent* moveEvent, Player* player, Item* item, slots_t slot, bool boolean);
+		static ReturnValue DeEquipItem(MoveEvent* moveEvent, Player* player, Item* item, slots_t slot, bool boolean);
 
 		MoveEvent_t eventType = MOVE_EVENT_NONE;
 		StepFunction stepFunction;
@@ -232,6 +238,7 @@ class MoveEvent final : public Event
 		std::string getScriptEventName() const override;
 
 		uint32_t slot = SLOTP_WHEREEVER;
+		std::string slotName;
 
 		//onEquip information
 		uint32_t reqLevel = 0;

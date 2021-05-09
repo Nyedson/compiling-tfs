@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@
 #include "teleport.h"
 #include "trashholder.h"
 #include "housetile.h"
-#include "iomap.h"
 
 extern Game g_game;
 extern ConfigManager g_config;
@@ -376,7 +375,7 @@ Thing* Tile::getTopVisibleThing(const Creature* creature)
 
 void Tile::onAddTileItem(Item* item)
 {
-	if ((item->hasProperty(CONST_PROP_MOVEABLE) || item->getContainer()) || (item->isWrapable() && !item->hasProperty(CONST_PROP_MOVEABLE) && !item->hasProperty(CONST_PROP_BLOCKPATH))) {
+	if (item->hasProperty(CONST_PROP_MOVEABLE) || item->getContainer()) {
 		auto it = g_game.browseFields.find(this);
 		if (it != g_game.browseFields.end()) {
 			it->second->addItemBack(item);
@@ -402,18 +401,11 @@ void Tile::onAddTileItem(Item* item)
 	for (Creature* spectator : spectators) {
 		spectator->onAddTileItem(this, cylinderMapPos);
 	}
-
-  if ((!hasFlag(TILESTATE_PROTECTIONZONE) || g_config.getBoolean(ConfigManager::CLEAN_PROTECTION_ZONES))
-																							&& item->isCleanable()) {
-		if (!dynamic_cast<HouseTile*>(this)) {
-			g_game.addTileToClean(this);
-		}
-	}
 }
 
 void Tile::onUpdateTileItem(Item* oldItem, const ItemType& oldType, Item* newItem, const ItemType& newType)
 {
-	if ((newItem->hasProperty(CONST_PROP_MOVEABLE) || newItem->getContainer()) || (newItem->isWrapable() && newItem->hasProperty(CONST_PROP_MOVEABLE) && !oldItem->hasProperty(CONST_PROP_BLOCKPATH))) {
+	if (newItem->hasProperty(CONST_PROP_MOVEABLE) || newItem->getContainer()) {
 		auto it = g_game.browseFields.find(this);
 		if (it != g_game.browseFields.end()) {
 			int32_t index = it->second->getThingIndex(oldItem);
@@ -422,7 +414,7 @@ void Tile::onUpdateTileItem(Item* oldItem, const ItemType& oldType, Item* newIte
 				newItem->setParent(this);
 			}
 		}
-	} else if ((oldItem->hasProperty(CONST_PROP_MOVEABLE) || oldItem->getContainer()) || (oldItem->isWrapable() && !oldItem->hasProperty(CONST_PROP_MOVEABLE) && !oldItem->hasProperty(CONST_PROP_BLOCKPATH))) {
+	} else if (oldItem->hasProperty(CONST_PROP_MOVEABLE) || oldItem->getContainer()) {
 		auto it = g_game.browseFields.find(this);
 		if (it != g_game.browseFields.end()) {
 			Cylinder* oldParent = oldItem->getParent();
@@ -451,7 +443,7 @@ void Tile::onUpdateTileItem(Item* oldItem, const ItemType& oldType, Item* newIte
 
 void Tile::onRemoveTileItem(const SpectatorHashSet& spectators, const std::vector<int32_t>& oldStackPosVector, Item* item)
 {
-	if ((item->hasProperty(CONST_PROP_MOVEABLE) || item->getContainer()) || (item->isWrapable() && !item->hasProperty(CONST_PROP_MOVEABLE) && !item->hasProperty(CONST_PROP_BLOCKPATH))) {
+	if (item->hasProperty(CONST_PROP_MOVEABLE) || item->getContainer()) {
 		auto it = g_game.browseFields.find(this);
 		if (it != g_game.browseFields.end()) {
 			it->second->removeThing(item, item->getItemCount());
@@ -475,26 +467,6 @@ void Tile::onRemoveTileItem(const SpectatorHashSet& spectators, const std::vecto
 	for (Creature* spectator : spectators) {
 		spectator->onRemoveTileItem(this, cylinderMapPos, iType, item);
 	}
-
-  if (!hasFlag(TILESTATE_PROTECTIONZONE) || g_config.getBoolean(ConfigManager::CLEAN_PROTECTION_ZONES)) {
-		auto items = getItemList();
-		if (!items || items->empty()) {
-			g_game.removeTileToClean(this);
-			return;
-		}
-
-		bool ret = false;
-		for (auto toCheck : *items) {
-			if (toCheck->isCleanable()) {
-				ret = true;
-				break;
-			}
-		}
-
-		if (!ret) {
-			g_game.removeTileToClean(this);
-		}
-	}
 }
 
 void Tile::onUpdateTile(const SpectatorHashSet& spectators)
@@ -507,14 +479,14 @@ void Tile::onUpdateTile(const SpectatorHashSet& spectators)
 	}
 }
 
-ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileFlags, Creature*) const
+ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t flags, Creature*) const
 {
 	if (const Creature* creature = thing.getCreature()) {
-		if (hasBitSet(FLAG_NOLIMIT, tileFlags)) {
+		if (hasBitSet(FLAG_NOLIMIT, flags)) {
 			return RETURNVALUE_NOERROR;
 		}
 
-		if (hasBitSet(FLAG_PATHFINDING, tileFlags) && hasFlag(TILESTATE_FLOORCHANGE | TILESTATE_TELEPORT)) {
+		if (hasBitSet(FLAG_PATHFINDING, flags) && hasFlag(TILESTATE_FLOORCHANGE | TILESTATE_TELEPORT)) {
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 
@@ -523,19 +495,14 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 		}
 
 		if (const Monster* monster = creature->getMonster()) {
-			if (hasFlag(TILESTATE_PROTECTIONZONE | TILESTATE_FLOORCHANGE | TILESTATE_TELEPORT) &&
-						(!monster->isPet() || (monster->isPet() && monster->getMaster() && monster->getMaster()->getAttackedCreature()))) {
+			if (hasFlag(TILESTATE_PROTECTIONZONE | TILESTATE_FLOORCHANGE | TILESTATE_TELEPORT) && !monster->isPet()) {
 				return RETURNVALUE_NOTPOSSIBLE;
 			}
 
-			if (monster->isSummon()) {
-				if (ground->getID() >= ITEM_WALKABLE_SEA_START && ground->getID() <= ITEM_WALKABLE_SEA_END) { 
-					return RETURNVALUE_NOTPOSSIBLE;
-				}
-			}
-
 			const CreatureVector* creatures = getCreatures();
-			if (monster->canPushCreatures() && !monster->isSummon()) {
+			if (creatures && !creatures->empty() && monster->isPet()) {
+				return RETURNVALUE_NOTENOUGHROOM;
+			} else if (monster->canPushCreatures() && !monster->isSummon()) {
 				if (creatures) {
 					for (Creature* tileCreature : *creatures) {
 						if (tileCreature->getPlayer() && tileCreature->getPlayer()->isInGhostMode()) {
@@ -561,12 +528,12 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 				return RETURNVALUE_NOTPOSSIBLE;
 			}
 
-			if (hasBitSet(FLAG_PATHFINDING, tileFlags) && hasFlag(TILESTATE_IMMOVABLENOFIELDBLOCKPATH)) {
+			if (hasBitSet(FLAG_PATHFINDING, flags) && hasFlag(TILESTATE_IMMOVABLENOFIELDBLOCKPATH)) {
 				return RETURNVALUE_NOTPOSSIBLE;
 			}
 
-			if (hasFlag(TILESTATE_BLOCKSOLID) || (hasBitSet(FLAG_PATHFINDING, tileFlags) && hasFlag(TILESTATE_NOFIELDBLOCKPATH))) {
-				if (!(monster->canPushItems() || hasBitSet(FLAG_IGNOREBLOCKITEM, tileFlags))) {
+			if (hasFlag(TILESTATE_BLOCKSOLID) || (hasBitSet(FLAG_PATHFINDING, flags) && hasFlag(TILESTATE_NOFIELDBLOCKPATH))) {
+				if (!(monster->canPushItems() || hasBitSet(FLAG_IGNOREBLOCKITEM, flags))) {
 					return RETURNVALUE_NOTPOSSIBLE;
 				}
 			}
@@ -580,8 +547,8 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 				if (!monster->isImmune(combatType)) {
 					//1) Monster is able to walk over field type
 					//2) Being attacked while random stepping will make it ignore field damages
-					if (hasBitSet(FLAG_IGNOREFIELDDAMAGE, tileFlags)) {
-						if (!(monster->getIgnoreFieldDamage() || monster->canWalkOnFieldType(combatType))) {
+					if (hasBitSet(FLAG_IGNOREFIELDDAMAGE, flags)) {
+						if (!(monster->canWalkOnFieldType(combatType) || monster->getIgnoreFieldDamage())) {
 							return RETURNVALUE_NOTPOSSIBLE;
 						}
 					} else {
@@ -595,7 +562,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 
 		const CreatureVector* creatures = getCreatures();
 		if (const Player* player = creature->getPlayer()) {
-			if (creatures && !creatures->empty() && !hasBitSet(FLAG_IGNOREBLOCKCREATURE, tileFlags) && !player->isAccessPlayer()) {
+			if (creatures && !creatures->empty() && !hasBitSet(FLAG_IGNOREBLOCKCREATURE, flags) && !player->isAccessPlayer()) {
 				for (const Creature* tileCreature : *creatures) {
 					if (!player->canWalkthrough(tileCreature)) {
 						return RETURNVALUE_NOTPOSSIBLE;
@@ -626,7 +593,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 					return RETURNVALUE_PLAYERISPZLOCKED;
 				}
 			}
-		} else if (creatures && !creatures->empty() && !hasBitSet(FLAG_IGNOREBLOCKCREATURE, tileFlags)) {
+		} else if (creatures && !creatures->empty() && !hasBitSet(FLAG_IGNOREBLOCKCREATURE, flags)) {
 			for (const Creature* tileCreature : *creatures) {
 				if (!tileCreature->isInGhostMode()) {
 					return RETURNVALUE_NOTENOUGHROOM;
@@ -634,22 +601,9 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 			}
 		}
 
-		if (!hasBitSet(FLAG_IGNOREBLOCKITEM, tileFlags)) {
+		if (!hasBitSet(FLAG_IGNOREBLOCKITEM, flags)) {
 			//If the FLAG_IGNOREBLOCKITEM bit isn't set we dont have to iterate every single item
 			if (hasFlag(TILESTATE_BLOCKSOLID)) {
-				// NO PVP magic wall or wild growth field check
-				if (creature && creature->getPlayer()) {
-					if (const auto fieldList = getItemList()) {
-						for (Item* findfield : *fieldList) {
-							if (findfield && (findfield->getID() == ITEM_WILDGROWTH_SAFE || findfield->getID() == ITEM_MAGICWALL_SAFE)) {
-								if (!creature->isInGhostMode()) {
-									g_game.internalRemoveItem(findfield, 1);
-								}
-								return RETURNVALUE_NOERROR;
-							}
-						}
-					}
-				}
 				return RETURNVALUE_NOTENOUGHROOM;
 			}
 		} else {
@@ -676,7 +630,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 
-		if (hasBitSet(FLAG_NOLIMIT, tileFlags)) {
+		if (hasBitSet(FLAG_NOLIMIT, flags)) {
 			return RETURNVALUE_NOERROR;
 		}
 
@@ -686,7 +640,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 		}
 
 		const CreatureVector* creatures = getCreatures();
-		if (creatures && !creatures->empty() && item->isBlocking() && !hasBitSet(FLAG_IGNOREBLOCKCREATURE, tileFlags)) {
+		if (creatures && !creatures->empty() && item->isBlocking() && !hasBitSet(FLAG_IGNOREBLOCKCREATURE, flags)) {
 			for (const Creature* tileCreature : *creatures) {
 				if (!tileCreature->isInGhostMode()) {
 					return RETURNVALUE_NOTENOUGHROOM;
@@ -749,7 +703,7 @@ ReturnValue Tile::queryMaxCount(int32_t, const Thing&, uint32_t count, uint32_t&
 	return RETURNVALUE_NOERROR;
 }
 
-ReturnValue Tile::queryRemove(const Thing& thing, uint32_t count, uint32_t tileFlags, Creature* /*= nullptr */) const
+ReturnValue Tile::queryRemove(const Thing& thing, uint32_t count, uint32_t flags) const
 {
 	int32_t index = getThingIndex(&thing);
 	if (index == -1) {
@@ -765,14 +719,14 @@ ReturnValue Tile::queryRemove(const Thing& thing, uint32_t count, uint32_t tileF
 		return RETURNVALUE_NOTPOSSIBLE;
 	}
 
-	if (!item->isMoveable() && !hasBitSet(FLAG_IGNORENOTMOVEABLE, tileFlags)) {
+	if (!item->isMoveable() && !hasBitSet(FLAG_IGNORENOTMOVEABLE, flags)) {
 		return RETURNVALUE_NOTMOVEABLE;
 	}
 
 	return RETURNVALUE_NOERROR;
 }
 
-Tile* Tile::queryDestination(int32_t&, const Thing&, Item** destItem, uint32_t& tileFlags)
+Tile* Tile::queryDestination(int32_t&, const Thing&, Item** destItem, uint32_t& flags)
 {
 	Tile* destTile = nullptr;
 	*destItem = nullptr;
@@ -857,7 +811,7 @@ Tile* Tile::queryDestination(int32_t&, const Thing&, Item** destItem, uint32_t& 
 	if (destTile == nullptr) {
 		destTile = this;
 	} else {
-		tileFlags |= FLAG_NOLIMIT; //Will ignore that there is blocking items/creatures
+		flags |= FLAG_NOLIMIT; //Will ignore that there is blocking items/creatures
 	}
 
 	if (destTile) {
@@ -878,7 +832,6 @@ void Tile::addThing(int32_t, Thing* thing)
 {
 	Creature* creature = thing->getCreature();
 	if (creature) {
-		g_game.map.clearSpectatorCache();
 		creature->setParent(this);
 		CreatureVector* creatures = makeCreatures();
 		creatures->insert(creatures->begin(), creature);
@@ -976,7 +929,7 @@ void Tile::addThing(int32_t, Thing* thing)
 
 			items = makeItemList();
 			items->insert(items->getBeginDownItem(), item);
-			items->increaseDownItemCount();
+			items->addDownItemCount(1);
 			onAddTileItem(item);
 		}
 	}
@@ -1083,7 +1036,6 @@ void Tile::removeThing(Thing* thing, uint32_t count)
 		if (creatures) {
 			auto it = std::find(creatures->begin(), creatures->end(), thing);
 			if (it != creatures->end()) {
-				g_game.map.clearSpectatorCache();
 				creatures->erase(it);
 			}
 		}
@@ -1158,7 +1110,7 @@ void Tile::removeThing(Thing* thing, uint32_t count)
 
 			item->setParent(nullptr);
 			items->erase(it);
-			items->decreaseDownItemCount();
+			items->addDownItemCount(-1);
 			onRemoveTileItem(spectators, oldStackPosVector, item);
 		}
 	}
@@ -1394,7 +1346,9 @@ void Tile::postAddNotification(Thing* thing, const Cylinder* oldParent, int32_t 
 	SpectatorHashSet spectators;
 	g_game.map.getSpectators(spectators, getPosition(), true, true);
 	for (Creature* spectator : spectators) {
-		spectator->getPlayer()->postAddNotification(thing, oldParent, index, LINK_NEAR);
+		if (Player* tmpPlayer = spectator->getPlayer()) {
+			tmpPlayer->postAddNotification(thing, oldParent, index, LINK_NEAR);
+		}
 	}
 
 	//add a reference to this item, it may be deleted after being added (mailbox for example)
@@ -1505,7 +1459,6 @@ void Tile::internalAddThing(uint32_t, Thing* thing)
 
 	Creature* creature = thing->getCreature();
 	if (creature) {
-		g_game.map.clearSpectatorCache();
 		CreatureVector* creatures = makeCreatures();
 		creatures->insert(creatures->begin(), creature);
 	} else {
@@ -1543,7 +1496,7 @@ void Tile::internalAddThing(uint32_t, Thing* thing)
 			}
 		} else {
 			items->insert(items->getBeginDownItem(), item);
-			items->increaseDownItemCount();
+			items->addDownItemCount(1);
 		}
 
 		setTileFlags(item);

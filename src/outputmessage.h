@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,11 +43,9 @@ class OutputMessage : public NetworkMessage
 			add_header(info.length);
 		}
 
-		void addCryptoHeader(uint8_t addChecksum, uint32_t& sequence) {
+		void addCryptoHeader(bool addChecksum, uint32_t checksum) {
 			if (addChecksum == 1) {
-				add_header(adlerChecksum(buffer + outputBufferStart, info.length));
-			} else if (addChecksum == 2) {
-				add_header(sequence++);
+				add_header(checksum);
 			}
 
 			writeMessageLength();
@@ -67,17 +65,25 @@ class OutputMessage : public NetworkMessage
 			info.position += msgLen;
 		}
 
-	private:
+		bool isBroadcastMsg() const {
+			return isBroadcastMesssage;
+		}
+		void setBroadcastMsg(bool isBroadcastMesssage) {
+			this->isBroadcastMesssage = isBroadcastMesssage;
+		}
+	protected:
 		template <typename T>
-		void add_header(T addHeader) {
+		void add_header(T add) {
 			assert(outputBufferStart >= sizeof(T));
 			outputBufferStart -= sizeof(T);
-			memcpy(buffer + outputBufferStart, &addHeader, sizeof(T));
+			memcpy(buffer + outputBufferStart, &add, sizeof(T));
 			//added header size to the message size
 			info.length += sizeof(T);
 		}
 
 		MsgSize_t outputBufferStart = INITIAL_BUFFER_POSITION;
+		bool isBroadcastMesssage = false;
+
 };
 
 class OutputMessagePool

@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ struct spawnBlock_t {
 class Spawn
 {
 	public:
-		Spawn(Position initPos, int32_t initRadius) : centerPos(std::move(initPos)), radius(initRadius) {}
+		Spawn(Position pos, int32_t radius) : centerPos(std::move(pos)), radius(radius) {}
 		~Spawn();
 
 		// non-copyable
@@ -48,9 +48,7 @@ class Spawn
 		bool addMonster(const std::string& name, const Position& pos, Direction dir, uint32_t interval);
 		void removeMonster(Monster* monster);
 
-		uint32_t getInterval() const {
-			return interval;
-		}
+		uint32_t getInterval() const;
 		void startup();
 
 		void startSpawnCheck();
@@ -96,7 +94,7 @@ class Spawns
 			return spawnList;
 		}
 
-		bool loadCustomSpawnXml(const std::string& _filename);
+		bool loadCustomSpawnXml(const std::string& _filename, const Position& relativePosition = Position());
 	private:
 		std::forward_list<Npc*> npcList;
 		std::forward_list<Spawn> spawnList;

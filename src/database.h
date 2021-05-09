@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,8 @@
 #define FS_DATABASE_H_A484B0CDFDE542838F506DCE3D40C693
 
 #include <boost/lexical_cast.hpp>
+
 #include <mysql/mysql.h>
-#include <memory>
-#include <mutex>
-#include <map>
-#include <iostream>
 
 class DBResult;
 using DBResult_ptr = std::shared_ptr<DBResult>;
@@ -41,6 +38,13 @@ class Database
 		Database& operator=(const Database&) = delete;
 
 		/**
+		 * Connects to the database
+		 *
+		 * @return true on successful connection, false on error
+		 */
+		bool connect();
+
+		/**
 		 * Singleton implementation.
 		 *
 		 * @return database connection handler singleton
@@ -52,28 +56,6 @@ class Database
 		}
 
 		/**
-		 * Connects to the database
-		 *
-		 * @return true on successful connection, false on error
-		 */
-		bool connect();
-
-    /**
-     * @brief Connect to the database using parameters
-     *
-     * @param host
-     * @param user
-     * @param password
-     * @param database
-     * @param port
-     * @param sock
-     * @return true Success
-     * @return false Fail
-     */
-    bool connect(const char *host, const char *user, const char *password,
-                const char *database, uint32_t port, const char *sock);
-
-    /**
 		 * Executes command.
 		 *
 		 * Executes query which doesn't generates results (eg. INSERT, UPDATE, DELETE...).
@@ -135,7 +117,7 @@ class Database
 			return maxPacketSize;
 		}
 
-	private:
+	protected:
 		/**
 		 * Transaction related methods.
 		 *
@@ -204,7 +186,6 @@ class DBResult
 		std::string getString(const std::string& s) const;
 		const char* getStream(const std::string& s, unsigned long& size) const;
 
-    size_t countResults() const;  
 		bool hasNext() const;
 		bool next();
 
@@ -228,7 +209,7 @@ class DBInsert
 		bool addRow(std::ostringstream& row);
 		bool execute();
 
-	private:
+	protected:
 		std::string query;
 		std::string values;
 		size_t length;

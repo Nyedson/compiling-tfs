@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,11 +61,8 @@ bool Outfits::loadFromXml()
 			pugi::cast<uint16_t>(lookTypeAttribute.value()),
 			outfitNode.attribute("premium").as_bool(),
 			outfitNode.attribute("unlocked").as_bool(true),
-			outfitNode.attribute("from").as_string()
+			outfitNode.attribute("vip").as_bool(false)
 		);
-	}
-	for (uint8_t sex = PLAYERSEX_FEMALE; sex <= PLAYERSEX_LAST; ++sex) {
-		outfits[sex].shrink_to_fit();
 	}
 	return true;
 }

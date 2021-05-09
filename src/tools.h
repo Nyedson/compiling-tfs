@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 #define FS_TOOLS_H_5F9A9742DA194628830AA1C64909AE43
 
 #include <random>
-
 #include <regex>
 #include <boost/algorithm/string.hpp>
 #include "position.h"
@@ -31,9 +30,6 @@
 void printXMLError(const std::string& where, const std::string& fileName, const pugi::xml_parse_result& result);
 
 std::string transformToSHA1(const std::string& input);
-
-uint16_t getStashSize(StashItemList itemList);
-
 std::string generateToken(const std::string& secret, uint32_t ticks);
 
 void replaceString(std::string& str, const std::string& sought, const std::string& replacement);
@@ -74,12 +70,8 @@ ShootType_t getShootType(const std::string& strValue);
 Ammo_t getAmmoType(const std::string& strValue);
 WeaponAction_t getWeaponAction(const std::string& strValue);
 Skulls_t getSkullType(const std::string& strValue);
-std::string getCombatName(CombatType_t combatType);
-/**
- * @Deprecated
- * It will be dropped with monsters. Use RespawnPeriod_t instead.
- */
 SpawnType_t getSpawnType(const std::string& strValue);
+std::string getCombatName(CombatType_t combatType);
 CombatType_t getCombatType(const std::string& combatname);
 
 std::string getSkillName(uint8_t skillid);
@@ -107,26 +99,56 @@ NameEval_t validateName(const std::string &name);
 
 bool isCaskItem(uint16_t itemId);
 
-std::string getObjectCategoryName(ObjectCategory_t category);
-
-int64_t OTSYS_TIME();
+int64_t OTSYS_TIME(bool useTime = false);
+int32_t OS_TIME(time_t* timer);
 
 SpellGroup_t stringToSpellGroup(std::string value);
 
-static inline Cipbia_Elementals_t getCipbiaElement(CombatType_t combatType) {
-	switch (combatType) {
-		case COMBAT_PHYSICALDAMAGE: return CIPBIA_ELEMENTAL_PHYSICAL;
-		case COMBAT_ENERGYDAMAGE: return CIPBIA_ELEMENTAL_ENERGY;
-		case COMBAT_EARTHDAMAGE: return CIPBIA_ELEMENTAL_EARTH;
-		case COMBAT_FIREDAMAGE: return CIPBIA_ELEMENTAL_FIRE;
-		case COMBAT_LIFEDRAIN: return CIPBIA_ELEMENTAL_LIFEDRAIN;
-		case COMBAT_HEALING: return CIPBIA_ELEMENTAL_HEALING;
-		case COMBAT_DROWNDAMAGE: return CIPBIA_ELEMENTAL_DROWN;
-		case COMBAT_ICEDAMAGE: return CIPBIA_ELEMENTAL_ICE;
-		case COMBAT_HOLYDAMAGE: return CIPBIA_ELEMENTAL_HOLY;
-		case COMBAT_DEATHDAMAGE: return CIPBIA_ELEMENTAL_DEATH;
-		default: return CIPBIA_ELEMENTAL_UNDEFINED;
+std::string getObjectCategoryName(ObjectCategory_t category);
+
+std::string generateRK(size_t length);
+
+template<typename T>
+std::vector<T> selectRandom(std::vector<T> from, size_t k) {
+	std::shuffle(begin(from), std::end(from), getRandomGenerator());
+	from.resize(std::min<size_t>(k, from.size()));
+	std::sort(std::begin(from), std::end(from));
+	return from;
+}
+
+template<typename T, typename... Args>
+std::vector<T> selectRandom(std::vector<T> from, size_t k, const std::vector<T>& elim, Args&&... args) {
+	std::vector<T> wh;
+
+	auto it2 = std::begin(elim);
+	for (auto it1 = std::begin(from); it1 != std::end(from); it1++) {
+		while (it2 != std::end(elim) && *it2 < *it1) it2++;
+		if (it2 == std::end(elim) || *it2 > *it1) {
+			wh.emplace_back(std::move(*it1));
+		}
+	}
+
+	return selectRandom(std::move(wh), k, std::forward<Args>(args)...);
+}
+
+template<typename T>
+void fastVectorRemoveOne(std::vector<T>& vec, T obj)
+{
+	for (size_t i = 0, len = vec.size(); i < len; i++) {
+		if (vec[i] == obj) {
+			T tmp = vec[len-1];
+			vec[len-1] = vec[i];
+			vec[i] = tmp;
+			vec.pop_back();
+			break;
+		}
 	}
 }
+
+#if BOOST_VERSION >= 107000
+#define GET_IO_SERVICE(s) ((boost::asio::io_context&)(s).get_executor().context())
+#else
+#define GET_IO_SERVICE(s) ((s).get_io_service())
+#endif
 
 #endif

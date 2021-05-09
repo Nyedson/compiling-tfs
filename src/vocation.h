@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 class Vocation
 {
 	public:
-		explicit Vocation(uint16_t initId) : id(initId) {}
+		explicit Vocation(uint16_t id) : id(id) {}
 
 		const std::string& getVocName() const {
 			return name;
@@ -86,16 +86,12 @@ class Vocation
 			return fromVocation;
 		}
 
-    bool getMagicShield() const {
-      return magicShield;
-    }
-
 		float meleeDamageMultiplier = 1.0f;
 		float distDamageMultiplier = 1.0f;
 		float defenseMultiplier = 1.0f;
 		float armorMultiplier = 1.0f;
 
-	private:
+	protected:
 		friend class Vocations;
 
 		std::map<uint32_t, uint64_t> cacheMana;
@@ -119,7 +115,6 @@ class Vocation
 		uint32_t baseSpeed = 220;
 		uint16_t id;
 
-    bool magicShield = false;
 
 		uint16_t gainSoulTicks = 120;
 
@@ -135,7 +130,6 @@ class Vocations
 		bool loadFromXml();
 
 		Vocation* getVocation(uint16_t id);
-    const std::map<uint16_t, Vocation>& getVocations() const {return vocationsMap;}
 		int32_t getVocationId(const std::string& name) const;
 		uint16_t getPromotedVocation(uint16_t vocationId) const;
 

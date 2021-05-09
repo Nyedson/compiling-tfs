@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ void Guild::removeMember(Player* player)
 		g_game.updatePlayerHelpers(*member);
 	}
 	g_game.updatePlayerHelpers(*player);
+
 	if (membersOnline.empty()) {
 		g_game.removeGuild(id);
 		delete this;
@@ -56,10 +57,10 @@ GuildRank_ptr Guild::getRankById(uint32_t rankId)
 	return nullptr;
 }
 
-GuildRank_ptr Guild::getRankByName(const std::string& guildName) const
+GuildRank_ptr Guild::getRankByName(const std::string& name) const
 {
 	for (auto rank : ranks) {
-		if (rank->name == guildName) {
+		if (rank->name == name) {
 			return rank;
 		}
 	}
@@ -79,4 +80,23 @@ GuildRank_ptr Guild::getRankByLevel(uint8_t level) const
 void Guild::addRank(uint32_t rankId, const std::string& rankName, uint8_t level)
 {
 	ranks.emplace_back(std::make_shared<GuildRank>(rankId,rankName,level));
+}
+
+void Guild::setBalance(uint64_t _balance) {
+	balance = _balance;
+	IOGuild::setBalance(id, balance);
+}
+
+void Guild::setPoints(uint32_t _points) {
+	points = _points;
+	IOGuild::setPoints(id, points);
+}
+
+void Guild::setLevel(uint32_t _level) {
+	level = _level;
+	IOGuild::setLevel(id, level);
+}
+
+void Guild::setPrivateWarRival(uint32_t rival) {
+	privateWarRival = rival;
 }

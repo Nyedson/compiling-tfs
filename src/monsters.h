@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ const uint32_t MAX_STATICWALK = 100;
 struct LootBlock {
 	uint16_t id;
 	uint32_t countmax;
-	uint32_t countmin;
 	uint32_t chance;
 
 	//optional
@@ -45,12 +44,12 @@ struct LootBlock {
 	int32_t shootRange;
 	int32_t hitChance;
 	bool unique;
+	bool raid;
 
 	std::vector<LootBlock> childLoot;
 	LootBlock() {
 		id = 0;
 		countmax = 1;
-		countmin = 1;
 		chance = 0;
 
 		subType = -1;
@@ -62,6 +61,7 @@ struct LootBlock {
 		shootRange = -1;
 		hitChance = -1;
 		unique = false;
+		raid = false;
 	}
 };
 
@@ -123,8 +123,6 @@ class MonsterType
 		LuaScriptInterface* scriptInterface;
 
 		std::map<CombatType_t, int32_t> elementMap;
-		std::map<CombatType_t, int32_t> reflectMap;
-		std::map<CombatType_t, int32_t> healingMap;
 
 		std::vector<voiceBlock_t> voiceVector;
 
@@ -137,12 +135,13 @@ class MonsterType
 		Skulls_t skull = SKULL_NONE;
 		Outfit_t outfit = {};
 		RaceType_t race = RACE_BLOOD;
-		RespawnType respawnType = {};
 
 		LightInfo light = {};
 		uint16_t lookcorpse = 0;
 
 		uint64_t experience = 0;
+
+		uint16_t raceid = 0;
 
 		uint32_t manaCost = 0;
 		uint32_t yellChance = 0;
@@ -153,18 +152,7 @@ class MonsterType
 		uint32_t conditionImmunities = 0;
 		uint32_t damageImmunities = 0;
 		uint32_t baseSpeed = 200;
-
-		// Bestiary
-		uint8_t bestiaryOccurrence = 0;
-		uint8_t bestiaryStars = 0;
-		uint16_t bestiaryToUnlock = 0;
-		uint16_t bestiaryFirstUnlock = 0;
-		uint16_t bestiarySecondUnlock = 0;
-		uint16_t bestiaryCharmsPoints = 0;
-		uint16_t raceid = 0;
-		std::string bestiaryLocations;
-		std::string bestiaryClass; // String (addString)
-		BestiaryType_t bestiaryRace = BESTY_RACE_NONE; // Number (addByte)
+		uint32_t respawnType = RESPAWN_IN_ALL;
 
 		int32_t creatureAppearEvent = -1;
 		int32_t creatureDisappearEvent = -1;
@@ -178,10 +166,6 @@ class MonsterType
 		int32_t changeTargetChance = 0;
 		int32_t defense = 0;
 		int32_t armor = 0;
-		int32_t targetStrategiesNearestPercent = 0;
-		int32_t targetStrategiesLowerHPPercent = 0;
-		int32_t targetStrategiesMostDamagePercent = 0;
-		int32_t targetStrategiesRandom = 0;
 
 		bool canPushItems = false;
 		bool canPushCreatures = false;
@@ -194,7 +178,9 @@ class MonsterType
 		bool hiddenHealth = false;
 		bool isBlockable = false;
 		bool isPet = false;
+		bool isPassive = false;
 		bool isRewardBoss = false;
+		bool isPreyable = true;
 		bool canWalkOnEnergy = true;
 		bool canWalkOnFire = true;
 		bool canWalkOnPoison = true;
@@ -216,9 +202,9 @@ class MonsterType
 
 		MonsterInfo info;
 
-		void loadLoot(MonsterType* monsterType, LootBlock lootblock);
-
 		bool canSpawn(const Position& pos);
+
+		void loadLoot(MonsterType* monsterType, LootBlock lootblock);
 };
 
 class MonsterSpell
@@ -258,9 +244,6 @@ class MonsterSpell
 		bool isMelee = false;
 
 		Outfit_t outfit = {};
-		std::string outfitMonster = "";
-		uint16_t outfitItem = 0;
-
 		ShootType_t shoot = CONST_ANI_NONE;
 		MagicEffectClasses effect = CONST_ME_NONE;
 		ConditionType_t conditionType = CONDITION_NONE;
@@ -282,19 +265,22 @@ class Monsters
 		bool reload();
 
 		MonsterType* getMonsterType(const std::string& name);
-		MonsterType* getMonsterTypeByRaceId(uint16_t thisrace);
+		MonsterType* getMonsterTypeByRace(uint16_t raceid);
 		void addMonsterType(const std::string& name, MonsterType* mType);
 		bool deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std::string& description = "");
 
+		std::vector<std::string> getPreyMonsters();
+		
 		std::unique_ptr<LuaScriptInterface> scriptInterface;
 		std::map<std::string, MonsterType> monsters;
+		std::map<uint16_t, std::string> raceidMonsters;
 
 	private:
 		ConditionDamage* getDamageCondition(ConditionType_t conditionType,
 											int32_t maxDamage, int32_t minDamage, int32_t startDamage, uint32_t tickInterval);
 		bool deserializeSpell(const pugi::xml_node& node, spellBlock_t& sb, const std::string& description = "");
 
-		MonsterType* loadMonster(const std::string& file, const std::string& monsterName, bool reloading = false);
+		MonsterType* loadMonster(const std::string& file, const std::string& monsterName, bool reloading = false, uint16_t raceid = 0);
 
 		void loadLootContainer(const pugi::xml_node& node, LootBlock&);
 		bool loadLootItem(const pugi::xml_node& node, LootBlock&);

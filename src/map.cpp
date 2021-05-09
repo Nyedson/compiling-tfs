@@ -24,24 +24,19 @@
 #include "combat.h"
 #include "creature.h"
 #include "game.h"
-#include "monster.h"
 
 extern Game g_game;
 
-bool Map::loadMap(const std::string& identifier, bool loadHouses, bool loadSpawns)
+bool Map::loadMap(const std::string& identifier, bool loadHouses, const Position& relativePosition)
 {
-	int64_t start = OTSYS_TIME();
 	IOMap loader;
-	if (!loader.loadMap(this, identifier)) {
+	if (!loader.loadMap(this, identifier, relativePosition)) {
 		std::cout << "[Fatal - Map::loadMap] " << loader.getLastErrorString() << std::endl;
 		return false;
 	}
 
-	if (loadSpawns) {
-		if (!IOMap::loadSpawns(this)) {
-			std::cout << "[Warning - Map::loadMap] Failed to load spawn data." << std::endl;
-		}
-		std::cout << "> Loaded spawns in: " << (OTSYS_TIME() - start) / (1000.) << " seconds" << std::endl;
+	if (!IOMap::loadSpawns(this)) {
+		std::cout << "[Warning - Map::loadMap] Failed to load spawn data." << std::endl;
 	}
 
 	if (loadHouses) {
@@ -52,6 +47,7 @@ bool Map::loadMap(const std::string& identifier, bool loadHouses, bool loadSpawn
 		IOMapSerialize::loadHouseInfo();
 		IOMapSerialize::loadHouseItems(this);
 	}
+
 	return true;
 }
 
@@ -76,6 +72,7 @@ bool Map::save()
 			break;
 		}
 	}
+
 	return saved;
 }
 
@@ -85,7 +82,7 @@ Tile* Map::getTile(uint16_t x, uint16_t y, uint8_t z) const
 		return nullptr;
 	}
 
-	const QTreeLeafNode* leaf = QTreeNode::getLeafStatic<const QTreeLeafNode*, const QTreeNode*>(&root, x, y);
+	const QTreeLeafNode* leaf = root.getLeaf(x, y);
 	if (!leaf) {
 		return nullptr;
 	}
@@ -104,35 +101,7 @@ void Map::setTile(uint16_t x, uint16_t y, uint8_t z, Tile* newTile)
 		return;
 	}
 
-	QTreeLeafNode::newLeaf = false;
-	QTreeLeafNode* leaf = root.createLeaf(x, y, 15);
-
-	if (QTreeLeafNode::newLeaf) {
-		//update north
-		QTreeLeafNode* northLeaf = root.getLeaf(x, y - FLOOR_SIZE);
-		if (northLeaf) {
-			northLeaf->leafS = leaf;
-		}
-
-		//update west leaf
-		QTreeLeafNode* westLeaf = root.getLeaf(x - FLOOR_SIZE, y);
-		if (westLeaf) {
-			westLeaf->leafE = leaf;
-		}
-
-		//update south
-		QTreeLeafNode* southLeaf = root.getLeaf(x, y + FLOOR_SIZE);
-		if (southLeaf) {
-			leaf->leafS = southLeaf;
-		}
-
-		//update east
-		QTreeLeafNode* eastLeaf = root.getLeaf(x + FLOOR_SIZE, y);
-		if (eastLeaf) {
-			leaf->leafE = eastLeaf;
-		}
-	}
-
+	QTreeLeafNode* leaf = root.createLeaf(x, y);
 	Floor* floor = leaf->createFloor(z);
 	uint32_t offsetX = x & FLOOR_MASK;
 	uint32_t offsetY = y & FLOOR_MASK;
@@ -160,11 +129,6 @@ void Map::setTile(uint16_t x, uint16_t y, uint8_t z, Tile* newTile)
 
 bool Map::placeCreature(const Position& centerPos, Creature* creature, bool extendedPos/* = false*/, bool forceLogin/* = false*/)
 {
-	Monster* monster = creature->getMonster();
-	if (monster) {
-		monster->ignoreFieldDamage = true;
-	}
-
 	bool foundTile;
 	bool placeInPZ;
 
@@ -172,10 +136,7 @@ bool Map::placeCreature(const Position& centerPos, Creature* creature, bool exte
 	if (tile) {
 		placeInPZ = tile->hasFlag(TILESTATE_PROTECTIONZONE);
 		ReturnValue ret = tile->queryAdd(0, *creature, 1, FLAG_IGNOREBLOCKITEM | FLAG_IGNOREFIELDDAMAGE);
-		foundTile = forceLogin || ret == RETURNVALUE_NOERROR || ret == RETURNVALUE_PLAYERISNOTINVITED;
-    if (monster) {
-			monster->ignoreFieldDamage = false;
-		}
+		foundTile = (forceLogin && tile->getGround() != nullptr) || ret == RETURNVALUE_NOERROR || ret == RETURNVALUE_PLAYERISNOTINVITED;
 	} else {
 		placeInPZ = false;
 		foundTile = false;
@@ -183,8 +144,8 @@ bool Map::placeCreature(const Position& centerPos, Creature* creature, bool exte
 
 	if (!foundTile) {
 		static std::vector<std::pair<int32_t, int32_t>> extendedRelList {
-							   {0, -2},
-					 {-1, -1}, {0, -1}, {1, -1},
+			                   {0, -2},
+			         {-1, -1}, {0, -1}, {1, -1},
 			{-2, 0}, {-1,  0},          {1,  0}, {2, 0},
 			         {-1,  1}, {0,  1}, {1,  1},
 			                   {0,  2}
@@ -213,11 +174,7 @@ bool Map::placeCreature(const Position& centerPos, Creature* creature, bool exte
 				continue;
 			}
 
-			if (monster) {
-				monster->ignoreFieldDamage = true;
-			}
-
-			if (tile->queryAdd(0, *creature, 1, FLAG_IGNOREBLOCKITEM | FLAG_IGNOREFIELDDAMAGE) == RETURNVALUE_NOERROR) {
+			if (tile->queryAdd(0, *creature, 1, FLAG_IGNOREFIELDDAMAGE) == RETURNVALUE_NOERROR) {
 				if (!extendedPos || isSightClear(centerPos, tryPos, false)) {
 					foundTile = true;
 					break;
@@ -227,10 +184,6 @@ bool Map::placeCreature(const Position& centerPos, Creature* creature, bool exte
 
 		if (!foundTile) {
 			return false;
-		} else {
-			if (monster) {
-				monster->ignoreFieldDamage = false;
-			}
 		}
 	}
 
@@ -242,7 +195,7 @@ bool Map::placeCreature(const Position& centerPos, Creature* creature, bool exte
 	toCylinder->internalAddThing(creature);
 
 	const Position& dest = toCylinder->getPosition();
-	getQTNode(dest.x, dest.y)->addCreature(creature);
+	getQTNode(dest.x, dest.y)->addCreature(creature, dest);
 	return true;
 }
 
@@ -255,9 +208,17 @@ void Map::moveCreature(Creature& creature, Tile& newTile, bool forceTeleport/* =
 
 	bool teleport = forceTeleport || !newTile.getGround() || !Position::areInRange<1, 1, 0>(oldPos, newPos);
 
-	SpectatorHashSet spectators;
-	getSpectators(spectators, oldPos, true);
-	getSpectators(spectators, newPos, true);
+	SpectatorVec spectators;
+	if (teleport) {
+		getSpectators(spectators, oldPos, true);
+		getSpectators(spectators, newPos, true);
+	} else {
+		int mnorth = newPos.getX() < oldPos.getX() ? 1 : 0;
+		int msouth = newPos.getX() > oldPos.getX() ? 1 : 0;
+		int mwest = newPos.getY() < oldPos.getY() ? 1 : 0;
+		int meast = newPos.getY() > oldPos.getY() ? 1 : 0;
+		getSpectators(spectators, oldPos, true, false, maxViewportX + mnorth, maxViewportX + msouth, maxViewportY + mwest, +maxViewportY + meast);
+	}
 
 	std::vector<int32_t> oldStackPosVector;
 	for (Creature* spectator : spectators) {
@@ -279,7 +240,9 @@ void Map::moveCreature(Creature& creature, Tile& newTile, bool forceTeleport/* =
 	// Switch the node ownership
 	if (leaf != new_leaf) {
 		leaf->removeCreature(&creature);
-		new_leaf->addCreature(&creature);
+		new_leaf->addCreature(&creature, newPos);
+	} else {
+		leaf->moveCreature(&creature, newPos);
 	}
 
 	//add the creature
@@ -320,12 +283,48 @@ void Map::moveCreature(Creature& creature, Tile& newTile, bool forceTeleport/* =
 	newTile.postAddNotification(&creature, &oldTile, 0);
 }
 
-void Map::getSpectatorsInternal(SpectatorHashSet& spectators, const Position& centerPos, int32_t minRangeX, int32_t maxRangeX, int32_t minRangeY, int32_t maxRangeY, int32_t minRangeZ, int32_t maxRangeZ, bool onlyPlayers) const
+void Map::getSpectators(FastSpectatorVector& spectators, const Position& centerPos, bool multifloor /*= false*/, bool onlyPlayers /*= false*/, int32_t minRangeX /*= 0*/, int32_t maxRangeX /*= 0*/, int32_t minRangeY /*= 0*/, int32_t maxRangeY /*= 0*/)
 {
-	int_fast32_t min_y = centerPos.y + minRangeY;
-	int_fast32_t min_x = centerPos.x + minRangeX;
-	int_fast32_t max_y = centerPos.y + maxRangeY;
-	int_fast32_t max_x = centerPos.x + maxRangeX;
+	if (centerPos.z >= MAP_MAX_LAYERS) {
+		return;
+	}
+
+	bool doUnique = !spectators.empty();
+
+	minRangeX = (minRangeX == 0 ? -maxViewportX : -minRangeX);
+	maxRangeX = (maxRangeX == 0 ? maxViewportX : maxRangeX);
+	minRangeY = (minRangeY == 0 ? -maxViewportY : -minRangeY);
+	maxRangeY = (maxRangeY == 0 ? maxViewportY : maxRangeY);
+
+	int32_t minRangeZ;
+	int32_t maxRangeZ;
+
+	if (multifloor) {
+		if (centerPos.z > 7) {
+			//underground
+
+			//8->15
+			minRangeZ = std::max<int32_t>(centerPos.getZ() - 2, 0);
+			maxRangeZ = std::min<int32_t>(centerPos.getZ() + 2, MAP_MAX_LAYERS - 1);
+		} else if (centerPos.z == 6) {
+			minRangeZ = 0;
+			maxRangeZ = 8;
+		} else if (centerPos.z == 7) {
+			minRangeZ = 0;
+			maxRangeZ = 9;
+		} else {
+			minRangeZ = 0;
+			maxRangeZ = 7;
+		}
+	} else {
+		minRangeZ = centerPos.z;
+		maxRangeZ = centerPos.z;
+	}
+
+	int_fast16_t min_y = centerPos.y + minRangeY;
+	int_fast16_t min_x = centerPos.x + minRangeX;
+	int_fast16_t max_y = centerPos.y + maxRangeY;
+	int_fast16_t max_x = centerPos.x + maxRangeX;
 
 	int32_t minoffset = centerPos.getZ() - maxRangeZ;
 	uint16_t x1 = std::min<uint32_t>(0xFFFF, std::max<int32_t>(0, (min_x + minoffset)));
@@ -340,139 +339,42 @@ void Map::getSpectatorsInternal(SpectatorHashSet& spectators, const Position& ce
 	int32_t endx2 = x2 - (x2 % FLOOR_SIZE);
 	int32_t endy2 = y2 - (y2 % FLOOR_SIZE);
 
-	const QTreeLeafNode* startLeaf = QTreeNode::getLeafStatic<const QTreeLeafNode*, const QTreeNode*>(&root, startx1, starty1);
-	const QTreeLeafNode* leafS = startLeaf;
-	const QTreeLeafNode* leafE;
-
 	for (int_fast32_t ny = starty1; ny <= endy2; ny += FLOOR_SIZE) {
-		leafE = leafS;
 		for (int_fast32_t nx = startx1; nx <= endx2; nx += FLOOR_SIZE) {
-			if (leafE) {
-				const CreatureVector& node_list = (onlyPlayers ? leafE->player_list : leafE->creature_list);
-				for (Creature* creature : node_list) {
-					const Position& cpos = creature->getPosition();
-					if (minRangeZ > cpos.z || maxRangeZ < cpos.z) {
-						continue;
-					}
-
-					int_fast16_t offsetZ = Position::getOffsetZ(centerPos, cpos);
-					if ((min_y + offsetZ) > cpos.y || (max_y + offsetZ) < cpos.y || (min_x + offsetZ) > cpos.x || (max_x + offsetZ) < cpos.x) {
-						continue;
-					}
-
-					spectators.insert(creature);
-				}
-				leafE = leafE->leafE;
-			} else {
-				leafE = QTreeNode::getLeafStatic<const QTreeLeafNode*, const QTreeNode*>(&root, nx + FLOOR_SIZE, ny);
+			QTreeLeafNode* leaf = root.getLeaf(nx, ny);
+			if (!leaf) {
+				continue;
 			}
-		}
 
-		if (leafS) {
-			leafS = leafS->leafS;
-		} else {
-			leafS = QTreeNode::getLeafStatic<const QTreeLeafNode*, const QTreeNode*>(&root, startx1, ny + FLOOR_SIZE);
-		}
-	}
-}
-
-void Map::getSpectators(SpectatorHashSet& spectators, const Position& centerPos, bool multifloor /*= false*/, bool onlyPlayers /*= false*/, int32_t minRangeX /*= 0*/, int32_t maxRangeX /*= 0*/, int32_t minRangeY /*= 0*/, int32_t maxRangeY /*= 0*/)
-{
-	if (centerPos.z >= MAP_MAX_LAYERS) {
-		return;
-	}
-
-	bool foundCache = false;
-	bool cacheResult = false;
-
-	minRangeX = (minRangeX == 0 ? -maxViewportX : -minRangeX);
-	maxRangeX = (maxRangeX == 0 ? maxViewportX : maxRangeX);
-	minRangeY = (minRangeY == 0 ? -maxViewportY : -minRangeY);
-	maxRangeY = (maxRangeY == 0 ? maxViewportY : maxRangeY);
-
-	if (minRangeX == -maxViewportX && maxRangeX == maxViewportX && minRangeY == -maxViewportY && maxRangeY == maxViewportY && multifloor) {
-		if (onlyPlayers) {
-			auto it = playersSpectatorCache.find(centerPos);
-			if (it != playersSpectatorCache.end()) {
-				if (!spectators.empty()) {
-					const SpectatorHashSet& cachedSpectators = it->second;
-					spectators.insert(cachedSpectators.begin(), cachedSpectators.end());
-				} else {
-					spectators = it->second;
+			auto creatures = leaf->getSpectators().getCreatures();
+			uint16_t capacity = leaf->getSpectators().getCapacity();
+			for (uint16_t i = 0; i < capacity; ++i) {
+				auto& it = creatures[i];
+				if (!it.creature) {
+					continue;
 				}
 
-				foundCache = true;
-			}
-		}
-
-		if (!foundCache) {
-			auto it = spectatorCache.find(centerPos);
-			if (it != spectatorCache.end()) {
-				if (!onlyPlayers) {
-					if (!spectators.empty()) {
-						const SpectatorHashSet& cachedSpectators = it->second;
-						spectators.insert(cachedSpectators.begin(), cachedSpectators.end());
-					} else {
-						spectators = it->second;
-					}
-				} else {
-					const SpectatorHashSet& cachedSpectators = it->second;
-					for (Creature* spectator : cachedSpectators) {
-						if (spectator->getPlayer()) {
-							spectators.insert(spectator);
-						}
-					}
+				if (!it.player && onlyPlayers) {
+					break;
 				}
 
-				foundCache = true;
-			} else {
-				cacheResult = true;
+				if (minRangeZ > it.pos.z || maxRangeZ < it.pos.z) {
+					continue;
+				}
+
+				int_fast16_t offsetZ = Position::getOffsetZ(centerPos, it.pos);
+				if ((min_y + offsetZ) > it.pos.y || (max_y + offsetZ) < it.pos.y || (min_x + offsetZ) > it.pos.x || (max_x + offsetZ) < it.pos.x) {
+					continue;
+				}
+
+				spectators.push_back(it.creature);
 			}
 		}
 	}
 
-	if (!foundCache) {
-		int32_t minRangeZ;
-		int32_t maxRangeZ;
-
-		if (multifloor) {
-			if (centerPos.z > 7) {
-				//underground
-
-				//8->15
-				minRangeZ = std::max<int32_t>(centerPos.getZ() - 2, 0);
-				maxRangeZ = std::min<int32_t>(centerPos.getZ() + 2, MAP_MAX_LAYERS - 1);
-			} else if (centerPos.z == 6) {
-				minRangeZ = 0;
-				maxRangeZ = 8;
-			} else if (centerPos.z == 7) {
-				minRangeZ = 0;
-				maxRangeZ = 9;
-			} else {
-				minRangeZ = 0;
-				maxRangeZ = 7;
-			}
-		} else {
-			minRangeZ = centerPos.z;
-			maxRangeZ = centerPos.z;
-		}
-
-		getSpectatorsInternal(spectators, centerPos, minRangeX, maxRangeX, minRangeY, maxRangeY, minRangeZ, maxRangeZ, onlyPlayers);
-
-		if (cacheResult) {
-			if (onlyPlayers) {
-				playersSpectatorCache[centerPos] = spectators;
-			} else {
-				spectatorCache[centerPos] = spectators;
-			}
-		}
+	if (doUnique) {
+		spectators.unique();
 	}
-}
-
-void Map::clearSpectatorCache()
-{
-	spectatorCache.clear();
-	playersSpectatorCache.clear();
 }
 
 bool Map::canThrowObjectTo(const Position& fromPos, const Position& toPos, bool checkLineOfSight /*= true*/,
@@ -582,7 +484,7 @@ const Tile* Map::canWalkTo(const Creature& creature, const Position& pos) const
 	return tile;
 }
 
-bool Map::getPathMatching(const Creature& creature, std::forward_list<Direction>& dirList, const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const
+bool Map::getPathMatching(const Creature& creature, Position targetPos, std::forward_list<Direction>& dirList, const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const
 {
 	Position pos = creature.getPosition();
 	Position endPos;
@@ -703,7 +605,7 @@ bool Map::getPathMatching(const Creature& creature, std::forward_list<Direction>
 				nodes.openNode(neighborNode);
 			} else {
 				//Does not exist in the open/closed list, create a new node
-				neighborNode = nodes.createOpenNode(n, pos.x, pos.y, newf);
+				neighborNode = nodes.createOpenNode(n, pos.x, pos.y, newf, ((std::abs(targetPos.x - pos.x) + std::abs(targetPos.y - pos.y)) * 10));
 				if (!neighborNode) {
 					if (found) {
 						break;
@@ -757,196 +659,67 @@ bool Map::getPathMatching(const Creature& creature, std::forward_list<Direction>
 	return true;
 }
 
-bool Map::getPathMatching(const Position& start, std::forward_list<Direction>& dirList, const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const
+uint32_t Map::clean() const
 {
-	Position pos = start;
-	Position endPos;
+	uint64_t start = OTSYS_TIME();
+	size_t count = 0, tiles = 0;
 
-	AStarNodes nodes(pos.x, pos.y);
+	if (g_game.getGameState() == GAME_STATE_NORMAL) {
+		g_game.setGameState(GAME_STATE_MAINTAIN);
+	}
 
-	int32_t bestMatch = 0;
-
-	static int_fast32_t dirNeighbors[8][5][2] = {
-		{{-1, 0}, {0, 1}, {1, 0}, {1, 1}, {-1, 1}},
-		{{-1, 0}, {0, 1}, {0, -1}, {-1, -1}, {-1, 1}},
-		{{-1, 0}, {1, 0}, {0, -1}, {-1, -1}, {1, -1}},
-		{{0, 1}, {1, 0}, {0, -1}, {1, -1}, {1, 1}},
-		{{1, 0}, {0, -1}, {-1, -1}, {1, -1}, {1, 1}},
-		{{-1, 0}, {0, -1}, {-1, -1}, {1, -1}, {-1, 1}},
-		{{0, 1}, {1, 0}, {1, -1}, {1, 1}, {-1, 1}},
-		{{-1, 0}, {0, 1}, {-1, -1}, {1, 1}, {-1, 1}}
-	};
-	static int_fast32_t allNeighbors[8][2] = {
-		{-1, 0}, {0, 1}, {1, 0}, {0, -1}, {-1, -1}, {1, -1}, {1, 1}, {-1, 1}
-	};
-
-	const Position startPos = pos;
-
-	AStarNode* found = nullptr;
-	while (fpp.maxSearchDist != 0 || nodes.getClosedNodes() < 100) {
-		AStarNode* n = nodes.getBestNode();
-		if (!n) {
-			if (found) {
-				break;
-			}
-			return false;
-		}
-
-		const int_fast32_t x = n->x;
-		const int_fast32_t y = n->y;
-		pos.x = x;
-		pos.y = y;
-		if (pathCondition(startPos, pos, fpp, bestMatch)) {
-			found = n;
-			endPos = pos;
-			if (bestMatch == 0) {
-				break;
-			}
-		}
-
-		uint_fast32_t dirCount;
-		int_fast32_t* neighbors;
-		if (n->parent) {
-			const int_fast32_t offset_x = n->parent->x - x;
-			const int_fast32_t offset_y = n->parent->y - y;
-			if (offset_y == 0) {
-				if (offset_x == -1) {
-					neighbors = *dirNeighbors[DIRECTION_WEST];
-				}
-				else {
-					neighbors = *dirNeighbors[DIRECTION_EAST];
-				}
-			}
-			else if (!fpp.allowDiagonal || offset_x == 0) {
-				if (offset_y == -1) {
-					neighbors = *dirNeighbors[DIRECTION_NORTH];
-				}
-				else {
-					neighbors = *dirNeighbors[DIRECTION_SOUTH];
-				}
-			}
-			else if (offset_y == -1) {
-				if (offset_x == -1) {
-					neighbors = *dirNeighbors[DIRECTION_NORTHWEST];
-				}
-				else {
-					neighbors = *dirNeighbors[DIRECTION_NORTHEAST];
-				}
-			}
-			else if (offset_x == -1) {
-				neighbors = *dirNeighbors[DIRECTION_SOUTHWEST];
-			}
-			else {
-				neighbors = *dirNeighbors[DIRECTION_SOUTHEAST];
-			}
-			dirCount = fpp.allowDiagonal ? 5 : 3;
-		}
-		else {
-			dirCount = 8;
-			neighbors = *allNeighbors;
-		}
-
-		const int_fast32_t f = n->f;
-		for (uint_fast32_t i = 0; i < dirCount; ++i) {
-			pos.x = x + *neighbors++;
-			pos.y = y + *neighbors++;
-
-			if (fpp.maxSearchDist != 0 && (Position::getDistanceX(startPos, pos) > fpp.maxSearchDist || Position::getDistanceY(startPos, pos) > fpp.maxSearchDist)) {
-				continue;
-			}
-
-			if (fpp.keepDistance && !pathCondition.isInRange(startPos, pos, fpp)) {
-				continue;
-			}
-
-			const Tile* tile;
-			AStarNode* neighborNode = nodes.getNodeByPosition(pos.x, pos.y);
-			if (neighborNode) {
-				tile = getTile(pos.x, pos.y, pos.z);
-			}
-			else {
-				tile = getTile(pos.x, pos.y, pos.z);
-				if (!tile || tile->hasFlag(TILESTATE_BLOCKSOLID)) {
-					continue;
-				}
-			}
-
-			//The cost (g) for this neighbor
-			const int_fast32_t cost = AStarNodes::getMapWalkCost(n, pos, true);
-			const int_fast32_t extraCost = 0;
-			const int_fast32_t newf = f + cost + extraCost;
-
-			if (neighborNode) {
-				if (neighborNode->f <= newf) {
-					//The node on the closed/open list is cheaper than this one
-					continue;
-				}
-
-				neighborNode->f = newf;
-				neighborNode->parent = n;
-				nodes.openNode(neighborNode);
-			}
-			else {
-				//Does not exist in the open/closed list, create a new node
-				neighborNode = nodes.createOpenNode(n, pos.x, pos.y, newf);
-				if (!neighborNode) {
-					if (found) {
-						break;
+	std::vector<Item*> toRemove;
+	for (int x = 0; x < 1024; ++x) {
+		for (int y = 0; y < 1024; ++y) {
+			auto& node = root.nodes[x][y];
+			for (int i = 0; i < node.count; ++i) {
+				for (uint8_t z = 0; z < MAP_MAX_LAYERS; ++z) {
+					Floor *floor = node.nodes[i].getFloor(z);
+					if (!floor) {
+						continue;
 					}
-					return false;
+
+					for (auto &row : floor->tiles) {
+						for (auto tile : row) {
+							if (!tile
+									|| dynamic_cast<HouseTile*>(tile)
+									|| tile->getItemCount() == 0
+									|| tile->hasFlag(TILESTATE_TELEPORT)
+									|| tile->hasFlag(TILESTATE_FLOORCHANGE)
+									|| tile->hasFlag(TILESTATE_DEPOT)
+									|| tile->hasProperty(CONST_PROP_BLOCKPROJECTILE)) {
+								continue;
+							}
+
+							++tiles;
+
+							for (Item *item : *tile->getItemList()) {
+								if (item->isCleanable()) {
+									toRemove.push_back(item);
+								}
+							}
+
+							for (Item *item : toRemove) {
+								g_game.internalRemoveItem(item, -1);
+							}
+
+							count += toRemove.size();
+							toRemove.clear();
+						}
+					}
 				}
 			}
 		}
-
-		nodes.closeNode(n);
 	}
 
-	if (!found) {
-		return false;
+	if (g_game.getGameState() == GAME_STATE_MAINTAIN) {
+		g_game.setGameState(GAME_STATE_NORMAL);
 	}
 
-	int_fast32_t prevx = endPos.x;
-	int_fast32_t prevy = endPos.y;
-
-	found = found->parent;
-	while (found) {
-		pos.x = found->x;
-		pos.y = found->y;
-
-		int_fast32_t dx = pos.getX() - prevx;
-		int_fast32_t dy = pos.getY() - prevy;
-
-		prevx = pos.x;
-		prevy = pos.y;
-
-		if (dx == 1 && dy == 1) {
-			dirList.push_front(DIRECTION_NORTHWEST);
-		}
-		else if (dx == -1 && dy == 1) {
-			dirList.push_front(DIRECTION_NORTHEAST);
-		}
-		else if (dx == 1 && dy == -1) {
-			dirList.push_front(DIRECTION_SOUTHWEST);
-		}
-		else if (dx == -1 && dy == -1) {
-			dirList.push_front(DIRECTION_SOUTHEAST);
-		}
-		else if (dx == 1) {
-			dirList.push_front(DIRECTION_WEST);
-		}
-		else if (dx == -1) {
-			dirList.push_front(DIRECTION_EAST);
-		}
-		else if (dy == 1) {
-			dirList.push_front(DIRECTION_NORTH);
-		}
-		else if (dy == -1) {
-			dirList.push_front(DIRECTION_SOUTH);
-		}
-
-		found = found->parent;
-	}
-	return true;
+	std::cout << "> CLEAN: Removed " << count << " item" << (count != 1 ? "s" : "")
+			  << " from " << tiles << " tile" << (tiles != 1 ? "s" : "") << " in "
+			  << (OTSYS_TIME() - start) / (1000.) << " seconds." << std::endl;
+	return count;
 }
 
 // AStarNodes
@@ -966,7 +739,7 @@ AStarNodes::AStarNodes(uint32_t x, uint32_t y)
 	nodeTable[(x << 16) | y] = nodes;
 }
 
-AStarNode* AStarNodes::createOpenNode(AStarNode* parent, uint32_t x, uint32_t y, int_fast32_t f)
+AStarNode* AStarNodes::createOpenNode(AStarNode* parent, uint32_t x, uint32_t y, int_fast32_t f, int_fast32_t g)
 {
 	if (curNode >= MAX_NODES) {
 		return nullptr;
@@ -981,20 +754,22 @@ AStarNode* AStarNodes::createOpenNode(AStarNode* parent, uint32_t x, uint32_t y,
 	node->x = x;
 	node->y = y;
 	node->f = f;
+	node->g = g;
 	return node;
 }
 
 AStarNode* AStarNodes::getBestNode()
 {
-	if (curNode == 0) {
-		return nullptr;
-	}
-
 	int32_t best_node_f = std::numeric_limits<int32_t>::max();
 	int32_t best_node = -1;
 	for (size_t i = 0; i < curNode; i++) {
-		if (openNodes[i] && nodes[i].f < best_node_f) {
-			best_node_f = nodes[i].f;
+		if (!openNodes[i]) {
+			continue;
+		}
+		
+		int32_t cost = nodes[i].f + nodes[i].g;
+		if (cost < best_node_f) {
+			best_node_f = cost;
 			best_node = i;
 		}
 	}
@@ -1037,14 +812,11 @@ AStarNode* AStarNodes::getNodeByPosition(uint32_t x, uint32_t y)
 	return it->second;
 }
 
-int_fast32_t AStarNodes::getMapWalkCost(AStarNode* node, const Position& neighborPos, bool preferDiagonal)
+int_fast32_t AStarNodes::getMapWalkCost(AStarNode* node, const Position& neighborPos)
 {
 	if (std::abs(node->x - neighborPos.x) == std::abs(node->y - neighborPos.y)) {
 		//diagonal movement extra cost
-		if (preferDiagonal)
-			return MAP_PREFERDIAGONALWALKCOST;
-		else
-			return MAP_DIAGONALWALKCOST;
+		return MAP_DIAGONALWALKCOST;
 	}
 	return MAP_NORMALWALKCOST;
 }
@@ -1059,8 +831,7 @@ int_fast32_t AStarNodes::getTileWalkCost(const Creature& creature, const Tile* t
 
 	if (const MagicField* field = tile->getFieldItem()) {
 		CombatType_t combatType = field->getCombatType();
-		const Monster* monster = creature.getMonster();
-		if (!creature.isImmune(combatType) && !creature.hasCondition(Combat::DamageToConditionType(combatType)) && (monster && !monster->canWalkOnFieldType(combatType))) {
+		if (!creature.isImmune(combatType) && !creature.hasCondition(Combat::DamageToConditionType(combatType))) {
 			cost += MAP_NORMALWALKCOST * 18;
 		}
 	}
@@ -1077,123 +848,117 @@ Floor::~Floor()
 	}
 }
 
-// QTreeNode
-QTreeNode::~QTreeNode()
+
+void FastSpectatorHolder::add(Creature* creature, const Position& pos)
 {
-	for (auto* ptr : child) {
-		delete ptr;
+	if (count < capacity) {
+		for (uint16_t i = index; i < capacity; ++i) {
+			if (creatures[i].creature) {
+				continue;
+			}
+
+			return _add(creature, pos, i);
+		}
+
+		for (uint16_t i = 0; i <= index; ++i) {
+			if (creatures[i].creature) {
+				continue;
+			}
+
+			return _add(creature, pos, i);
+		}
+
+		std::cout << count << " " << capacity << " " << index << std::endl;
+
+		for (int i = 0; i < capacity; ++i) {
+			std::cout << creatures[i].creature << std::endl;
+		}
+
+		throw "FastSpectatorHolder exception - count < capacity";
 	}
+
+	// resize and add
+	SpectatorVector *newVec = new SpectatorVector[capacity * 2]{};
+	for(uint16_t i = 0; i < capacity; ++i) {
+		newVec[i] = creatures[i];
+	}
+
+	delete[] creatures;
+	creatures = newVec;
+	capacity *= 2;
+	return _add(creature, pos, capacity / 2);
 }
 
-QTreeLeafNode* QTreeNode::getLeaf(uint32_t x, uint32_t y)
+void FastSpectatorHolder::move(Creature* creature, const Position& pos)
 {
-	if (leaf) {
-		return static_cast<QTreeLeafNode*>(this);
-	}
-
-	QTreeNode* node = child[((x & 0x8000) >> 15) | ((y & 0x8000) >> 14)];
-	if (!node) {
-		return nullptr;
-	}
-	return node->getLeaf(x << 1, y << 1);
+	creatures[creature->getSpectatorId()].pos = pos;
 }
 
-QTreeLeafNode* QTreeNode::createLeaf(uint32_t x, uint32_t y, uint32_t level)
+void FastSpectatorHolder::remove(Creature* creature)
 {
-	if (!isLeaf()) {
-		uint32_t index = ((x & 0x8000) >> 15) | ((y & 0x8000) >> 14);
-		if (!child[index]) {
-			if (level != FLOOR_BITS) {
-				child[index] = new QTreeNode();
-			} else {
-				child[index] = new QTreeLeafNode();
-				QTreeLeafNode::newLeaf = true;
+	uint16_t id = creature->getSpectatorId();
+	if (creatures[id].player) {
+		if (!creatures[player_index].creature) {
+			player_index -= 1;
+		}
+
+		if (player_index != id) {
+			std::swap(creatures[id], creatures[player_index]);
+			creatures[id].creature->setSpectatorId(id);
+			id = player_index;
+		}
+
+		player_index -= 1;
+	}
+
+	creatures[id].creature = nullptr;
+	index = id;
+	count -= 1;
+	if (capacity != 2 && capacity > count * 2.5) {
+		SpectatorVector *newVec = new SpectatorVector[capacity / 2]{};
+		for (uint16_t i = 0; i < capacity / 2; ++i) {
+			if (creatures[i].creature) {
+				newVec[i] = creatures[i];
 			}
 		}
-		return child[index]->createLeaf(x * 2, y * 2, level - 1);
-	}
-	return static_cast<QTreeLeafNode*>(this);
-}
 
-// QTreeLeafNode
-bool QTreeLeafNode::newLeaf = false;
+		for (uint16_t i = capacity / 2, j = 0; i < capacity; ++i) {
+			if (!creatures[i].creature) {
+				continue;
+			}
 
-QTreeLeafNode::~QTreeLeafNode()
-{
-	for (auto* ptr : array) {
-		delete ptr;
-	}
-}
+			while (newVec[j].creature) {
+				j += 1;
+			}
 
-Floor* QTreeLeafNode::createFloor(uint32_t z)
-{
-	if (!array[z]) {
-		array[z] = new Floor();
-	}
-	return array[z];
-}
-
-void QTreeLeafNode::addCreature(Creature* c)
-{
-	creature_list.push_back(c);
-
-	if (c->getPlayer()) {
-		player_list.push_back(c);
-	}
-}
-
-void QTreeLeafNode::removeCreature(Creature* c)
-{
-	auto iter = std::find(creature_list.begin(), creature_list.end(), c);
-	assert(iter != creature_list.end());
-	*iter = creature_list.back();
-	creature_list.pop_back();
-
-	if (c->getPlayer()) {
-		iter = std::find(player_list.begin(), player_list.end(), c);
-		assert(iter != player_list.end());
-		*iter = player_list.back();
-		player_list.pop_back();
-	}
-}
-
-uint32_t Map::clean() const
-{
-	uint64_t start = OTSYS_TIME();
-	size_t tiles = 0;
-
-	if (g_game.getGameState() == GAME_STATE_NORMAL) {
-		g_game.setGameState(GAME_STATE_MAINTAIN);
-	}
-
-	std::vector<Item*> toRemove;
-	for (auto tile : g_game.getTilesToClean()) {
-    if (!tile) {
-      continue;
-    }
-    if (auto items = tile->getItemList()) {
-      ++tiles;
-      for (auto item : *items) {
-				if (item->isCleanable()) {
-					toRemove.emplace_back(item);
-				}
-      }
+			newVec[j] = creatures[i];
+			newVec[j].creature->setSpectatorId(j);
 		}
+
+		index = 0;
+		delete[] creatures;
+		creatures = newVec;
+		capacity /= 2;
 	}
+}
 
-  for (auto item : toRemove) {
-		g_game.internalRemoveItem(item, -1);
+void FastSpectatorHolder::_add(Creature* creature, const Position& pos, uint16_t i)
+{
+	creatures[i].creature = creature;
+	creatures[i].pos = pos;
+	creatures[i].player = creature->getPlayer() ? true : false;
+	index = (i + 1) % capacity;
+	count += 1;
+
+	if (creatures[i].player) {
+		player_index += 1;
+		std::swap(creatures[i], creatures[player_index]);
+		if (creatures[i].creature) {
+			creatures[i].creature->setSpectatorId(i);
+		}
+
+		creature->setSpectatorId(player_index);
+	} else {
+		creature->setSpectatorId(i);
 	}
-
-	size_t count = toRemove.size();
-	g_game.clearTilesToClean();
-
-	if (g_game.getGameState() == GAME_STATE_MAINTAIN) {
-		g_game.setGameState(GAME_STATE_NORMAL);
-	}
-
-	std::cout << "> CLEAN: Removed " << count << " item" << (count != 1 ? "s" : "")
-	          << " from " << tiles << " tile" << (tiles != 1 ? "s" : "") << " in "
-	          << (OTSYS_TIME() - start) / (1000.) << " seconds." << std::endl;
-	return count;
 }

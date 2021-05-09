@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ class CreatureEvent final : public Event
 		bool executeOnThink(Creature* creature, uint32_t interval);
 		bool executeOnPrepareDeath(Creature* creature, Creature* killer);
 		bool executeOnDeath(Creature* creature, Item* corpse, Creature* killer, Creature* mostDamageKiller, bool lastHitUnjustified, bool mostDamageUnjustified);
-		void executeOnKill(Creature* creature, Creature* target, bool lastHit);
+		void executeOnKill(Creature* creature, Creature* target);
 		bool executeAdvance(Player* player, skills_t, uint32_t, uint32_t);
 		void executeModalWindow(Player* player, uint32_t modalWindowId, uint8_t buttonId, uint8_t choiceId);
 		bool executeTextEdit(Player* player, Item* item, const std::string& text);
@@ -112,7 +112,6 @@ class CreatureEvents final : public BaseEvents
 		CreatureEvent* getEventByName(const std::string& name, bool forceLoaded = true);
 
 		bool registerLuaEvent(CreatureEvent* event);
-		void removeInvalidEvents();
 		void clear(bool fromLua) override final;
 
 	private:

@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,35 +59,6 @@ bool Database::connect()
 	return true;
 }
 
-bool Database::connect(const char *host, const char *user, const char *password,
-                      const char *database, uint32_t port, const char *sock) {
-	// connection handle initialization
-	handle = mysql_init(nullptr);
-	if (!handle) {
-		std::cout << std::endl << "Failed to initialize MySQL connection handle."
-              << std::endl;
-		return false;
-	}
-
-	// automatic reconnect
-	bool reconnect = true;
-	mysql_options(handle, MYSQL_OPT_RECONNECT, &reconnect);
-
-	// connects to database
-	if (!mysql_real_connect(handle, host, user, password, database, port, sock,
-                          0)) {
-		std::cout << std::endl << "MySQL Error Message: " << mysql_error(handle)
-              << std::endl;
-		return false;
-	}
-
-	DBResult_ptr result = storeQuery("SHOW VARIABLES LIKE 'max_allowed_packet'");
-	if (result) {
-		maxPacketSize = result->getNumber<uint64_t>("Value");
-	}
-	return true;
-}
-
 bool Database::beginTransaction()
 {
 	if (!executeQuery("BEGIN")) {
@@ -100,11 +71,6 @@ bool Database::beginTransaction()
 
 bool Database::rollback()
 {
-  if (!handle) {
-    std::cout << std::endl << "Database not initialized!" << std::endl;
-    return false;
-  }
-
 	if (mysql_rollback(handle) != 0) {
 		std::cout << "[Error - mysql_rollback] Message: " << mysql_error(handle) << std::endl;
 		databaseLock.unlock();
@@ -117,11 +83,6 @@ bool Database::rollback()
 
 bool Database::commit()
 {
-  if (!handle) {
-    std::cout << std::endl << "Database not initialized!" << std::endl;
-    return false;
-  }
-
 	if (mysql_commit(handle) != 0) {
 		std::cout << "[Error - mysql_commit] Message: " << mysql_error(handle) << std::endl;
 		databaseLock.unlock();
@@ -134,11 +95,6 @@ bool Database::commit()
 
 bool Database::executeQuery(const std::string& query)
 {
-  if (!handle) {
-    std::cout << std::endl << "Database not initialized!" << std::endl;
-    return false;
-  }
-
 	bool success = true;
 
 	// executes the query
@@ -166,11 +122,6 @@ bool Database::executeQuery(const std::string& query)
 
 DBResult_ptr Database::storeQuery(const std::string& query)
 {
-  if (!handle) {
-    std::cout << std::endl << "Database not initialized!" << std::endl;
-    return nullptr;
-  }
-
 	databaseLock.lock();
 
 	retry:
@@ -283,11 +234,6 @@ const char* DBResult::getStream(const std::string& s, unsigned long& size) const
 	return row[it->second];
 }
 
-size_t DBResult::countResults() const
-{
-	return static_cast<size_t>(mysql_num_rows(handle));
-}
-
 bool DBResult::hasNext() const
 {
 	return row != nullptr;
@@ -295,15 +241,11 @@ bool DBResult::hasNext() const
 
 bool DBResult::next()
 {
-  if (!handle) {
-    std::cout << std::endl << "Database not initialized!" << std::endl;
-    return false;
-  }
 	row = mysql_fetch_row(handle);
 	return row != nullptr;
 }
 
-DBInsert::DBInsert(std::string insertQuery) : query(std::move(insertQuery))
+DBInsert::DBInsert(std::string query) : query(std::move(query))
 {
 	this->length = this->query.length();
 }

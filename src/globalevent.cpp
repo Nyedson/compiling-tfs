@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -138,7 +138,7 @@ void GlobalEvents::startup() const
 
 void GlobalEvents::timer()
 {
-	time_t now = time(nullptr);
+	time_t now = OS_TIME(nullptr);
 
 	int64_t nextScheduledTime = std::numeric_limits<int64_t>::max();
 
@@ -226,7 +226,6 @@ GlobalEventMap GlobalEvents::getEventMap(GlobalEvent_t type)
 	switch (type) {
 		case GLOBALEVENT_NONE: return thinkMap;
 		case GLOBALEVENT_TIMER: return timerMap;
-		case GLOBALEVENT_PERIODCHANGE:
 		case GLOBALEVENT_STARTUP:
 		case GLOBALEVENT_SHUTDOWN:
 		case GLOBALEVENT_RECORD: {
@@ -285,7 +284,7 @@ bool GlobalEvent::configureEvent(const pugi::xml_node& node)
 			}
 		}
 
-		time_t current_time = time(nullptr);
+		time_t current_time = OS_TIME(nullptr);
 		tm* timeinfo = localtime(&current_time);
 		timeinfo->tm_hour = hour;
 		timeinfo->tm_min = min;
@@ -327,40 +326,15 @@ std::string GlobalEvent::getScriptEventName() const
 		case GLOBALEVENT_SHUTDOWN: return "onShutdown";
 		case GLOBALEVENT_RECORD: return "onRecord";
 		case GLOBALEVENT_TIMER: return "onTime";
-		case GLOBALEVENT_PERIODCHANGE: return "onPeriodChange";
 		default: return "onThink";
 	}
-}
-
-bool GlobalEvent::executePeriodChange(LightState_t lightState, LightInfo lightInfo) {
-	//onPeriodChange(lightState, lightTime)
-	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - GlobalEvent::executePeriodChange "
-			<< getName()
-			<< "] Call stack overflow. Too many lua script calls being nested."
-			<< std::endl;
-		return false;
-	}
-
-	ScriptEnvironment* env = scriptInterface->getScriptEnv();
-	env->setScriptId(scriptId, scriptInterface);
-
-	lua_State* L = scriptInterface->getLuaState();
-	scriptInterface->pushFunction(scriptId);
-
-	lua_pushnumber(L, lightState);
-	lua_pushnumber(L, lightInfo.level);
-	return scriptInterface->callFunction(2);
 }
 
 bool GlobalEvent::executeRecord(uint32_t current, uint32_t old)
 {
 	//onRecord(current, old)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - GlobalEvent::executeRecord "
-			<< getName()
-			<< "] Call stack overflow. Too many lua script calls being nested."
-			<< std::endl;
+		std::cout << "[Error - GlobalEvent::executeRecord] Call stack overflow" << std::endl;
 		return false;
 	}
 
@@ -378,10 +352,7 @@ bool GlobalEvent::executeRecord(uint32_t current, uint32_t old)
 bool GlobalEvent::executeEvent() const
 {
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - GlobalEvent::executeEvent "
-			<< getName()
-			<< "] Call stack overflow. Too many lua script calls being nested."
-			<< std::endl;
+		std::cout << "[Error - GlobalEvent::executeEvent] Call stack overflow" << std::endl;
 		return false;
 	}
 

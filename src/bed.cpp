@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2019  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2019 Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,10 @@
 #include "game.h"
 #include "iologindata.h"
 #include "scheduler.h"
+#include "configmanager.h"
 
 extern Game g_game;
+extern ConfigManager g_config;
 
 BedItem::BedItem(uint16_t id) : Item(id)
 {
@@ -87,7 +89,7 @@ BedItem* BedItem::getNextBedItem() const
 	Position targetPos = getNextPosition(dir, getPosition());
 
 	Tile* tile = g_game.map.getTile(targetPos);
-	if (tile == nullptr) {
+	if (!tile) {
 		return nullptr;
 	}
 	return tile->getBedItem();
@@ -95,7 +97,7 @@ BedItem* BedItem::getNextBedItem() const
 
 bool BedItem::canUse(Player* player)
 {
-	if ((player == nullptr) || (house == nullptr)) {
+	if (!player || !house || !player->isPremium()) {
 		return false;
 	}
 
@@ -137,7 +139,7 @@ bool BedItem::trySleep(Player* player)
 
 bool BedItem::sleep(Player* player)
 {
-	if (house == nullptr) {
+	if (!house) {
 		return false;
 	}
 
@@ -149,7 +151,7 @@ bool BedItem::sleep(Player* player)
 
 	internalSetSleeper(player);
 
-	if (nextBedItem != nullptr) {
+	if (nextBedItem) {
 		nextBedItem->internalSetSleeper(player);
 	}
 
@@ -169,7 +171,7 @@ bool BedItem::sleep(Player* player)
 	// change self and partner's appearance
 	updateAppearance(player);
 
-	if (nextBedItem != nullptr) {
+	if (nextBedItem) {
 		nextBedItem->updateAppearance(player);
 	}
 
@@ -178,12 +180,12 @@ bool BedItem::sleep(Player* player)
 
 void BedItem::wakeUp(Player* player)
 {
-	if (house == nullptr) {
+	if (!house) {
 		return;
 	}
 
 	if (sleeperGUID != 0) {
-		if (player == nullptr) {
+		if (!player) {
 			Player regenPlayer(nullptr);
 			if (IOLoginData::loadPlayerById(&regenPlayer, sleeperGUID)) {
 				regeneratePlayer(&regenPlayer);
@@ -203,24 +205,24 @@ void BedItem::wakeUp(Player* player)
 	// unset sleep info
 	internalRemoveSleeper();
 
-	if (nextBedItem != nullptr) {
+	if (nextBedItem) {
 		nextBedItem->internalRemoveSleeper();
 	}
 
 	// change self and partner's appearance
 	updateAppearance(nullptr);
 
-	if (nextBedItem != nullptr) {
+	if (nextBedItem) {
 		nextBedItem->updateAppearance(nullptr);
 	}
 }
 
 void BedItem::regeneratePlayer(Player* player) const
 {
-	const uint32_t sleptTime = time(nullptr) - sleepStart;
+	const uint32_t sleptTime = OS_TIME(nullptr) - sleepStart;
 
 	Condition* condition = player->getCondition(CONDITION_REGENERATION, CONDITIONID_DEFAULT);
-	if (condition != nullptr) {
+	if (condition) {
 		uint32_t regen;
 		if (condition->getTicks() != -1) {
 			regen = std::min<int32_t>((condition->getTicks() / 1000), sleptTime) / 30;
@@ -246,7 +248,7 @@ void BedItem::updateAppearance(const Player* player)
 {
 	const ItemType& it = Item::items[id];
 	if (it.type == ITEM_TYPE_BED) {
-		if ((player != nullptr) && it.transformToOnUse[player->getSex()] != 0) {
+		if (player && it.transformToOnUse[player->getSex()] != 0) {
 			const ItemType& newType = Item::items[it.transformToOnUse[player->getSex()]];
 			if (newType.type == ITEM_TYPE_BED) {
 				g_game.transformItem(this, it.transformToOnUse[player->getSex()]);
@@ -265,7 +267,7 @@ void BedItem::internalSetSleeper(const Player* player)
 	std::string desc_str = player->getName() + " is sleeping there.";
 
 	sleeperGUID = player->getGUID();
-	sleepStart = time(nullptr);
+	sleepStart = OS_TIME(nullptr);
 	setSpecialDescription(desc_str);
 }
 
