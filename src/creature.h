@@ -54,8 +54,6 @@ struct FindPathParams {
 	bool clearSight = true;
 	bool allowDiagonal = true;
 	bool keepDistance = false;
-	bool absoluteDist = false;
-	bool preferDiagonal = false;
 	int32_t maxSearchDist = 0;
 	int32_t minTargetDist = -1;
 	int32_t maxTargetDist = -1;
@@ -243,34 +241,6 @@ class Creature : virtual public Thing
 			return mana;
 		}
 
-    uint16_t getManaShield() const {
-      return manaShield;
-    }
-
-    void setManaShield(uint16_t value) {
-      manaShield = value;
-    }
-
-    uint16_t getMaxManaShield() const {
-      return maxManaShield;
-    }
-
-    void setMaxManaShield(uint16_t value) {
-      maxManaShield = value;
-    }
-
-    int32_t getBuff(int32_t buff) {
-      return varBuffs[buff];
-    }
-
-    void setBuff(buffs_t buff, int32_t modifier) {
-      varBuffs[buff] += modifier;
-    }
-
-		virtual CreatureIcon_t getIcon() const {
-			return CREATUREICON_NONE;
-		}
-
 		const Outfit_t getCurrentOutfit() const {
 			return currentOutfit;
 		}
@@ -326,12 +296,6 @@ class Creature : virtual public Thing
 		bool isSummon() const {
 			return master != nullptr;
 		}
-		/**
-		 * hasBeenSummoned doesn't guarantee master still exists
-		 */ 
-		bool hasBeenSummoned() const {
-			return summoned;
-		}
 		Creature* getMaster() const {
 			return master;
 		}
@@ -381,9 +345,6 @@ class Creature : virtual public Thing
 		}
 		virtual bool isAttackable() const {
 			return true;
-		}
-		virtual Faction_t getFaction() const {
-			return FACTION_DEFAULT;
 		}
 
 		virtual void changeHealth(int32_t healthChange, bool sendHealthChange = true);
@@ -544,23 +505,12 @@ class Creature : virtual public Thing
 		Creature* master = nullptr;
 		Creature* followCreature = nullptr;
 
-		/**
-		 * We need to persist if this creature is summon or not because when we
-		 * increment the bestiary count, the master might be gone before we can
-		 * check if this summon has a master and mistakenly count it kill.
-		 * 
-		 * @see BestiaryOnKill
-		 * @see Monster::death()
-		 */
-		bool summoned = false;
-
 		uint64_t lastStep = 0;
 		uint32_t referenceCounter = 0;
 		uint32_t id = 0;
 		uint32_t scriptEventsBitField = 0;
 		uint32_t eventWalk = 0;
 		uint32_t walkUpdateTicks = 0;
-		int32_t returnToMasterInterval = 0;
 		uint32_t lastHitCreatureId = 0;
 		uint32_t blockCount = 0;
 		uint32_t blockTicks = 0;
@@ -570,10 +520,6 @@ class Creature : virtual public Thing
 		int32_t varSpeed = 0;
 		int32_t health = 1000;
 		int32_t healthMax = 1000;
-
-		uint16_t manaShield = 0;
-		uint16_t maxManaShield = 0;
-		int32_t varBuffs[BUFF_LAST + 1] = { 100, 100 };
 
 		Outfit_t currentOutfit;
 		Outfit_t defaultOutfit;

@@ -20,8 +20,6 @@
 #ifndef FS_ENUMS_H_003445999FEE4A67BCECBE918B0124CE
 #define FS_ENUMS_H_003445999FEE4A67BCECBE918B0124CE
 
-#include <list>
-
 enum RuleViolationType_t : uint8_t {
 	REPORT_TYPE_NAME = 0,
 	REPORT_TYPE_STATEMENT = 1,
@@ -94,15 +92,13 @@ enum itemAttrTypes : uint32_t {
 	ITEM_ATTRIBUTE_SPECIAL = 1 << 23,
 	ITEM_ATTRIBUTE_IMBUINGSLOTS = 1 << 24,
 	ITEM_ATTRIBUTE_OPENCONTAINER = 1 << 25,
-	ITEM_ATTRIBUTE_QUICKLOOTCONTAINER = 1 << 26,
 	ITEM_ATTRIBUTE_CUSTOM = 1U << 31
 };
 
 enum VipStatus_t : uint8_t {
 	VIPSTATUS_OFFLINE = 0,
 	VIPSTATUS_ONLINE = 1,
-	VIPSTATUS_PENDING = 2,
-	VIPSTATUS_TRAINING = 3
+	VIPSTATUS_PENDING = 2
 };
 
 enum MarketAction_t {
@@ -147,9 +143,7 @@ enum OperatingSystem_t : uint8_t {
 	CLIENTOS_LINUX = 1,
 	CLIENTOS_WINDOWS = 2,
 	CLIENTOS_FLASH = 3,
-	CLIENTOS_NEW_LINUX = 4,
 	CLIENTOS_NEW_WINDOWS = 5,
-	CLIENTOS_NEW_MAC = 6,
 
 	CLIENTOS_OTCLIENT_LINUX = 10,
 	CLIENTOS_OTCLIENT_WINDOWS = 11,
@@ -157,14 +151,21 @@ enum OperatingSystem_t : uint8_t {
 };
 
 // New Prey
-enum PreySlotNum_t : uint8_t
+enum PreySlotNum_t : uint16_t
 {
 	PREY_SLOTNUM_FIRST = 0,
 	PREY_SLOTNUM_SECOND = 1,
 	PREY_SLOTNUM_THIRD = 2,
 };
 
-enum PreyState_t : uint8_t
+enum PreySlotStatus_t : uint16_t
+{
+	PREY_SLOT_LOCKED = 0,
+	PREY_SLOT_UNLOCKED = 1,
+};
+
+
+enum PreyState_t : uint16_t
 {
 	PREY_STATE_LOCKED = 0,
 	PREY_STATE_INACTIVE = 1,
@@ -191,16 +192,21 @@ enum SpellGroup_t : uint8_t {
 	SPELLGROUP_HEALING = 2,
 	SPELLGROUP_SUPPORT = 3,
 	SPELLGROUP_SPECIAL = 4,
-	SPELLGROUP_CONJURE = 5, // Deprecated
-	SPELLGROUP_CRIPPLING = 6,
-	SPELLGROUP_FOCUS = 7,
-	SPELLGROUP_ULTIMATESTRIKES = 8,
+	SPELLGROUP_CONJURE = 5,
 };
 
 enum SpellType_t : uint8_t {
 	SPELL_UNDEFINED = 0,
 	SPELL_INSTANT = 1,
 	SPELL_RUNE = 2,
+};
+
+enum AccountType_t : uint8_t {
+	ACCOUNT_TYPE_NORMAL = 1,
+	ACCOUNT_TYPE_TUTOR = 2,
+	ACCOUNT_TYPE_SENIORTUTOR = 3,
+	ACCOUNT_TYPE_GAMEMASTER = 4,
+	ACCOUNT_TYPE_GOD = 5
 };
 
 enum RaceType_t : uint8_t {
@@ -210,66 +216,6 @@ enum RaceType_t : uint8_t {
 	RACE_UNDEAD,
 	RACE_FIRE,
 	RACE_ENERGY,
-};
-
-enum charmRune_t : int8_t {
-	CHARM_NONE = -1,
-	CHARM_WOUND = 0,
-	CHARM_ENFLAME = 1,
-	CHARM_POISON = 2,
-	CHARM_FREEZE = 3,
-	CHARM_ZAP = 4,
-	CHARM_CURSE = 5,
-	CHARM_CRIPPLE = 6,
-	CHARM_PARRY = 7,
-	CHARM_DODGE = 8,
-	CHARM_ADRENALINE = 9,
-	CHARM_NUMB = 10,
-	CHARM_CLEANSE = 11,
-	CHARM_BLESS = 12,
-	CHARM_SCAVENGE = 13,
-	CHARM_GUT = 14,
-	CHARM_LOW = 15,
-	CHARM_DIVINE = 16,
-	CHARM_VAMP = 17,
-	CHARM_VOID = 18,
-
-	CHARM_LAST = CHARM_VOID,
-};
-
-enum charm_t {
-	CHARM_UNDEFINED = 0,
-	CHARM_OFFENSIVE = 1,
-	CHARM_DEFENSIVE = 2,
-	CHARM_PASSIVE = 3,
-};
-
-enum BestiaryType_t : uint8_t {
-	BESTY_RACE_NONE = 0,
-
-	BESTY_RACE_AMPHIBIC = 1,
-	BESTY_RACE_AQUATIC = 2,
-	BESTY_RACE_BIRD = 3,
-	BESTY_RACE_CONSTRUCT = 4,
-	BESTY_RACE_DEMON = 5,
-	BESTY_RACE_DRAGON = 6,
-	BESTY_RACE_ELEMENTAL = 7,
-	BESTY_RACE_EXTRA_DIMENSIONAL = 8,
-	BESTY_RACE_FEY = 9,
-	BESTY_RACE_GIANT = 10,
-	BESTY_RACE_HUMAN = 11,
-	BESTY_RACE_HUMANOID = 12,
-	BESTY_RACE_LYCANTHROPE = 13,
-	BESTY_RACE_MAGICAL = 14,
-	BESTY_RACE_MAMMAL = 15,
-	BESTY_RACE_PLANT = 16,
-	BESTY_RACE_REPTILE = 17,
-	BESTY_RACE_SLIME = 18,
-	BESTY_RACE_UNDEAD = 19,
-	BESTY_RACE_VERMIN = 20,
-
-	BESTY_RACE_FIRST = BESTY_RACE_AMPHIBIC,
-	BESTY_RACE_LAST = BESTY_RACE_VERMIN,
 };
 
 enum CombatType_t : uint16_t {
@@ -365,10 +311,7 @@ enum ConditionParam_t {
 	CONDITION_PARAM_SKILL_MANA_LEECH_CHANCE = 51,
 	CONDITION_PARAM_SKILL_MANA_LEECH_AMOUNT = 52,
 	CONDITION_PARAM_DISABLE_DEFENSE = 53,
-	CONDITION_PARAM_STAT_CAPACITYPERCENT = 54,
-  CONDITION_PARAM_MANASHIELD = 55,
-  CONDITION_PARAM_BUFF_DAMAGEDEALT = 56,
-  CONDITION_PARAM_BUFF_DAMAGERECEIVED = 57,
+	CONDITION_PARAM_STAT_CAPACITYPERCENT = 54
 };
 
 enum BlockType_t : uint8_t {
@@ -411,14 +354,6 @@ enum stats_t {
 	STAT_LAST = STAT_CAPACITY
 };
 
-enum buffs_t {
-  BUFF_DAMAGEDEALT,
-  BUFF_DAMAGERECEIVED,
-
-  BUFF_FIRST = BUFF_DAMAGEDEALT,
-  BUFF_LAST = BUFF_DAMAGERECEIVED,
-};
-
 enum formulaType_t {
 	COMBAT_FORMULA_UNDEFINED,
 	COMBAT_FORMULA_LEVELMAGIC,
@@ -457,7 +392,6 @@ enum ConditionType_t {
 	CONDITION_PACIFIED = 1 << 25,
 	CONDITION_SPELLCOOLDOWN = 1 << 26,
 	CONDITION_SPELLGROUPCOOLDOWN = 1 << 27,
-	CONDITION_ROOTED = 1 << 28,
 };
 
 enum ConditionId_t : int8_t {
@@ -483,16 +417,7 @@ enum PlayerSex_t : uint8_t {
 };
 
 enum Vocation_t : uint16_t {
-	VOCATION_NONE = 0,
-	VOCATION_SORCERER = 1,
-	VOCATION_DRUID = 2,
-	VOCATION_PALADIN = 3,
-	VOCATION_KNIGHT = 4,
-	VOCATION_MASTER_SORCERER = 5,
-	VOCATION_ELDER_DRUID = 6,
-	VOCATION_ROYAL_PALADIN = 7,
-	VOCATION_ELITE_KNIGHT = 8,
-	VOCATION_LAST = VOCATION_ELITE_KNIGHT
+	VOCATION_NONE = 0
 };
 
 enum ReturnValue {
@@ -517,7 +442,6 @@ enum ReturnValue {
 	RETURNVALUE_FIRSTGODOWNSTAIRS,
 	RETURNVALUE_FIRSTGOUPSTAIRS,
 	RETURNVALUE_CONTAINERNOTENOUGHROOM,
-  RETURNVALUE_ONLYAMMOINQUIVER,
 	RETURNVALUE_NOTENOUGHCAPACITY,
 	RETURNVALUE_CANNOTPICKUP,
 	RETURNVALUE_THISISIMPOSSIBLE,
@@ -589,16 +513,6 @@ enum SpeechBubble_t
 	SPEECHBUBBLE_QUESTTRADER = 4,
 };
 
-enum RespawnPeriod_t {
-	RESPAWNPERIOD_ALL,
-	RESPAWNPERIOD_DAY,
-	RESPAWNPERIOD_NIGHT
-};
-
-/**
- * @Deprecated
- * It will be dropped with monsters. Use RespawnPeriod_t instead.
- */
 enum SpawnType_t
 {
 	RESPAWN_IN_ALL = 0,
@@ -632,47 +546,6 @@ enum MapMark_t
 	MAPMARK_GREENSOUTH = 19,
 };
 
-enum QuickLootFilter_t
-{
-	QUICKLOOTFILTER_SKIPPEDLOOT = 0,
-	QUICKLOOTFILTER_ACCEPTEDLOOT = 1,
-};
-
-enum ObjectCategory_t
-{
-	OBJECTCATEGORY_NONE = 0,
-	OBJECTCATEGORY_ARMORS = 1,
-	OBJECTCATEGORY_NECKLACES = 2,
-	OBJECTCATEGORY_BOOTS = 3,
-	OBJECTCATEGORY_CONTAINERS = 4,
-	OBJECTCATEGORY_DECORATION = 5,
-	OBJECTCATEGORY_FOOD = 6,
-	OBJECTCATEGORY_HELMETS = 7,
-	OBJECTCATEGORY_LEGS = 8,
-	OBJECTCATEGORY_OTHERS = 9,
-	OBJECTCATEGORY_POTIONS = 10,
-	OBJECTCATEGORY_RINGS = 11,
-	OBJECTCATEGORY_RUNES = 12,
-	OBJECTCATEGORY_SHIELDS = 13,
-	OBJECTCATEGORY_TOOLS = 14,
-	OBJECTCATEGORY_VALUABLES = 15,
-	OBJECTCATEGORY_AMMO = 16,
-	OBJECTCATEGORY_AXES = 17,
-	OBJECTCATEGORY_CLUBS = 18,
-	OBJECTCATEGORY_DISTANCEWEAPONS = 19,
-	OBJECTCATEGORY_SWORDS = 20,
-	OBJECTCATEGORY_WANDS = 21,
-	OBJECTCATEGORY_PREMIUMSCROLLS = 22, // not used in quickloot
-	OBJECTCATEGORY_TIBIACOINS = 23, // not used in quickloot
-	OBJECTCATEGORY_CREATUREPRODUCTS = 24,
-	OBJECTCATEGORY_STASHRETRIEVE = 27,
-	OBJECTCATEGORY_GOLD = 30,
-	OBJECTCATEGORY_DEFAULT = 31, // unassigned loot
-
-	OBJECTCATEGORY_FIRST = OBJECTCATEGORY_ARMORS,
-	OBJECTCATEGORY_LAST = OBJECTCATEGORY_DEFAULT,
-};
-
 struct Outfit_t {
 	uint16_t lookType = 0;
 	uint16_t lookTypeEx = 0;
@@ -682,26 +555,6 @@ struct Outfit_t {
 	uint8_t lookLegs = 0;
 	uint8_t lookFeet = 0;
 	uint8_t lookAddons = 0;
-	uint8_t lookMountHead = 0;
-	uint8_t lookMountBody = 0;
-	uint8_t lookMountLegs = 0;
-	uint8_t lookMountFeet = 0;
-	uint16_t lookFamiliarsType = 0;
-};
-
-enum Faction_t {
-	FACTION_DEFAULT = 0,
-	FACTION_PLAYER = 1,
-	FACTION_LION = 2,
-	FACTION_LIONUSURPERS = 3,
-	FACTION_LAST = FACTION_LIONUSURPERS,
-};
-
-enum LightState_t {
-	LIGHT_STATE_DAY,
-	LIGHT_STATE_NIGHT,
-	LIGHT_STATE_SUNSET,
-	LIGHT_STATE_SUNRISE,
 };
 
 struct LightInfo {
@@ -709,11 +562,6 @@ struct LightInfo {
 	uint8_t color = 0;
 	constexpr LightInfo() = default;
 	constexpr LightInfo(uint8_t newLevel, uint8_t newColor) : level(newLevel), color(newColor) {}
-};
-
-struct RespawnType {
-	RespawnPeriod_t period;
-	bool underground;
 };
 
 struct ShopInfo {
@@ -814,8 +662,6 @@ struct CombatDamage
 	CombatOrigin origin;
 	bool critical;
 	int affected;
-	bool extension;
-	std::string exString;
 
 	CombatDamage()
 	{
@@ -824,16 +670,12 @@ struct CombatDamage
 		primary.value = secondary.value = 0;
 		critical = false;
 		affected = 1;
-		extension = false;
-		exString = "";
 	}
 };
 
-using StashContainerList = std::map<uint16_t, std::pair<bool, uint32_t>>;
-using StashItemList = std::map<uint16_t, uint32_t>;
 using MarketOfferList = std::list<MarketOffer>;
 using HistoryMarketOfferList = std::list<HistoryMarketOffer>;
-using ShopInfoList = std::vector<ShopInfo>;
+using ShopInfoList = std::list<ShopInfo>;
 
 enum MonstersEvent_t : uint8_t {
 	MONSTERS_EVENT_NONE = 0,
@@ -842,199 +684,6 @@ enum MonstersEvent_t : uint8_t {
 	MONSTERS_EVENT_DISAPPEAR = 3,
 	MONSTERS_EVENT_MOVE = 4,
 	MONSTERS_EVENT_SAY = 5,
-};
-
-enum Supply_Stash_Actions_t : uint8_t {
-	SUPPLY_STASH_ACTION_STOW_ITEM = 0,
-	SUPPLY_STASH_ACTION_STOW_CONTAINER = 1,
-	SUPPLY_STASH_ACTION_STOW_STACK = 2,
-	SUPPLY_STASH_ACTION_WITHDRAW = 3
-};
-
-enum Daily_Reward_Bonus : uint8_t {
-	DAILY_REWARD_FIRST = 2,
-
-	DAILY_REWARD_HP_REGENERATION = 2,
-	DAILY_REWARD_MP_REGENERATION = 3,
-	DAILY_REWARD_STAMINA_REGENERATION = 4,
-	DAILY_REWARD_DOUBLE_HP_REGENERATION = 5,
-	DAILY_REWARD_DOUBLE_MP_REGENERATION = 6,
-	DAILY_REWARD_SOUL_REGENERATION = 7,
-
-	DAILY_REWARD_LAST = 7,
-};
-
-enum Daily_Reward_Status : uint8_t {
-	DAILY_REWARD_COLLECTED = 0,
-	DAILY_REWARD_NOTCOLLECTED = 1,
-	DAILY_REWARD_NOTAVAILABLE = 2
-};
-
-enum Resource_t : uint8_t
-{
-	RESOURCE_BANK = 0x00,
-	RESOURCE_INVENTORY = 0x01,
-	RESOURCE_PREY = 0x0A,
-};
-
-enum MagicEffectsType_t : uint8_t {
-  MAGIC_EFFECTS_END_LOOP = 0,//ends magic effect loop
-  MAGIC_EFFECTS_DELTA = 1,//needs uint8_t delta after type to adjust position
-  MAGIC_EFFECTS_DELAY = 2,//needs uint16_t delay after type to delay in miliseconds effect display
-  MAGIC_EFFECTS_CREATE_EFFECT = 3,//needs uint8_t effectid after type
-  MAGIC_EFFECTS_CREATE_DISTANCEEFFECT = 4,//needs uint8_t and deltaX(int8_t), deltaY(int8_t) after type
-  MAGIC_EFFECTS_CREATE_DISTANCEEFFECT_REVERSED = 5,//needs uint8_t and deltaX(int8_t), deltaY(int8_t) after type
-};
-
-enum InspectObjectTypes : uint8_t {
-	INSPECT_NORMALOBJECT = 0,
-	INSPECT_NPCTRADE = 1,
-	INSPECT_UNKNOWN = 2,
-	INSPECT_CYCLOPEDIA = 3
-};
-
-enum ImpactAnalyzerAndTracker_t : uint8_t {
-	ANALYZER_HEAL = 0,
-	ANALYZER_DAMAGE_DEALT = 1,
-	ANALYZER_DAMAGE_RECEIVED = 2
-};
-
-enum CyclopediaCharacterInfoType_t : uint8_t {
-	CYCLOPEDIA_CHARACTERINFO_BASEINFORMATION = 0,
-	CYCLOPEDIA_CHARACTERINFO_GENERALSTATS = 1,
-	CYCLOPEDIA_CHARACTERINFO_COMBATSTATS = 2,
-	CYCLOPEDIA_CHARACTERINFO_RECENTDEATHS = 3,
-	CYCLOPEDIA_CHARACTERINFO_RECENTPVPKILLS = 4,
-	CYCLOPEDIA_CHARACTERINFO_ACHIEVEMENTS = 5,
-	CYCLOPEDIA_CHARACTERINFO_ITEMSUMMARY = 6,
-	CYCLOPEDIA_CHARACTERINFO_OUTFITSMOUNTS = 7,
-	CYCLOPEDIA_CHARACTERINFO_STORESUMMARY = 8,
-	CYCLOPEDIA_CHARACTERINFO_INSPECTION = 9,
-	CYCLOPEDIA_CHARACTERINFO_BADGES = 10,
-	CYCLOPEDIA_CHARACTERINFO_TITLES = 11
-};
-
-enum CyclopediaCharacterInfo_OutfitType_t : uint8_t {
-	CYCLOPEDIA_CHARACTERINFO_OUTFITTYPE_NONE = 0,
-	CYCLOPEDIA_CHARACTERINFO_OUTFITTYPE_QUEST = 1,
-	CYCLOPEDIA_CHARACTERINFO_OUTFITTYPE_STORE = 2
-};
-
-enum CyclopediaCharacterInfo_RecentKillStatus_t : uint8_t {
-	CYCLOPEDIA_CHARACTERINFO_RECENTKILLSTATUS_JUSTIFIED = 0,
-	CYCLOPEDIA_CHARACTERINFO_RECENTKILLSTATUS_UNJUSTIFIED = 1,
-	CYCLOPEDIA_CHARACTERINFO_RECENTKILLSTATUS_GUILDWAR = 2,
-	CYCLOPEDIA_CHARACTERINFO_RECENTKILLSTATUS_ASSISTED = 3,
-	CYCLOPEDIA_CHARACTERINFO_RECENTKILLSTATUS_ARENA = 4
-};
-
-struct RecentDeathEntry
-{
-	RecentDeathEntry(std::string cause, uint32_t timestamp) :
-		cause(std::move(cause)), timestamp(timestamp) {}
-
-	std::string cause;
-	uint32_t timestamp;
-};
-
-struct RecentPvPKillEntry
-{
-	RecentPvPKillEntry(std::string description, uint32_t timestamp, uint8_t status) :
-		description(std::move(description)), timestamp(timestamp), status(status) {}
-
-	std::string description;
-	uint32_t timestamp;
-	uint8_t status;
-};
-
-enum HighscoreType_t : uint8_t {
-	HIGHSCORE_GETENTRIES = 0,
-	HIGHSCORE_OURRANK = 1
-};
-
-enum HighscoreCategories_t : uint8_t {
-	HIGHSCORE_CATEGORY_EXPERIENCE = 0,
-	HIGHSCORE_CATEGORY_FIST_FIGHTING,
-	HIGHSCORE_CATEGORY_CLUB_FIGHTING,
-	HIGHSCORE_CATEGORY_SWORD_FIGHTING,
-	HIGHSCORE_CATEGORY_AXE_FIGHTING,
-	HIGHSCORE_CATEGORY_DISTANCE_FIGHTING,
-	HIGHSCORE_CATEGORY_SHIELDING,
-	HIGHSCORE_CATEGORY_FISHING,
-	HIGHSCORE_CATEGORY_MAGIC_LEVEL
-};
-
-struct HighscoreCategory
-{
-	HighscoreCategory(const char* name, uint8_t id) :
-		name(name), id(id) {}
-
-	const char* name;
-	uint8_t id;
-};
-
-struct HighscoreCharacter
-{
-	HighscoreCharacter(std::string name, uint64_t points, uint32_t id, uint32_t rank, uint16_t level, uint8_t vocation) :
-		name(std::move(name)), points(points), id(id), rank(rank), level(level), vocation(vocation) {}
-
-	std::string name;
-	uint64_t points;
-	uint32_t id;
-	uint32_t rank;
-	uint16_t level;
-	uint8_t vocation;
-};
-
-enum Cipbia_Elementals_t : uint8_t {
-	CIPBIA_ELEMENTAL_PHYSICAL = 0,
-	CIPBIA_ELEMENTAL_FIRE = 1,
-	CIPBIA_ELEMENTAL_EARTH = 2,
-	CIPBIA_ELEMENTAL_ENERGY = 3,
-	CIPBIA_ELEMENTAL_ICE = 4,
-	CIPBIA_ELEMENTAL_HOLY = 5,
-	CIPBIA_ELEMENTAL_DEATH = 6,
-	CIPBIA_ELEMENTAL_HEALING = 7,
-	CIPBIA_ELEMENTAL_DROWN = 8,
-	CIPBIA_ELEMENTAL_LIFEDRAIN = 9,
-	CIPBIA_ELEMENTAL_UNDEFINED = 10
-};
-
-enum Webhook_Colors_t : uint32_t {
-	WEBHOOK_COLOR_ONLINE = 0x00FF00,
-	WEBHOOK_COLOR_OFFLINE = 0xFF0000,
-	WEBHOOK_COLOR_WARNING = 0xFFFF00,
-	WEBHOOK_COLOR_RAID = 0x0000FF
-};
-
-/**
-  * [OTServer BR]
-  * Team assemble finder.
-  * This class is responsible control and manage the team finder feature.
-**/
-
-class TeamFinder
-{
- public:
-	TeamFinder() = default;
-	TeamFinder(uint16_t initMinLevel, uint16_t initMaxLevel, uint8_t initVocationIDs, uint16_t initTeamSlots, uint16_t initFreeSlots, bool initPartyBool, uint32_t initTimestamp, uint8_t initTeamType, uint16_t initBossID, uint16_t initHunt_type, uint16_t initHunt_area, uint16_t initQuestID, uint32_t initLeaderGuid, std::map<uint32_t, uint8_t> initMembersMap) :
-		minLevel(initMinLevel), maxLevel(initMaxLevel), vocationIDs(initVocationIDs), teamSlots(initTeamSlots), freeSlots(initFreeSlots), partyBool(initPartyBool), timestamp(initTimestamp), teamType(initTeamType), bossID(initBossID), hunt_type(initHunt_type), hunt_area(initHunt_area), questID(initQuestID), leaderGuid(initLeaderGuid), membersMap(initMembersMap) {}
-	virtual ~TeamFinder() = default;
-
-	uint16_t minLevel = 0;
-	uint16_t maxLevel = 0;
-	uint8_t vocationIDs = 0;
-	uint16_t teamSlots = 0;
-	uint16_t freeSlots = 0;
-	bool partyBool = false;
-	uint32_t timestamp = 0;
-	uint8_t teamType = 0;
-	uint16_t bossID = 0;
-	uint16_t hunt_type = 0;
-	uint16_t hunt_area = 0;
-	uint16_t questID = 0;
-	uint32_t leaderGuid = 0;
-	std::map<uint32_t, uint8_t> membersMap = {}; // list: player:getGuid(), player status
 };
 
 #endif

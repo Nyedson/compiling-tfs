@@ -60,7 +60,6 @@ Monster::Monster(MonsterType* mType) :
 	baseSpeed = mType->info.baseSpeed;
 	internalLight = mType->info.light;
 	hiddenHealth = mType->info.hiddenHealth;
-	targetDistance = mType->info.targetDistance;
 
 	// register creature events
 	for (const std::string& scriptName : mType->info.scripts) {
@@ -105,22 +104,6 @@ bool Monster::canWalkOnFieldType(CombatType_t combatType) const
 	}
 }
 
-uint32_t Monster::getReflectValue(CombatType_t reflectType) const {
-	auto it = mType->info.reflectMap.find(reflectType);
-	if (it != mType->info.reflectMap.end()) {
-		return it->second;
-	}
-	return 0;
-}
-
-uint32_t Monster::getHealingCombatValue(CombatType_t healingType) const {
-	auto it = mType->info.healingMap.find(healingType);
-	if (it != mType->info.healingMap.end()) {
-		return it->second;
-	}
-	return 0;
-}
-
 void Monster::onAttackedCreatureDisappear(bool)
 {
 	attackTicks = 0;
@@ -135,13 +118,7 @@ void Monster::onCreatureAppear(Creature* creature, bool isLogin)
 		// onCreatureAppear(self, creature)
 		LuaScriptInterface* scriptInterface = mType->info.scriptInterface;
 		if (!scriptInterface->reserveScriptEnv()) {
-			std::cout << "[Error - Monster::onCreatureAppear"
-				<< " Monster "
-				<< getName()
-				<< " creature "
-				<< creature->getName()
-				<< "] Call stack overflow. Too many lua script calls being nested."
-				<< std::endl;
+			std::cout << "[Error - Monster::onCreatureAppear] Call stack overflow" << std::endl;
 			return;
 		}
 
@@ -183,13 +160,7 @@ void Monster::onRemoveCreature(Creature* creature, bool isLogout)
 		// onCreatureDisappear(self, creature)
 		LuaScriptInterface* scriptInterface = mType->info.scriptInterface;
 		if (!scriptInterface->reserveScriptEnv()) {
-			std::cout << "[Error - Monster::onCreatureDisappear"
-				<< " Monster "
-				<< getName()
-				<< " creature "
-				<< creature->getName()
-				<< "] Call stack overflow. Too many lua script calls being nested."
-				<< std::endl;
+			std::cout << "[Error - Monster::onCreatureDisappear] Call stack overflow" << std::endl;
 			return;
 		}
 
@@ -230,13 +201,7 @@ void Monster::onCreatureMove(Creature* creature, const Tile* newTile, const Posi
 		// onCreatureMove(self, creature, oldPosition, newPosition)
 		LuaScriptInterface* scriptInterface = mType->info.scriptInterface;
 		if (!scriptInterface->reserveScriptEnv()) {
-			std::cout << "[Error - Monster::onCreatureMove"
-				<< " Monster "
-				<< getName()
-				<< " creature "
-				<< creature->getName()
-				<< "] Call stack overflow. Too many lua script calls being nested."
-				<< std::endl;
+			std::cout << "[Error - Monster::onCreatureMove] Call stack overflow" << std::endl;
 			return;
 		}
 
@@ -318,13 +283,7 @@ void Monster::onCreatureSay(Creature* creature, SpeakClasses type, const std::st
 		// onCreatureSay(self, creature, type, message)
 		LuaScriptInterface* scriptInterface = mType->info.scriptInterface;
 		if (!scriptInterface->reserveScriptEnv()) {
-			std::cout << "[Error - Monster::onCreatureSay"
-				<< " Monster "
-				<< getName()
-				<< " creature "
-				<< creature->getName()
-				<< "] Call stack overflow. Too many lua script calls being nested."
-				<< std::endl;
+			std::cout << "[Error - Monster::onCreatureSay] Call stack overflow" << std::endl;
 			return;
 		}
 
@@ -375,8 +334,6 @@ void Monster::addTarget(Creature* creature, bool pushFront/* = false*/)
 		} else {
 			targetList.push_back(creature);
 		}
-		if(!master && getFaction() != FACTION_DEFAULT && creature->getPlayer())
-			totalPlayersOnScreen++;
 	}
 }
 
@@ -386,8 +343,6 @@ void Monster::removeTarget(Creature* creature)
 	if (it != targetList.end()) {
 		creature->decrementReferenceCounter();
 		targetList.erase(it);
-		if(!master && getFaction() != FACTION_DEFAULT && creature->getPlayer())
-			totalPlayersOnScreen--;
 	}
 }
 
@@ -498,13 +453,9 @@ bool Monster::isOpponent(const Creature* creature) const
 		if (creature != getMaster()) {
 			return true;
 		}
-	} else if (creature->getPlayer() &&  creature->getPlayer() && creature->getPlayer()->hasFlag(PlayerFlag_IgnoredByMonsters)) {
-		return false;
 	} else {
-		if (getFaction() != FACTION_DEFAULT) {
-			return isEnemyFaction(creature->getFaction()) || creature->getFaction() == FACTION_PLAYER;
-		}
-		if ((creature->getPlayer()) || (creature->getMaster() && creature->getMaster()->getPlayer())) {
+		if ((creature->getPlayer() && !creature->getPlayer()->hasFlag(PlayerFlag_IgnoredByMonsters)) ||
+				(creature->getMaster() && creature->getMaster()->getPlayer())) {
 			return true;
 		}
 	}
@@ -562,7 +513,7 @@ bool Monster::searchTarget(TargetSearchType_t searchType /*= TARGETSEARCH_DEFAUL
 
 	for (Creature* creature : targetList) {
 		if (isTarget(creature)) {
-			if ((this->targetDistance == 1) || canUseAttack(myPos, creature)) {
+			if ((this->mType->info.targetDistance == 1) || canUseAttack(myPos, creature)) {
 				resultList.push_back(creature);
 			}
 		}
@@ -733,16 +684,21 @@ bool Monster::isTarget(const Creature* creature) const
 	if (creature->getPosition().z != getPosition().z) {
 		return false;
 	}
-	Faction_t targetFaction = creature->getFaction();
-	if (getFaction() != FACTION_DEFAULT) {
-		return isEnemyFaction(targetFaction);
+
+	if (cantAttackPlayers() && creature->getPlayer()) {
+		return false;
 	}
+
 	return true;
 }
 
 bool Monster::selectTarget(Creature* creature)
 {
-	if (!isTarget(creature) || returnToMasterInterval > 0) {
+	if (!isTarget(creature)) {
+		return false;
+	}
+
+	if (isPassive() && !hasBeenAttacked(creature->getID())) {
 		return false;
 	}
 
@@ -786,9 +742,10 @@ void Monster::updateIdleStatus()
 		if (!isSummon() && targetList.empty()) {
 			idle = true;
 		}
-		else if ((!master || master->getMonster()) && getFaction() != FACTION_DEFAULT && (totalPlayersOnScreen == 0 && (!master || master->getMonster()->totalPlayersOnScreen == 0))) {
-			idle = true;
-		}
+	}
+
+	if (isMonsterAttacker()) {
+		idle = false;
 	}
 
 	setIdle(idle);
@@ -797,7 +754,6 @@ void Monster::updateIdleStatus()
 void Monster::onAddCondition(ConditionType_t type)
 {
 	if (type == CONDITION_FIRE || type == CONDITION_ENERGY || type == CONDITION_POISON) {
-    ignoreFieldDamage = true;
 		updateMapCache();
 	}
 
@@ -822,11 +778,7 @@ void Monster::onThink(uint32_t interval)
 		// onThink(self, interval)
 		LuaScriptInterface* scriptInterface = mType->info.scriptInterface;
 		if (!scriptInterface->reserveScriptEnv()) {
-			std::cout << "[Error - Monster::onThink"
-				<< " Monster "
-				<< getName()
-				<< "] Call stack overflow. Too many lua script calls being nested."
-				<< std::endl;
+			std::cout << "[Error - Monster::onThink] Call stack overflow" << std::endl;
 			return;
 		}
 
@@ -846,22 +798,13 @@ void Monster::onThink(uint32_t interval)
 		}
 	}
 
-	if (challengeMeleeDuration != 0) {
-		challengeMeleeDuration -= interval;
-		if (challengeMeleeDuration <= 0) {
-			challengeMeleeDuration = 0;
-			targetDistance = mType->info.targetDistance;
-			g_game.updateCreatureIcon(this);
-		}
-	}
-
 	if (!mType->canSpawn(position)) {
 		g_game.removeCreature(this);
 	}
 
 	if (!isInSpawnRange(position)) {
 		g_game.internalTeleport(this, masterPos);
-		setIdle(true);
+		setIdle(false);
 	} else {
 		updateIdleStatus();
 
@@ -1223,7 +1166,7 @@ bool Monster::pushCreature(Creature* creature)
 	for (Direction dir : dirList) {
 		const Position& tryPos = Spells::getCasterPosition(creature, dir);
 		Tile* toTile = g_game.map.getTile(tryPos);
-		if (toTile && !toTile->hasFlag(TILESTATE_BLOCKPATH) && !toTile->getCreatures()) {
+		if (toTile && !toTile->hasFlag(TILESTATE_BLOCKPATH)) {
 			if (g_game.internalMoveCreature(creature, dir) == RETURNVALUE_NOERROR) {
 				return true;
 			}
@@ -1284,6 +1227,7 @@ bool Monster::getNextStep(Direction& nextDirection, uint32_t& flags)
 			flags |= FLAG_PATHFINDING;
 		} else {
 			if (ignoreFieldDamage) {
+				ignoreFieldDamage = false;
 				updateMapCache();
 			}
 			//target dancing
@@ -1297,8 +1241,8 @@ bool Monster::getNextStep(Direction& nextDirection, uint32_t& flags)
 		}
 	}
 
-	if (result) {
-		const Position& pos = getNextPosition(nextDirection, getPosition());
+	if (result && (canPushItems() || canPushCreatures())) {
+		const Position& pos = Spells::getCasterPosition(this, direction);
 		Tile* posTile = g_game.map.getTile(pos);
 		if (posTile) {
 			if (canPushItems()) {
@@ -1349,7 +1293,7 @@ bool Monster::getDanceStep(const Position& creaturePos, Direction& moveDirection
 	uint32_t centerToDist = std::max<uint32_t>(distance_x, distance_y);
 
 	//monsters not at targetDistance shouldn't dancestep
-	if (centerToDist < (uint32_t) targetDistance) {
+	if (centerToDist < (uint32_t) mType->info.targetDistance) {
 		return false;
 	}
 
@@ -1432,9 +1376,9 @@ bool Monster::getDistanceStep(const Position& targetPos, Direction& moveDirectio
 
 	int32_t distance = std::max<int32_t>(dx, dy);
 
-	if (!flee && (distance > targetDistance || !g_game.isSightClear(creaturePos, targetPos, true))) {
+	if (!flee && (distance > mType->info.targetDistance || !g_game.isSightClear(creaturePos, targetPos, true))) {
 		return false; // let the A* calculate it
-	} else if (!flee && distance == targetDistance) {
+	} else if (!flee && distance == mType->info.targetDistance) {
 		return true; // we don't really care here, since it's what we wanted to reach (a dancestep will take of dancing in that position)
 	}
 
@@ -1926,9 +1870,8 @@ bool Monster::canWalkTo(Position pos, Direction moveDirection) const
 			return false;
 		}
 
-		Tile* tile = g_game.map.getTile(pos);
-		if (tile && tile->getTopVisibleCreature(this) == nullptr &&
-					tile->queryAdd(0, *this, 1, FLAG_PATHFINDING | FLAG_IGNOREFIELDDAMAGE) == RETURNVALUE_NOERROR) {
+		Tile* walkTile = g_game.map.getTile(pos);
+		if (walkTile && walkTile->getTopVisibleCreature(this) == nullptr && walkTile->queryAdd(0, *this, 1, FLAG_PATHFINDING) == RETURNVALUE_NOERROR) {
 			return true;
 		}
 	}
@@ -2118,42 +2061,18 @@ bool Monster::challengeCreature(Creature* creature)
 	return result;
 }
 
-bool Monster::changeTargetDistance(int32_t distance)
-{
-	if (isSummon()) {
-		return false;
-	}
-
-	if (mType->info.isRewardBoss) {
-		return false;
-	}
-
-	bool shouldUpdate = mType->info.targetDistance > distance ? true : false;
-	challengeMeleeDuration = 12000;
-	targetDistance = distance;
-
-	if (shouldUpdate) {
-		g_game.updateCreatureIcon(this);
-	}
-	return true;
-}
-
 void Monster::getPathSearchParams(const Creature* creature, FindPathParams& fpp) const
 {
 	Creature::getPathSearchParams(creature, fpp);
 
 	fpp.minTargetDist = 1;
-	fpp.maxTargetDist = targetDistance;
+	fpp.maxTargetDist = mType->info.targetDistance;
 
 	if (isSummon()) {
 		if (getMaster() == creature) {
-			int32_t distX = Position::getDistanceX(getPosition(), creature->getPosition());
-			int32_t distY = Position::getDistanceY(getPosition(), creature->getPosition());
-			fpp.absoluteDist = true;
-			fpp.preferDiagonal = !(distX >= 2 && distY == 0 || distY >= 2 && distX == 0);
 			fpp.maxTargetDist = 2;
 			fpp.fullPathSearch = true;
-		} else if (targetDistance <= 1) {
+		} else if (mType->info.targetDistance <= 1) {
 			fpp.fullPathSearch = true;
 		} else {
 			fpp.fullPathSearch = !canUseAttack(getPosition(), creature);
@@ -2164,7 +2083,7 @@ void Monster::getPathSearchParams(const Creature* creature, FindPathParams& fpp)
 		fpp.clearSight = false;
 		fpp.keepDistance = true;
 		fpp.fullPathSearch = false;
-	} else if (targetDistance <= 1) {
+	} else if (mType->info.targetDistance <= 1) {
 		fpp.fullPathSearch = true;
 	} else {
 		fpp.fullPathSearch = !canUseAttack(getPosition(), creature);

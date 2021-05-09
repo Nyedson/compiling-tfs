@@ -35,9 +35,7 @@ enum TargetSearchType_t {
 	TARGETSEARCH_NEAREST,
 	TARGETSEARCH_HP,
 	TARGETSEARCH_DAMAGE,
-	TARGETSEARCH_RANDOM,
-	TARGETSEARCH_PREFERPLAYER,
-	TARGETSEARCH_PREFERMASTER,
+	TARGETSEARCH_RANDOM
 };
 
 class Monster final : public Creature
@@ -100,25 +98,13 @@ class Monster final : public Creature
 		int32_t getDefense() const override {
 			return mType->info.defense;
 		}
-
-		Faction_t getFaction() const override {
-			if (master)
-				return master->getFaction();
-			return mType->info.faction;
-		}
-
-		bool isEnemyFaction(Faction_t faction) const {
-			if (master && master->getMonster())
-				return master->getMonster()->isEnemyFaction(faction);
-			return mType->info.enemyFactions.empty() ? false : mType->info.enemyFactions.find(faction) != mType->info.enemyFactions.end();
-		}
-
 		bool isPushable() const override {
 			return mType->info.pushable && baseSpeed != 0;
 		}
 		bool isAttackable() const override {
 			return mType->info.isAttackable;
 		}
+
 		bool canPushItems() const {
 			return mType->info.canPushItems;
 		}
@@ -131,6 +117,15 @@ class Monster final : public Creature
 		bool isPet() const {
 			return mType->info.isPet;
 		}
+		bool isPassive() const {
+			return mType->info.isPassive;
+		}
+		bool cantAttackPlayers() const {
+			return mType->info.cantAttackPlayers;
+		}
+		bool isMonsterAttacker() const {
+			return mType->info.isMonsterAttacker;
+		}
 		bool canSee(const Position& pos) const override;
 		bool canSeeInvisibility() const override {
 			return isImmune(CONDITION_INVISIBLE);
@@ -138,15 +133,12 @@ class Monster final : public Creature
 		uint32_t getManaCost() const {
 			return mType->info.manaCost;
 		}
-		RespawnType getRespawnType() const {
+		uint32_t getRespawnType() const {
 			return mType->info.respawnType;
 		}
 		void setSpawn(Spawn* newSpawn) {
 			this->spawn = newSpawn;
 		}
-
-		uint32_t getReflectValue(CombatType_t combatType) const;
-		uint32_t getHealingCombatValue(CombatType_t healingType) const;
 
 		bool canWalkOnFieldType(CombatType_t combatType) const;
 		void onAttackedCreatureDisappear(bool isLogout) override;
@@ -165,19 +157,6 @@ class Monster final : public Creature
 		void onThink(uint32_t interval) override;
 
 		bool challengeCreature(Creature* creature) override;
-
-		bool changeTargetDistance(int32_t distance);
-
-		CreatureIcon_t getIcon() const override {
-			if (challengeMeleeDuration > 0 && mType->info.targetDistance > targetDistance)
-				return CREATUREICON_TURNEDMELEE;
-			else if (varBuffs[BUFF_DAMAGERECEIVED] > 100)
-				return CREATUREICON_HIGHERRECEIVEDDAMAGE;
-			else if (varBuffs[BUFF_DAMAGEDEALT] < 100)
-				return CREATUREICON_LOWERDEALTDAMAGE;
-			else
-				return CREATUREICON_NONE;
-		}
 
 		void setNormalCreatureLight() override;
 		bool getCombatValues(int32_t& min, int32_t& max) override;
@@ -245,9 +224,6 @@ class Monster final : public Creature
 		int32_t targetChangeCooldown = 0;
 		int32_t challengeFocusDuration = 0;
 		int32_t stepDuration = 0;
-		int32_t targetDistance = 1;
-		int32_t challengeMeleeDuration = 0;
-		uint16_t totalPlayersOnScreen = 0;
 
 		Position masterPos;
 
@@ -324,7 +300,6 @@ class Monster final : public Creature
 		}
 
 		friend class LuaScriptInterface;
-		friend class Map;
 };
 
 #endif
