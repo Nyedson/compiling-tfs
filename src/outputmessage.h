@@ -67,13 +67,6 @@ class OutputMessage : public NetworkMessage
 			info.position += msgLen;
 		}
 
-		bool isBroadcastMsg() const {
-			return isBroadcastMesssage;
-		}
-		void setBroadcastMsg(bool isBroadcastMesssage) {
-			this->isBroadcastMesssage = isBroadcastMesssage;
-		}
-
 	private:
 		template <typename T>
 		void add_header(T addHeader) {
@@ -84,7 +77,6 @@ class OutputMessage : public NetworkMessage
 			info.length += sizeof(T);
 		}
 
-        bool isBroadcastMesssage {false};
 		MsgSize_t outputBufferStart = INITIAL_BUFFER_POSITION;
 };
 

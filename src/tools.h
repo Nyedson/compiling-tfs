@@ -31,6 +31,9 @@
 void printXMLError(const std::string& where, const std::string& fileName, const pugi::xml_parse_result& result);
 
 std::string transformToSHA1(const std::string& input);
+
+uint16_t getStashSize(StashItemList itemList);
+
 std::string generateToken(const std::string& secret, uint32_t ticks);
 
 void replaceString(std::string& str, const std::string& sought, const std::string& replacement);
@@ -72,6 +75,10 @@ Ammo_t getAmmoType(const std::string& strValue);
 WeaponAction_t getWeaponAction(const std::string& strValue);
 Skulls_t getSkullType(const std::string& strValue);
 std::string getCombatName(CombatType_t combatType);
+/**
+ * @Deprecated
+ * It will be dropped with monsters. Use RespawnPeriod_t instead.
+ */
 SpawnType_t getSpawnType(const std::string& strValue);
 CombatType_t getCombatType(const std::string& combatname);
 
@@ -100,8 +107,26 @@ NameEval_t validateName(const std::string &name);
 
 bool isCaskItem(uint16_t itemId);
 
+std::string getObjectCategoryName(ObjectCategory_t category);
+
 int64_t OTSYS_TIME();
 
 SpellGroup_t stringToSpellGroup(std::string value);
+
+static inline Cipbia_Elementals_t getCipbiaElement(CombatType_t combatType) {
+	switch (combatType) {
+		case COMBAT_PHYSICALDAMAGE: return CIPBIA_ELEMENTAL_PHYSICAL;
+		case COMBAT_ENERGYDAMAGE: return CIPBIA_ELEMENTAL_ENERGY;
+		case COMBAT_EARTHDAMAGE: return CIPBIA_ELEMENTAL_EARTH;
+		case COMBAT_FIREDAMAGE: return CIPBIA_ELEMENTAL_FIRE;
+		case COMBAT_LIFEDRAIN: return CIPBIA_ELEMENTAL_LIFEDRAIN;
+		case COMBAT_HEALING: return CIPBIA_ELEMENTAL_HEALING;
+		case COMBAT_DROWNDAMAGE: return CIPBIA_ELEMENTAL_DROWN;
+		case COMBAT_ICEDAMAGE: return CIPBIA_ELEMENTAL_ICE;
+		case COMBAT_HOLYDAMAGE: return CIPBIA_ELEMENTAL_HOLY;
+		case COMBAT_DEATHDAMAGE: return CIPBIA_ELEMENTAL_DEATH;
+		default: return CIPBIA_ELEMENTAL_UNDEFINED;
+	}
+}
 
 #endif

@@ -92,7 +92,7 @@ class Container : public Item, public Cylinder
 
 		Attr_ReadValue readAttr(AttrTypes_t attr, PropStream& propStream) override;
 		bool unserializeItemNode(OTB::Loader& loader, const OTB::Node& node, PropStream& propStream) override;
-		std::string getContentDescription() const;
+		std::string getContentDescription(bool oldClient = false) const;
 
 		size_t size() const {
 			return itemlist.size();
@@ -128,7 +128,7 @@ class Container : public Item, public Cylinder
 		uint32_t getWeight() const override final;
 
 		bool isUnlocked() const {
-			return unlocked;
+			return !this->isCorpse() && unlocked;
 		}
 		bool hasPagination() const {
 			return pagination;
@@ -139,7 +139,7 @@ class Container : public Item, public Cylinder
 				uint32_t flags, Creature* actor = nullptr) const override;
 		ReturnValue queryMaxCount(int32_t index, const Thing& thing, uint32_t count, uint32_t& maxQueryCount,
 				uint32_t flags) const override final;
-		ReturnValue queryRemove(const Thing& thing, uint32_t count, uint32_t flags) const override final;
+		ReturnValue queryRemove(const Thing& thing, uint32_t count, uint32_t flags, Creature* actor = nullptr) const override final;
 		Cylinder* queryDestination(int32_t& index, const Thing& thing, Item** destItem,
 				uint32_t& flags) override final;
 
@@ -167,7 +167,7 @@ class Container : public Item, public Cylinder
 		void startDecaying() override final;
 
 	protected:
-		std::ostringstream& getContentDescription(std::ostringstream& os) const;
+		std::ostringstream& getContentDescription(std::ostringstream& os, bool oldClient) const;
 
 		uint32_t maxSize;
 		uint32_t totalWeight = 0;
