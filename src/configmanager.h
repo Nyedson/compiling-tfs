@@ -76,6 +76,7 @@ class ConfigManager
 			MAP_AUTHOR,
 			STORE_IMAGES_URL,
 			VERSION_STR,
+			DISCORD_WEBHOOK_URL,
 
 			LAST_STRING_CONFIG /* this must be the last one */
 		};
@@ -127,7 +128,6 @@ class ConfigManager
 			SERVER_SAVE_NOTIFY_DURATION,
 			PUSH_DELAY,
 			PUSH_DISTANCE_DELAY,
-			DISCORD_WEBHOOK_URL,
 
 			LAST_INTEGER_CONFIG /* this must be the last one */
 		};
