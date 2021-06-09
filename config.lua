@@ -100,6 +100,11 @@ mysqlPort = 3306
 mysqlSock = ""
 passwordType = "sha1"
 
+-- Sends Discord webhook notifications on startup, raids and shutdown.
+-- The URL layout is https://discord.com/api/webhooks/:id/:token
+-- Leave empty if you wish to disable.
+discordWebhookURL = ""
+
 -- Misc.
 allowChangeOutfit = true
 freePremium = false
