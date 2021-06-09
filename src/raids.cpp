@@ -317,17 +317,17 @@ bool AnnounceEvent::configureRaidEvent(const pugi::xml_node& eventNode)
 	if (typeAttribute) {
 		std::string tmpStrValue = asLowerCaseString(typeAttribute.as_string());
 		if (tmpStrValue == "warning") {
-			messageType = MESSAGE_GAME_HIGHLIGHT;
+			messageType = MESSAGE_STATUS_WARNING;
 		} else if (tmpStrValue == "event") {
 			messageType = MESSAGE_EVENT_ADVANCE;
 		} else if (tmpStrValue == "default") {
-			messageType = MESSAGE_EVENT_ADVANCE;
+			messageType = MESSAGE_EVENT_DEFAULT;
 		} else if (tmpStrValue == "description") {
-			messageType = MESSAGE_LOOK;
+			messageType = MESSAGE_INFO_DESCR;
 		} else if (tmpStrValue == "smallstatus") {
-			messageType = MESSAGE_FAILURE;
+			messageType = MESSAGE_STATUS_SMALL;
 		} else if (tmpStrValue == "redconsole") {
-			messageType = MESSAGE_GAMEMASTER_CONSOLE;
+			messageType = MESSAGE_STATUS_CONSOLE_RED;
 		} else {
 			std::cout << "[Notice] Raid: Unknown type tag missing for announce event. Using default: " << static_cast<uint32_t>(messageType) << std::endl;
 		}
@@ -341,7 +341,7 @@ bool AnnounceEvent::configureRaidEvent(const pugi::xml_node& eventNode)
 bool AnnounceEvent::executeEvent()
 {
 	g_game.broadcastMessage(message, messageType);
-  webhook_send_message("Incoming raid!", message, WEBHOOK_COLOR_RAID);
+	webhook_send_message("Incoming raid!", message, WEBHOOK_COLOR_RAID);
 	return true;
 }
 
@@ -560,15 +560,10 @@ bool ScriptEvent::configureRaidEvent(const pugi::xml_node& eventNode)
 		return false;
 	}
 
-	std::string scriptName = std::string(scriptAttribute.as_string());
-
-	if (!loadScript("data/raids/scripts/" + scriptName)) {
-		std::cout << "Error: [ScriptEvent::configureRaidEvent] Can not load raid script " << scriptName << std::endl;
+	if (!loadScript("data/raids/scripts/" + std::string(scriptAttribute.as_string()))) {
+		std::cout << "Error: [ScriptEvent::configureRaidEvent] Can not load raid script." << std::endl;
 		return false;
 	}
-
-	setScriptName(scriptName);
-
 	return true;
 }
 
@@ -581,11 +576,7 @@ bool ScriptEvent::executeEvent()
 {
 	//onRaid()
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - ScriptEvent::onRaid"
-			<< " Script "
-			<< getScriptName()
-			<< "] Call stack overflow. Too many lua script calls being nested."
-			<< std::endl;
+		std::cout << "[Error - ScriptEvent::onRaid] Call stack overflow" << std::endl;
 		return false;
 	}
 

@@ -20,9 +20,13 @@
 #ifndef FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 #define FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 
-static constexpr auto STATUS_SERVER_NAME = "Prometheus Server";
-static constexpr auto STATUS_SERVER_VERSION = "1.0";
-static constexpr auto STATUS_SERVER_DEVELOPERS = "Prometheus Team, Mark Samman and The Forgotten Server Developers";
+static constexpr auto STATUS_SERVER_NAME = "Thornia Engine";
+static constexpr auto STATUS_SERVER_VERSION = "2.0";
+static constexpr auto STATUS_SERVER_DEVELOPERS = "Thornia Team, Mark Samman and The Forgotten Server Developers";
+
+static constexpr auto CLIENT_VERSION_MIN = 1200;
+static constexpr auto CLIENT_VERSION_MAX = 1200;
+static constexpr auto CLIENT_VERSION_STR = "12.00";
 
 static constexpr auto AUTHENTICATOR_DIGITS = 6U;
 static constexpr auto AUTHENTICATOR_PERIOD = 30U;
@@ -76,7 +80,5 @@ static constexpr auto AUTHENTICATOR_PERIOD = 30U;
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-
-typedef int error_t;
 
 #endif

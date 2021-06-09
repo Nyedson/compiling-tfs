@@ -55,11 +55,8 @@ std::condition_variable g_loaderSignal;
 std::unique_lock<std::mutex> g_loaderUniqueLock(g_loaderLock);
 
 void startupErrorMessage(const std::string& errorStr) {
-  std::cout << "\033[1;31m>> " << errorStr << std::endl;
-  std::cout << ">> The program will close after pressing the enter key..." << "\033[0m" << std::endl;
-  g_loaderSignal.notify_all();
-  getchar();
-  exit(-1);
+	std::cout << "> ERROR: " << errorStr << std::endl;
+	g_loaderSignal.notify_all();
 }
 
 void mainLoader(int argc, char* argv[], ServiceManager* servicer);
@@ -72,9 +69,7 @@ void badAllocationHandler() {
 	exit(-1);
 }
 
-#ifndef UNIT_TESTING
 int main(int argc, char* argv[]) {
-
 	// Setup bad allocation handler
 	std::set_new_handler(badAllocationHandler);
 
@@ -104,12 +99,10 @@ int main(int argc, char* argv[]) {
 	g_dispatcher.join();
 	return 0;
 }
-
 // No RB
-//__attribute__ ((used)) void saveServer() {
-//	g_game.saveGameState();
-//}
-#endif
+__attribute__ ((used)) void saveServer() {
+	g_game.saveGameState();
+}
 
 void mainLoader(int, char*[], ServiceManager* services) {
 	// dispatcher thread
@@ -153,6 +146,8 @@ void mainLoader(int, char*[], ServiceManager* services) {
 
 	std::cout << "A server developed by " << STATUS_SERVER_DEVELOPERS
 																<< std::endl;
+	std::cout << "Visit our forum for updates, support, and resources: "
+		"https://otserv.com.br/ and https://forums.otserv.com.br" << std::endl;
 	std::cout << std::endl;
 
 	// check if config.lua or config.lua.dist exist
@@ -176,9 +171,6 @@ void mainLoader(int, char*[], ServiceManager* services) {
 		startupErrorMessage("Unable to load config.lua!");
 		return;
 	}
-
-	std::cout << ">> Client Version: " << g_config.getString(ConfigManager::CLIENT_VERSION_STR)
-													<< std::endl;
 
 #ifdef _WIN32
 	const std::string& defaultPriority = g_config.getString(
@@ -221,7 +213,7 @@ void mainLoader(int, char*[], ServiceManager* services) {
 
 	if (g_config.getBoolean(ConfigManager::OPTIMIZE_DATABASE)
 			&& !DatabaseManager::optimizeTables()) {
-		std::cout << "> No tables were optimized" << std::endl;
+		std::cout << "> No tables were optimized." << std::endl;
 	}
 
 	// load vocations
@@ -249,14 +241,15 @@ void mainLoader(int, char*[], ServiceManager* services) {
 		return;
 	}
 
-	std::cout << ">> Loading event scheduler" << std::endl;
-	if (!g_game.loadScheduleEventFromXml()) {
-		startupErrorMessage("Unable to load event schedule!");
-	}
-
 	std::cout << ">> Loading lua scripts" << std::endl;
 	if (!g_scripts->loadScripts("scripts", false, false)) {
 		startupErrorMessage("Failed to load lua scripts");
+		return;
+	}
+
+	std::cout << ">> Loading monsters" << std::endl;
+	if (!g_monsters.loadFromXml()) {
+		startupErrorMessage("Unable to load monsters!");
 		return;
 	}
 
@@ -271,14 +264,6 @@ void mainLoader(int, char*[], ServiceManager* services) {
 		startupErrorMessage("Unable to load outfits!");
 		return;
 	}
-
-	std::cout << ">> Loading familiars" << std::endl;
-	if (!Familiars::getInstance().loadFromXml()) {
-		startupErrorMessage("Unable to load familiars!");
-		return;
-	}
-
-	g_game.loadBoostedCreature();
 
 	std::cout << ">> Checking world type... " << std::flush;
 	std::string worldType = asLowerCaseString(g_config.getString(
@@ -355,6 +340,6 @@ void mainLoader(int, char*[], ServiceManager* services) {
 
 	webhook_init();
 	webhook_send_message("Server is now online", "Server has successfully started.", WEBHOOK_COLOR_ONLINE);
-
+	
 	g_loaderSignal.notify_all();
 }
