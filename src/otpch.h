@@ -21,7 +21,7 @@
 #define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
 
 // Definitions should be global.
-#include "definitions.h"
+#include "utils/definitions.h"
 
 #include <algorithm>
 #include <chrono>
@@ -44,18 +44,6 @@
 
 #include <pugixml.hpp>
 
-
-// Log library
-#ifdef DEBUG_LOG
-	// DLOG_F(verbosity_name, fmt, ...)
-	// DVLOG_F(verbosity, fmt, ...)
-	// DLOG_IF_F(verbosity_name, cond, fmt, ...)
-	// DVLOG_IF_F(verbosity, cond, fmt, ...)
-	// DRAW_LOG_F(verbosity_name, fmt, ...)
-	// DRAW_VLOG_F(verbosity, fmt, ...)
-	#define LOGURU_DEBUG_LOGGING 1
-#endif
-// #define LOGURU_WITH_STREAMS 1
-#include "loguru.h"
+#include "spdlog/spdlog.h"
 
 #endif
