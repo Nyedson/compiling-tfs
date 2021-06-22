@@ -1,5 +1,5 @@
 {
-  "name": "prometheus-engine",
+  "name": "prometheus-server",
   "version-string": "1.0.0",
   "dependencies": [
     "boost-asio",
