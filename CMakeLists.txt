@@ -21,9 +21,9 @@ set(VCPKG_FEATURE_FLAGS "versions")
 set(VCPKG_BUILD_TYPE "release")
 
 # *****************************************************************************
-# Project prometheus-engine
+# Project otbr
 # *****************************************************************************
-project(prometheus-engine)
+project(otbr)
 
 
 # *****************************************************************************
