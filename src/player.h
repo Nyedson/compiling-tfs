@@ -259,7 +259,6 @@ class Player final : public Creature, public Cylinder
 			sendStats();
 		}
 
-
 		uint16_t getPreyStamina(uint16_t index) const {
 			return preyStaminaMinutes[index];
 		}
@@ -1089,8 +1088,9 @@ class Player final : public Creature, public Cylinder
 				client->sendCreatePrivateChannel(channelId, channelName);
 			}
 		}
-		void sendRestingAreaIcon(uint16_t currentIcons) const;
 		void sendClosePrivate(uint16_t channelId);
+		void sendRestingAreaIcon(uint16_t currentIcons) const;
+
 		void sendIcons() const {
 			if (client) {
 				uint16_t icons = getClientIcons();
@@ -1422,6 +1422,7 @@ class Player final : public Creature, public Cylinder
 
 		void onEquipImbueItem(Imbuement* imbuement);
 		void onDeEquipImbueItem(Imbuement* imbuement);
+		StreakBonus_t getStreakDaysBonus()const;
 
 		//Custom: Anti bug do market
 		bool isMarketExhausted() const;
@@ -1550,6 +1551,7 @@ class Player final : public Creature, public Cylinder
 		uint64_t manaSpent = 0;
 		uint64_t lastAttack = 0;
 		uint64_t bankBalance = 0;
+		uint64_t instantRewardTokens = 0;
 		uint64_t lastQuestlogUpdate = 0;
 		int64_t lastFailedFollow = 0;
 		int64_t skullTicks = 0;
