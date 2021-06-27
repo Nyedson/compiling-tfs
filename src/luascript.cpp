@@ -11203,11 +11203,11 @@ int LuaScriptInterface::luaPlayerGetRuneSpells(lua_State* L)
 
 
     std::vector<RuneSpell*> spells;
-    for (auto spell : g_spells->getRuneSpells()) {
-        if (spell.second->canUseRune(player,ignoreLevel)) {
-            spells.push_back(spell.second);
-        }
-    }
+	for (auto spell : g_spells->getRuneSpells()) {
+		if (spell.second.canUseRune(player,ignoreLevel)) {
+			spells.push_back(&spell.second);
+		}
+	}
 
     lua_createtable(L, spells.size(), 0);
 
