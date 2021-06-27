@@ -1421,6 +1421,7 @@ class Player final : public Creature, public Cylinder
 
 		void onEquipImbueItem(Imbuement* imbuement);
 		void onDeEquipImbueItem(Imbuement* imbuement);
+		StreakBonus_t getStreakDaysBonus()const;
 
 		//Custom: Anti bug do market
 		bool isMarketExhausted() const;
