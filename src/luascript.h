@@ -20,7 +20,11 @@
 #ifndef FS_LUASCRIPT_H_5344B2BC907E46E3943EA78574A212D8
 #define FS_LUASCRIPT_H_5344B2BC907E46E3943EA78574A212D8
 
-#include <luajit/lua.hpp>
+#if __has_include("luajit/lua.hpp")
+  #include <luajit/lua.hpp>
+#else
+  #include <lua.hpp>
+#endif
 
 #if LUA_VERSION_NUM >= 502
 #ifndef LUA_COMPAT_ALL
@@ -1082,6 +1086,7 @@ class LuaScriptInterface
 		static int luaPlayerGetIdleTime(lua_State* L);
 		static int luaPlayerGetInstantRewardTokenBalance(lua_State* L);
 		static int luaPlayerSetInstantRewardTokenBalance(lua_State* L);
+
 		static int luaPlayerSendStats(lua_State* L);
 		static int luaPlayerGetFreeBackpackSlots(lua_State* L);
 

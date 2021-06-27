@@ -174,10 +174,10 @@ Condition* Condition::createCondition(ConditionId_t id, ConditionType_t type, in
 
 		case CONDITION_SOUL:
 			return new ConditionSoul(id, type, ticks, buff, subId);
-
-		case CONDITION_SOULBONUS:
+        
+        case CONDITION_SOULBONUS:
             return new ConditionSoulBonus(id, type, ticks, buff, subId);
-
+        
         case CONDITION_STAMINAREGEN:
             return new ConditionStamina(id, type, ticks, buff, subId);
 
@@ -1047,7 +1047,7 @@ void ConditionSoulBonus::addCondition(Creature*, const Condition* addCondition)
 
         return staminaTicksStaged;
     }
-
+    
 bool ConditionDamage::setParam(ConditionParam_t param, int32_t value)
 {
 	bool ret = Condition::setParam(param, value);

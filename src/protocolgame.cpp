@@ -1787,7 +1787,6 @@ void ProtocolGame::sendRestingAreaIcon(bool activate/*=false*/, bool activeResti
     writeToOutputBuffer(msg);
 }
 
-
 void ProtocolGame::sendShop(Npc* npc, const ShopInfoList& itemList)
 {
 	NetworkMessage msg;

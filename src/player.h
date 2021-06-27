@@ -298,11 +298,11 @@ class Player final : public Creature, public Cylinder
 			bankBalance = balance;
 		}
 
-		void setInstantRewardTokens(uint64_t tokens){
+		void setInstantRewardTokens(uint64_t tokens) {
 			instantRewardTokens = tokens;
 		}
 
-		uint64_t getInstantRewardTokens() const{
+		uint64_t getInstantRewardTokens() const {
 			return instantRewardTokens;
 		}
 
@@ -1090,7 +1090,6 @@ class Player final : public Creature, public Cylinder
 		}
 		void sendClosePrivate(uint16_t channelId);
 		void sendRestingAreaIcon(uint16_t currentIcons) const;
-
 		void sendIcons() const {
 			if (client) {
 				uint16_t icons = getClientIcons();
@@ -1422,7 +1421,6 @@ class Player final : public Creature, public Cylinder
 
 		void onEquipImbueItem(Imbuement* imbuement);
 		void onDeEquipImbueItem(Imbuement* imbuement);
-		StreakBonus_t getStreakDaysBonus()const;
 
 		//Custom: Anti bug do market
 		bool isMarketExhausted() const;
@@ -1551,7 +1549,6 @@ class Player final : public Creature, public Cylinder
 		uint64_t manaSpent = 0;
 		uint64_t lastAttack = 0;
 		uint64_t bankBalance = 0;
-		uint64_t instantRewardTokens = 0;
 		uint64_t lastQuestlogUpdate = 0;
 		int64_t lastFailedFollow = 0;
 		int64_t skullTicks = 0;

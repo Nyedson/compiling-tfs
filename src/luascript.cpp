@@ -1199,7 +1199,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(CONDITION_PACIFIED)
 	registerEnum(CONDITION_SPELLCOOLDOWN)
 	registerEnum(CONDITION_SPELLGROUPCOOLDOWN)
-
+    
     registerEnum(CONDITION_STAMINAREGEN)
     registerEnum(CONDITION_SOULBONUS)
 	registerEnum(CONDITIONID_DEFAULT)
@@ -1989,9 +1989,11 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(MONSTERS_EVENT_DISAPPEAR)
 	registerEnum(MONSTERS_EVENT_MOVE)
 	registerEnum(MONSTERS_EVENT_SAY)
+
+	//DailyRewardStorages
 	registerEnum(DAILYREWARDSTORAGE_LASTREWARDPICK)
-    registerEnum(DAILYREWARDSTORAGE_NEXTREWARDPICK)
-    registerEnum(DAILYREWARDSTORAGE_STREAKDAYS)
+	registerEnum(DAILYREWARDSTORAGE_NEXTREWARDPICK)
+	registerEnum(DAILYREWARDSTORAGE_STREAKDAYS)
 
 	// _G
 	registerGlobalVariable("INDEX_WHEREEVER", INDEX_WHEREEVER);
@@ -2661,7 +2663,7 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Player", "getExpBoostStamina", LuaScriptInterface::luaPlayerGetExpBoostStamina);
 	registerMethod("Player", "setExpBoostStamina", LuaScriptInterface::luaPlayerSetExpBoostStamina);
 
-	registerMethod("Player", "getIdleTime", LuaScriptInterface::luaPlayerGetIdleTime);}
+	registerMethod("Player", "getIdleTime", LuaScriptInterface::luaPlayerGetIdleTime);
 	registerMethod("Player", "getInstantRewardTokens", LuaScriptInterface::luaPlayerGetInstantRewardTokenBalance);
 	registerMethod("Player", "setInstantRewardTokens", LuaScriptInterface::luaPlayerSetInstantRewardTokenBalance);
 	registerMethod("Player", "sendStats", LuaScriptInterface::luaPlayerSendStats);

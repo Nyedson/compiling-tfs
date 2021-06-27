@@ -64,8 +64,8 @@ class Spells final : public BaseEvents
 			return instants;
 		};
 
-		const std::map<uint16_t, RuneSpell*>& getRuneSpells() const{
-			return runes;
+		const std::map<uint16_t, RuneSpell>& getRuneSpells() const{
+				return runes;
 		};
 
 		void clearMaps(bool fromLua);
@@ -345,8 +345,6 @@ class InstantSpell final : public TalkAction, public Spell
 
 		bool configureEvent(const pugi::xml_node& node) override;
 
-		bool canUseRune(const Player* player, bool ignoreLevel=false);
-
 		virtual bool playerCastInstant(Player* player, std::string& param);
 
 		bool castSpell(Creature* creature) override;
@@ -409,6 +407,7 @@ class RuneSpell final : public Action, public Spell
 		explicit RuneSpell(LuaScriptInterface* interface) : Action(interface) {}
 
 		bool configureEvent(const pugi::xml_node& node) override;
+		bool canUseRune(const Player* player, bool ignoreLevel=false);
 
 		ReturnValue canExecuteAction(const Player* player, const Position& toPos) override;
 		bool hasOwnErrorHandler() override {

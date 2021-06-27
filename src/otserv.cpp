@@ -99,9 +99,9 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 // No RB
-__attribute__ ((used)) void saveServer() {
-	g_game.saveGameState();
-}
+//__attribute__ ((used)) void saveServer() {
+//	g_game.saveGameState();
+//}
 
 void mainLoader(int, char*[], ServiceManager* services) {
 	// dispatcher thread

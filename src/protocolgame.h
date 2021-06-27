@@ -191,8 +191,8 @@ class ProtocolGame final : public Protocol
 		void sendOpenPrivateChannel(const std::string& receiver);
 		void sendToChannel(const Creature* creature, SpeakClasses type, const std::string& text, uint16_t channelId);
 		void sendPrivateMessage(const Player* speaker, SpeakClasses type, const std::string& text);
-		void sendRestingAreaIcon(bool activate=false, bool activeResting=false);
 		void sendIcons(uint16_t icons);
+		void sendRestingAreaIcon(bool activate=false, bool activeResting=false);
 		void sendFYIBox(const std::string& message);
 
 		void sendImbuementWindow(Item* item);
