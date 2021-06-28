@@ -738,40 +738,41 @@ bool ConditionRegeneration::executeCondition(Creature* creature, int32_t interva
 	internalHealthTicks += interval;
 	internalManaTicks += interval;
 
-	if (creature->getZone() != ZONE_PROTECTION || ((creature->getZone() == ZONE_PROTECTION) && (creature->getPlayer() &&
-                                                                                                (creature->getPlayer()->getStreakDaysBonus() >
-                                                                                                 STREAKBONUS_NOBONUS)))) {
-        uint8_t multiplierHealth = 1;
-        uint8_t multiplierMana = 1;
+	Player* player = creature->getPlayer();
+	StreakBonus_t bonusRegenStreakDays = STREAKBONUS_NOBONUS;
+	if (player) {
+		bonusRegenStreakDays = player->getStreakDaysBonus();
+	}
+	bool ActiveRestingArea = ((creature->getZone() == ZONE_PROTECTION) && (player && (bonusRegenStreakDays > STREAKBONUS_NOBONUS)));
+	if (creature->getZone() != ZONE_PROTECTION || ActiveRestingArea) {
+		uint8_t multiplierHealth = 1;
+		uint8_t multiplierMana = 1;
 
-        if (creature->getZone() == ZONE_PROTECTION && creature->getPlayer() &&
-            (creature->getPlayer()->getStreakDaysBonus() > STREAKBONUS_NOBONUS)) {
-            StreakBonus_t bonusRegenStreakDays = creature->getPlayer()->getStreakDaysBonus();
+		if (ActiveRestingArea) {
+			switch (bonusRegenStreakDays) {
+				case STREAKBONUS_SOULBONUS:
+				case STREAKBONUS_DOUBLEMANABONUS:
+					multiplierMana = 2;
+				case STREAKBONUS_DOUBLEHEALTHBONUS:
+					multiplierHealth = 2;
+					break;
+				case STREAKBONUS_HEALTHBONUS:
+					multiplierMana = 0;
+					break;
 
-            switch (bonusRegenStreakDays) {
-                case STREAKBONUS_SOULBONUS:
-                case STREAKBONUS_DOUBLEMANABONUS:
-                    multiplierMana = 2;
-                case STREAKBONUS_DOUBLEHEALTHBONUS:
-                    multiplierHealth = 2;
-                    break;
-                case STREAKBONUS_HEALTHBONUS:
-                    multiplierMana = 0;
-                    break;
+				default:
+					break;
+			}
+		}
 
-                default:
-                    break;
-            }
-        }
 		if (internalHealthTicks >= healthTicks) {
 			internalHealthTicks = 0;
 
 			int32_t realHealthGain = creature->getHealth();
-			creature->changeHealth(healthGain * multiplierHealth);
+			creature->changeHealth(healthGain*multiplierHealth);
 			realHealthGain = creature->getHealth() - realHealthGain;
 
 			if (isBuff && realHealthGain > 0) {
-				Player* player = creature->getPlayer();
 				if (player) {
 					std::string healString = std::to_string(realHealthGain) + (realHealthGain != 1 ? " hitpoints." : " hitpoint.");
 
@@ -796,8 +797,8 @@ bool ConditionRegeneration::executeCondition(Creature* creature, int32_t interva
 		}
 
 		if (internalManaTicks >= manaTicks && multiplierMana > 0) {
-            internalManaTicks = 0;
-            creature->changeMana(manaGain * multiplierMana);
+			internalManaTicks = 0;
+			creature->changeMana(manaGain * multiplierMana);
 		}
 	}
 
