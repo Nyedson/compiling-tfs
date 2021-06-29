@@ -200,6 +200,11 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	ReturnValue ret = RETURNVALUE_NOERROR;
 	item = findItemOfType(player, itemType.id);
 
+	if (player->isMoveExhausted()) {
+		player->sendCancelMessage("You can't equip very fast.");
+		return;
+	}
+
 	if (!item) {
 		item = findItemOfType(player, itemType.transformEquipTo);
 		if (!item) {
@@ -381,7 +386,8 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 		}
 	  }
 	}
-
+    
+    player->setMoveExhaust(600);
 	if (ret != RETURNVALUE_NOERROR) {
 	  player->sendCancelMessage(ret);
 	}
@@ -2075,11 +2081,6 @@ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
 		return;
 	}
 
-	if (player->isMoveExhausted()) {
-		player->sendCancelMessage("You can't equip very fast.");
-		return;
-	}
-
 	Item* item = player->getInventoryItem(CONST_SLOT_BACKPACK);
 	if (!item) {
 		return;
@@ -2100,8 +2101,6 @@ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
 	} else if (equipItem) {
 		internalMoveItem(equipItem->getParent(), player, slot, equipItem, equipItem->getItemCount(), nullptr);
 	}
-
-	player->setMoveExhaust(1000);
 }
 
 void Game::playerMove(uint32_t playerId, Direction direction)
