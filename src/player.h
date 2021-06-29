@@ -1429,6 +1429,14 @@ class Player final : public Creature, public Cylinder
 			lastMarketInteraction = OTSYS_TIME();
 		}
 
+		bool isMoveExhausted() {
+			return exhaustItems > OTSYS_TIME();
+		}
+
+		void setMoveExhaust(int64_t value) {
+			exhaustItems = OTSYS_TIME() + value;
+		}
+
    		bool updateKillTracker(Container* corpse, const std::string& playerName, const Outfit_t creatureOutfit) const
  		{
   			if (client && getProtocolVersion() > 1140) {
@@ -1562,6 +1570,7 @@ class Player final : public Creature, public Cylinder
 		uint64_t instantRewardTokens = 0;
 		int64_t nextPotionAction = 0;
 		int64_t lastWalking = 0;
+		int64_t exhaustItems = 0;
 
 		std::vector<Kill> unjustifiedKills;
 

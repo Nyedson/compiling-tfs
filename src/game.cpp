@@ -2075,6 +2075,11 @@ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
 		return;
 	}
 
+	if (player->isMoveExhausted()) {
+		player->sendCancelMessage("You can't equip very fast.");
+		return;
+	}
+
 	Item* item = player->getInventoryItem(CONST_SLOT_BACKPACK);
 	if (!item) {
 		return;
@@ -2094,6 +2099,11 @@ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
 		internalMoveItem(slotItem->getParent(), player, CONST_SLOT_WHEREEVER, slotItem, slotItem->getItemCount(), nullptr);
 	} else if (equipItem) {
 		internalMoveItem(equipItem->getParent(), player, slot, equipItem, equipItem->getItemCount(), nullptr);
+	}
+
+	player->setMoveExhaust(300);
+	if (ret != RETURNVALUE_NOERROR) {
+		player->sendCancelMessage(ret);
 	}
 }
 
