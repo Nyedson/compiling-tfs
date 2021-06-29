@@ -311,27 +311,13 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 		  if (ammothing) {
 			Item* ammoItem = ammothing->getItem();
 			  if (ammoItem) {
-				ObjectCategory_t category = getObjectCategory(ammoItem);
 				if (ammoItem->getID() == item->getID()) {
 				  if (item->getDuration() > 0 ||
 				  ammoItem->getItemCount() == 100 ||
 				  ammoItem->getItemCount() == player->getItemTypeCount(ammoItem->getID())) {
-					ret = internalQuickLootItem(player, ammoItem, category);
-					if (ret != RETURNVALUE_NOERROR) {
-					 ret = internalMoveItem(ammoItem->getParent(), player, 0, ammoItem, ammoItem->getItemCount(), nullptr);
-					}
-					if (ret != RETURNVALUE_NOERROR) {
-					 player->sendCancelMessage(ret);
-					}
 					return;
 				  }
 				} else {
-				  ret = internalQuickLootItem(player, ammoItem, category);
-				  if (ret != RETURNVALUE_NOERROR) {
-				   ret = internalMoveItem(ammoItem->getParent(), player, 0, ammoItem, ammoItem->getItemCount(), nullptr);
-				  }
-				}
-			  } else {
 				return;
 			  }
 		  }
