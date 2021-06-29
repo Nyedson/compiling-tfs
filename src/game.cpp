@@ -387,7 +387,7 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	  }
 	}
     
-    player->setMoveExhaust(600);
+    player->setMoveExhaust(300);
 	if (ret != RETURNVALUE_NOERROR) {
 	  player->sendCancelMessage(ret);
 	}
