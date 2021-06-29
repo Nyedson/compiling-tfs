@@ -2101,10 +2101,7 @@ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
 		internalMoveItem(equipItem->getParent(), player, slot, equipItem, equipItem->getItemCount(), nullptr);
 	}
 
-	player->setMoveExhaust(300);
-	if (ret != RETURNVALUE_NOERROR) {
-		player->sendCancelMessage(ret);
-	}
+	player->setMoveExhaust(1000);
 }
 
 void Game::playerMove(uint32_t playerId, Direction direction)
