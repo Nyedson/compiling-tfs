@@ -73,7 +73,6 @@ class OutputMessage : public NetworkMessage
 		void setBroadcastMsg(bool isBroadcastMesssage) {
 			this->isBroadcastMesssage = isBroadcastMesssage;
 		}
-
 	private:
 		template <typename T>
 		void add_header(T addHeader) {

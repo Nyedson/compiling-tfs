@@ -302,7 +302,7 @@ void Connection::send(const OutputMessage_ptr& conMsg)
 
 void Connection::internalSend(const OutputMessage_ptr& conMsg)
 {   
-	if (msg->isBroadcastMsg()) {
+	if (conMsg->isBroadcastMsg()) {
 		dispatchBroadcastMessage(conMsg);
 	}
 	protocol->onSendMessage(conMsg);
