@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.5)
 # Features
 # *****************************************************************************
 
-# Enable interprocedural optimization for a target.
+# Enable interprocedural optimization for a target.a
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 # specify the C++ standard
