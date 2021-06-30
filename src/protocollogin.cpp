@@ -57,6 +57,27 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 	//Update premium days
 	Game::updatePremium(account);
 	addWorldInfo(output, accountName, password, version);
+
+	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), account.characters.size());
+	output->addByte(size);
+	for (uint8_t i = 0; i < size; i++) {
+		output->addByte(0);
+		output->addString(account.characters[i]);
+	}
+
+	//Add premium days
+	output->addByte(0);
+	if (g_config.getBoolean(ConfigManager::FREE_PREMIUM)) {
+		output->addByte(1);
+		output->add<uint32_t>(0);
+	} else {
+		output->addByte(0);
+		output->add<uint32_t>(time(nullptr) + (account.premiumDays * 86400));
+	}
+
+	send(output);
+
+	disconnect();
 }
 
 
@@ -86,13 +107,11 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 	output->addString(g_config.getString(ConfigManager::SERVER_NAME));
 	output->addString(g_config.getString(ConfigManager::IP));
 
-	//Add premium days
 	if (isLiveCastLogin) {
 		output->add<uint16_t>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
 	} else {
 		output->add<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT));
 	}
-
 	output->addByte(0);
 }
 
@@ -104,12 +123,20 @@ void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t 
 
 	const auto& casts = ProtocolGame::getLiveCasts();
 	output->addByte(casts.size());
+	std::ostringstream entry;
 	for (const auto& cast : casts) {
 		output->addByte(0);
-		output->addString(cast.first->getName());
+		int vers = version/10;
+		entry << cast.first->getName() << " [" << cast.second->getSpectatorCount() << " viewers (" << vers <<")]";
+		output->addString(entry.str());
+		entry.str(std::string());
 	}
-	output->add<uint16_t>(0x0); //The client expects the number of premium days left.
+	output->addByte(0);
+	output->addByte(g_config.getBoolean(ConfigManager::FREE_PREMIUM));
+	output->add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (OS_TIME(nullptr)));
+
 	send(std::move(output));
+
 	disconnect();
 }
 
