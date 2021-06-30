@@ -296,21 +296,18 @@ void mainLoader(int, char*[], ServiceManager* services) {
 	g_game.setGameState(GAME_STATE_INIT);
 
 	// Game client protocols
-	services->add<ProtocolGame>(static_cast<uint16_t>(g_config.getNumber(
-												ConfigManager::GAME_PORT)));
+	services->add<ProtocolGame>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT)));
 	if (g_config.getBoolean(ConfigManager::ENABLE_LIVE_CASTING)) {
 		ProtocolGame::clearLiveCastInfo();
-		services->add<ProtocolSpectator>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
+		services->add<ProtocolSpectator>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT)));
 	}
-	services->add<ProtocolLogin>(static_cast<uint16_t>(g_config.getNumber(
-												ConfigManager::LOGIN_PORT)));
+	services->add<ProtocolLogin>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::LOGIN_PORT)));
+
 	// OT protocols
-	services->add<ProtocolStatus>(static_cast<uint16_t>(g_config.getNumber(
-												ConfigManager::STATUS_PORT)));
+	services->add<ProtocolStatus>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::STATUS_PORT)));
 
 	RentPeriod_t rentPeriod;
-	std::string strRentPeriod = asLowerCaseString(g_config.getString(
-											ConfigManager::HOUSE_RENT_PERIOD));
+	std::string strRentPeriod = asLowerCaseString(g_config.getString(ConfigManager::HOUSE_RENT_PERIOD));
 
 	if (strRentPeriod == "yearly") {
 		rentPeriod = RENTPERIOD_YEARLY;
