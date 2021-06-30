@@ -335,14 +335,14 @@ uint32_t Connection::getIP()
 	return htonl(endpoint.address().to_v4().to_ulong());
 }
 
-void Connection::dispatchBroadcastMessage(const OutputMessage_ptr& conMsg)
+void Connection::dispatchBroadcastMessage(const OutputMessage_ptr& msg)
 {
 	auto msgCopy = OutputMessagePool::getOutputMessage();
-	msgCopy->append(conMsg);
-	socket.get_io_service().dispatch(std::bind(&Connection::broadcastMessage, shared_from_this(), msgCopy));
+	msgCopy->append(msg);
+	GET_IO_SERVICE(socket).dispatch(std::bind(&Connection::broadcastMessage, shared_from_this(), msgCopy)); // MUDAR ESSA LINHA
 }
 
-void Connection::broadcastMessage(OutputMessage_ptr conMsg)
+void Connection::broadcastMessage(OutputMessage_ptr msg)
 {
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	const auto client = std::dynamic_pointer_cast<ProtocolGame>(protocol);
@@ -352,7 +352,7 @@ void Connection::broadcastMessage(OutputMessage_ptr conMsg)
 		const auto& spectators = client->getLiveCastSpectators();
 		for (const ProtocolSpectator_ptr& spectator : spectators) {
 			auto newMsg = OutputMessagePool::getOutputMessage();
-			newMsg->append(conMsg);
+			newMsg->append(msg);
 			spectator->send(std::move(newMsg));
 		}
 	}
