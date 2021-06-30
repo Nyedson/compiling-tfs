@@ -1389,10 +1389,6 @@ class Player final : public Creature, public Cylinder
 			lastWalking = OTSYS_TIME() + value;
 		}
 
-		const std::map<uint8_t, OpenContainer>& getOpenContainers() const {
-			return openContainers;
-		}
-
 		uint16_t getBaseXpGain() const {
 			return baseXpGain;
 		}
