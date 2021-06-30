@@ -335,14 +335,14 @@ uint32_t Connection::getIP()
 	return htonl(endpoint.address().to_v4().to_ulong());
 }
 
-void Connection::dispatchBroadcastMessage(const OutputMessage_ptr& msg)
+void Connection::dispatchBroadcastMessage(const OutputMessage_ptr& conMsg)
 {
 	auto msgCopy = OutputMessagePool::getOutputMessage();
-	msgCopy->append(msg);
+	msgCopy->append(conMsg);
 	socket.get_io_service().dispatch(std::bind(&Connection::broadcastMessage, shared_from_this(), msgCopy));
 }
 
-void Connection::broadcastMessage(OutputMessage_ptr msg)
+void Connection::broadcastMessage(OutputMessage_ptr conMsg)
 {
 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
 	const auto client = std::dynamic_pointer_cast<ProtocolGame>(protocol);
@@ -352,7 +352,7 @@ void Connection::broadcastMessage(OutputMessage_ptr msg)
 		const auto& spectators = client->getLiveCastSpectators();
 		for (const ProtocolSpectator_ptr& spectator : spectators) {
 			auto newMsg = OutputMessagePool::getOutputMessage();
-			newMsg->append(msg);
+			newMsg->append(conMsg);
 			spectator->send(std::move(newMsg));
 		}
 	}
