@@ -10,7 +10,7 @@ configuration:
   - Release
 
 matrix:
-  fast_finish: false
+  fast_finish: true
 
 only_commits:
   files:
