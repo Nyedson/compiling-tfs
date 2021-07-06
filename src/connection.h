@@ -25,7 +25,6 @@
 #include <unordered_set>
 
 #include "networkmessage.h"
-#include "tools.h"
 
 static constexpr int32_t CONNECTION_WRITE_TIMEOUT = 30;
 static constexpr int32_t CONNECTION_READ_TIMEOUT = 30;
