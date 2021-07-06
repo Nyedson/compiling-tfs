@@ -70,9 +70,9 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 	output->addString(g_config.getString(ConfigManager::IP));
 
 	if (isLiveCastLogin) {
-		output->add<uint16_t>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
+		output->add<uint16_t>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT)));
 	} else {
-		output->add<uint16_t>(g_config.getShortNumber(ConfigManager::GAME_PORT));
+		output->add<uint16_t>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT)));
 	}
 	output->addByte(0);
 }
