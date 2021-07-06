@@ -100,9 +100,9 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 // No RB
-__attribute__ ((used)) void saveServer() {
-	g_game.saveGameState();
-}
+//__attribute__ ((used)) void saveServer() {
+//	g_game.saveGameState();
+//}
 
 void mainLoader(int, char*[], ServiceManager* services) {
 	// dispatcher thread
@@ -297,7 +297,7 @@ void mainLoader(int, char*[], ServiceManager* services) {
 
 	// Game client protocols
 	services->add<ProtocolGame>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT)));
-	if (static_cast<uint16_t>(g_config.getBoolean(ConfigManager::ENABLE_LIVE_CASTING))) {
+	if ((g_config.getBoolean(ConfigManager::ENABLE_LIVE_CASTING)) {
 		ProtocolGame::clearLiveCastInfo();
 		services->add<ProtocolSpectator>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
 	}
