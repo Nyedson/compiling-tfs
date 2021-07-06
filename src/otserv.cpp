@@ -297,9 +297,10 @@ void mainLoader(int, char*[], ServiceManager* services) {
 
 	// Game client protocols
 	services->add<ProtocolGame>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT)));
+	
 	if (g_config.getBoolean(ConfigManager::ENABLE_LIVE_CASTING)) {
 		ProtocolGame::clearLiveCastInfo();
-		services->add<ProtocolSpectator>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
+		services->add<ProtocolSpectator>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT)));
 	}
 	services->add<ProtocolLogin>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::LOGIN_PORT)));
 	// OT protocols
