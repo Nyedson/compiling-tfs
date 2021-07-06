@@ -301,12 +301,12 @@ void Connection::send(const OutputMessage_ptr& conMsg)
 }
 
 void Connection::internalSend(const OutputMessage_ptr& conMsg)
-{   
-	if (conMsg->isBroadcastMsg()) {
-		dispatchBroadcastMessage(conMsg);
+{
+	if (msg->isBroadcastMsg()) {
+		dispatchBroadcastMessage(msg);
 	}
-	protocol->onSendMessage(conMsg);
 
+	protocol->onSendMessage(conMsg);
 	try {
 		writeTimer.expires_from_now(boost::posix_time::seconds(CONNECTION_WRITE_TIMEOUT));
 		writeTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()),
@@ -339,7 +339,7 @@ void Connection::dispatchBroadcastMessage(const OutputMessage_ptr& msg)
 {
 	auto msgCopy = OutputMessagePool::getOutputMessage();
 	msgCopy->append(msg);
-	GET_IO_SERVICE(socket).dispatch(std::bind(&Connection::broadcastMessage, shared_from_this(), msgCopy)); // MUDAR ESSA LINHA
+	socket.get_io_service().dispatch(std::bind(&Connection::broadcastMessage, shared_from_this(), msgCopy));
 }
 
 void Connection::broadcastMessage(OutputMessage_ptr msg)

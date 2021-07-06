@@ -1061,11 +1061,7 @@ class LuaScriptInterface
 		static int luaPlayerGetContainerId(lua_State* L);
 		static int luaPlayerGetContainerById(lua_State* L);
 		static int luaPlayerGetContainerIndex(lua_State* L);
-    
-    static int32_t luaPlayerStartLiveCast(lua_State* L);
-		static int32_t luaPlayerStopLiveCast(lua_State* L);
-		static int32_t luaPlayerIsLiveCaster(lua_State* L);
-		
+
 		static int luaPlayerGetInstantSpells(lua_State* L);
 		static int luaPlayerGetRuneSpells(lua_State *L);
 		static int luaPlayerCanCast(lua_State* L);
@@ -1073,6 +1069,11 @@ class LuaScriptInterface
 		static int luaPlayerHasChaseMode(lua_State* L);
 		static int luaPlayerHasSecureMode(lua_State* L);
 		static int luaPlayerGetFightMode(lua_State* L);
+
+		static int32_t luaPlayerStartLiveCast(lua_State* L);
+		static int32_t luaPlayerStopLiveCast(lua_State* L);
+		static int32_t luaPlayerIsLiveCaster(lua_State* L);
+		static int32_t luaPlayerGetSpectators(lua_State* L);
 
 		static int luaPlayerGetBaseXpGain(lua_State *L);
 		static int luaPlayerSetBaseXpGain(lua_State *L);

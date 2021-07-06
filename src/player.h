@@ -1351,22 +1351,22 @@ class Player final : public Creature, public Cylinder
 		void learnInstantSpell(const std::string& spellName);
 		void forgetInstantSpell(const std::string& spellName);
 		bool hasLearnedInstantSpell(const std::string& spellName) const;
-        
 
-        bool startLiveCast(const std::string& password) {
+		bool startLiveCast(const std::string& password) {
 			return client && client->startLiveCast(password);
 		}
-
 		bool stopLiveCast() {
 			return client && client->stopLiveCast();
 		}
-
 		bool isLiveCaster() const {
 			return client && client->isLiveCaster();
 		}
-
-		const std::map<uint8_t, OpenContainer>& getOpenContainers() const {
-			return openContainers;
+		bool getSpectators(std::vector<ProtocolSpectator_ptr>& spectators) const {
+			if (!isLiveCaster()) {
+				return false;
+			}
+			spectators = client->spectators;
+			return true;
 		}
 
 		bool inPushEvent() {
@@ -1387,6 +1387,10 @@ class Player final : public Creature, public Cylinder
 
 		void setWalkExhaust(int64_t value) {
 			lastWalking = OTSYS_TIME() + value;
+		}
+
+		const std::map<uint8_t, OpenContainer>& getOpenContainers() const {
+			return openContainers;
 		}
 
 		uint16_t getBaseXpGain() const {
@@ -1724,8 +1728,8 @@ class Player final : public Creature, public Cylinder
 		friend class Map;
 		friend class Actions;
 		friend class IOLoginData;
-		friend class ProtocolGameBase;
 		friend class ProtocolGame;
+		friend class ProtocolGameBase;
 };
 
 #endif

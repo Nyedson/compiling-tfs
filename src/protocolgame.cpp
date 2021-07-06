@@ -49,6 +49,7 @@ extern Modules* g_modules;
 extern Spells* g_spells;
 extern Imbuements* g_imbuements;
 
+
 ProtocolGame::LiveCastsMap ProtocolGame::liveCasts;
 
 void ProtocolGame::release()
@@ -261,7 +262,7 @@ bool ProtocolGame::startLiveCast(const std::string& password /*= ""*/)
 	}
 
 	{
-		std::lock_guard<decltype(liveCastLock)> lock {liveCastLock};
+		std::lock_guard<decltype(liveCastLock)> lock{ liveCastLock };
 		//DO NOT do any send operations here
 		liveCastName = player->getName();
 		liveCastPassword = password;
@@ -286,7 +287,7 @@ bool ProtocolGame::stopLiveCast()
 	CastSpectatorVec spectators;
 
 	{
-		std::lock_guard<decltype(liveCastLock)> lock {liveCastLock};
+		std::lock_guard<decltype(liveCastLock)> lock{ liveCastLock };
 		//DO NOT do any send operations here
 		std::swap(this->spectators, spectators);
 		isCaster.store(false, std::memory_order_relaxed);
@@ -305,11 +306,11 @@ void ProtocolGame::clearLiveCastInfo()
 {
 	static std::once_flag flag;
 	std::call_once(flag, []() {
-			assert(g_game.getGameState() == GAME_STATE_INIT);
-			std::ostringstream query;
-			query << "TRUNCATE TABLE `live_casts`;";
-			g_databaseTasks.addTask(query.str());
-		});
+		assert(g_game.getGameState() == GAME_STATE_INIT);
+		std::ostringstream query;
+		query << "TRUNCATE TABLE `live_casts`;";
+		g_databaseTasks.addTask(query.str());
+	});
 }
 
 void ProtocolGame::registerLiveCast()
@@ -499,7 +500,8 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 			this_ptr->stopLiveCast();
 		}));
 		if (recvbyte == 0x0F) {
-			// g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::onRecvFirstMessage, getThis(), msg)));
+			// we need to make the player pointer != null in this part, game.cpp release is the first step
+			// login(player->getName(), player->getAccount(), player->operatingSystem);
 			disconnect();
 			return;
 		}
@@ -1319,98 +1321,6 @@ void ProtocolGame::sendReLoginWindow(uint8_t unfairFightReduction)
 	writeToOutputBuffer(msg);
 }
 
-void ProtocolGame::sendBlessStatus()
-{
-	NetworkMessage msg;
-	//uint8_t maxClientBlessings = (player->operatingSystem == CLIENTOS_NEW_WINDOWS) ? 8 : 6; (compartability for the client 10)
-	//Ignore ToF (bless 1)
-	uint8_t blessCount = 0;
-	uint16_t flag = 0;
-	uint16_t pow2 = 2;
-	for (int i = 1; i <= 8; i++) {
-		if (player->hasBlessing(i)) {
-			if (i > 1)
-				blessCount++;
-			flag |= pow2;
-		}
-		pow2 = pow2 * 2;
-	}
-
-	msg.addByte(0x9C);
-
-	if (player->getProtocolVersion() >= 1120) {
-		if (blessCount >= 5) //Show up the glowing effect in items if have all blesses
-			flag |= 1;
-
-		msg.add<uint16_t>(flag);
-		msg.addByte((blessCount >= 7) ? 3 : ((blessCount >= 5) ? 2 : 1)); // 1 = Disabled | 2 = normal | 3 = green
-	}else if (blessCount >= 5) {
-		msg.add<uint16_t>(0x01);
-	} else {
-		msg.add<uint16_t>(0x00);
-	}
-
-	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendStoreHighlight()
-{
-	NetworkMessage msg;
-	bool haveSale = g_game.gameStore.haveCategoryByState(StoreState_t::SALE);
-	bool haveNewItem = g_game.gameStore.haveCategoryByState(StoreState_t::NEW);
-	msg.addByte(0x19);
-	msg.addByte((haveSale) ? 1 : 0);
-	msg.addByte((haveNewItem) ? 1 : 0);
-	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendPremiumTrigger()
-{
-	if (!g_config.getBoolean(ConfigManager::FREE_PREMIUM)) {
-		NetworkMessage msg;
-		msg.addByte(0x9E);
-		msg.addByte(16);
-		for (uint16_t i = 0; i <= 15; i++) {
-			//PREMIUM_TRIGGER_TRAIN_OFFLINE = false, PREMIUM_TRIGGER_XP_BOOST = false, PREMIUM_TRIGGER_MARKET = false, PREMIUM_TRIGGER_VIP_LIST = false, PREMIUM_TRIGGER_DEPOT_SPACE = false, PREMIUM_TRIGGER_INVITE_PRIVCHAT = false
-			msg.addByte(0x01);
-		}
-		writeToOutputBuffer(msg);
-	}
-}
-
-// Send preyInfo
-void ProtocolGame::sendPreyData()
-{
-	NetworkMessage msg;
-	for (int i = 0; i < 3; i++) {
-		msg.addByte(0xE8);
-		msg.addByte(i);
-
-		msg.addByte(0x00);
-		msg.addByte(0x00);
-		msg.add<uint16_t>(0);
-		if (version >= 1190) {
-			msg.addByte(0x00); // wildCards
-		}
-	}
-
-	msg.addByte(0xEC);
-	msg.addByte(0xEE);
-	msg.addByte(0x0A);
-	msg.add<uint64_t>(0);
-	msg.addByte(0xEE);
-	msg.addByte(0x01);
-	msg.add<uint64_t>(0);
-	// prey prices
-	msg.addByte(0xE9);
-	msg.add<uint32_t>(0);
-	if (version >= 1190) {
-		msg.addByte(0x00); // unknown price
-		msg.addByte(0x00); // selectCreatureDirectly price (5 in tibia)
-	}
-	writeToOutputBuffer(msg);
-}
-
 void ProtocolGame::sendTextMessage(const TextMessage& message)
 {
 	NetworkMessage msg;
@@ -1484,19 +1394,6 @@ void ProtocolGame::sendChannelsDialog()
 	writeToOutputBuffer(msg);
 }
 
-void ProtocolGame::sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel)
-{
-	NetworkMessage msg;
-	msg.addByte(0xAA);
-	msg.add<uint32_t>(0x00);
-	msg.addString(author);
-	msg.add<uint16_t>(0x00);
-	msg.addByte(type);
-	msg.add<uint16_t>(channel);
-	msg.addString(text);
-	writeToOutputBuffer(msg);
-}
-
 void ProtocolGame::sendIcons(uint16_t icons)
 {
 	NetworkMessage msg;
@@ -1510,17 +1407,20 @@ void ProtocolGame::sendIcons(uint16_t icons)
 	writeToOutputBuffer(msg);
 }
 
-void ProtocolGame::sendUnjustifiedPoints(const uint8_t& dayProgress, const uint8_t& dayLeft, const uint8_t& weekProgress, const uint8_t& weekLeft, const uint8_t& monthProgress, const uint8_t& monthLeft, const uint8_t& skullDuration)
+void ProtocolGame::sendShop(Npc* npc, const ShopInfoList& itemList)
 {
 	NetworkMessage msg;
-	msg.addByte(0xB7);
-	msg.addByte(dayProgress);
-	msg.addByte(dayLeft);
-	msg.addByte(weekProgress);
-	msg.addByte(weekLeft);
-	msg.addByte(monthProgress);
-	msg.addByte(monthLeft);
-	msg.addByte(skullDuration);
+	msg.addByte(0x7A);
+	msg.addString(npc->getName());
+
+	uint16_t itemsToSend = std::min<size_t>(itemList.size(), std::numeric_limits<uint16_t>::max());
+	msg.add<uint16_t>(itemsToSend);
+
+	uint16_t i = 0;
+	for (auto it = itemList.begin(); i < itemsToSend; ++it, ++i) {
+		AddShopItem(msg, *it);
+	}
+
 	writeToOutputBuffer(msg);
 }
 
@@ -1549,23 +1449,6 @@ void ProtocolGame::sendRestingAreaIcon(bool activate/*=false*/, bool activeResti
     msg.addByte(b2);
     msg.addString(ss.str());
     writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::sendShop(Npc* npc, const ShopInfoList& itemList)
-{
-	NetworkMessage msg;
-	msg.addByte(0x7A);
-	msg.addString(npc->getName());
-
-	uint16_t itemsToSend = std::min<size_t>(itemList.size(), std::numeric_limits<uint16_t>::max());
-	msg.add<uint16_t>(itemsToSend);
-
-	uint16_t i = 0;
-	for (auto it = itemList.begin(); i < itemsToSend; ++it, ++i) {
-		AddShopItem(msg, *it);
-	}
-
-	writeToOutputBuffer(msg);
 }
 
 void ProtocolGame::sendCloseShop()
@@ -2373,7 +2256,6 @@ void ProtocolGame::sendFYIBox(const std::string& message)
 	writeToOutputBuffer(msg);
 }
 
-//tile
 void ProtocolGame::sendAddTileItem(const Position& pos, uint32_t stackpos, const Item* item)
 {
 	if (!canSee(pos)) {
@@ -2485,28 +2367,6 @@ void ProtocolGame::sendMoveCreature(const Creature* creature, const Position& ne
 	} else if (canSee(creature->getPosition())) {
 		sendAddCreature(creature, newPos, newStackPos, false);
 	}
-}
-
-void ProtocolGame::sendInventoryClientIds()
-{
-	std::map<uint16_t, uint16_t> items = player->getInventoryClientIds();
-
-	NetworkMessage msg;
-	msg.addByte(0xF5);
-	msg.add<uint16_t>(items.size() + 11);
-
-	for (uint16_t i = 1; i <= 11; i++) {
-		msg.add<uint16_t>(i);
-		msg.addByte(0x00);
-		msg.add<uint16_t>(0x01);
-	}
-
-	for (const auto& it : items) {
-		msg.add<uint16_t>(it.first);
-		msg.addByte(0x00);
-		msg.add<uint16_t>(it.second);
-	}
-	writeToOutputBuffer(msg);
 }
 
 void ProtocolGame::sendAddContainerItem(uint8_t cid, uint16_t slot, const Item* item)
@@ -3034,60 +2894,6 @@ void ProtocolGame::sendImbuementWindow(Item* item)
 	writeToOutputBuffer(msg);
 }
 
-void ProtocolGame::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count)
-{
-	const ItemType& it = Item::items[id];
-
-	msg.add<uint16_t>(it.clientId);
-
-	if (version < 1200) {
-		msg.addByte(0xFF); // MARK_UNMARKED
-	}
-
-	if (it.stackable) {
-		msg.addByte(count);
-	} else if (it.isSplash() || it.isFluidContainer()) {
-		msg.addByte(fluidMap[count & 7]);
-	} else if (version >= 1150 && it.isContainer()) {
-		msg.addByte(0x00);
-	}
-
-	if (it.isAnimation) {
-		msg.addByte(0xFE); // random phase (0xFF for async)
-	}
-}
-
-void ProtocolGame::AddItem(NetworkMessage& msg, const Item* item)
-{
-	const ItemType& it = Item::items[item->getID()];
-
-	msg.add<uint16_t>(it.clientId);
-
-	if (version < 1200) {
-		msg.addByte(0xFF); // MARK_UNMARKED
-	}
-
-	if (it.stackable) {
-		msg.addByte(std::min<uint16_t>(0xFF, item->getItemCount()));
-	} else if (it.isSplash() || it.isFluidContainer()) {
-		msg.addByte(fluidMap[item->getFluidType() & 7]);
-	} else if (version >= 1150 && it.isContainer()) {
-		uint32_t quickLootFlags = item->getQuickLootFlags();
-		if (quickLootFlags > 0) {
-			msg.addByte(2);
-			msg.add<uint32_t>(quickLootFlags);
-		}
-		else {
-			msg.addByte(0x00);
-		}
-	}
-
-	if (it.isAnimation) {
-		msg.addByte(0xFE); // random phase (0xFF for async)
-	}
-}
-
-//tile
 void ProtocolGame::sendKillTrackerUpdate(Container* corpse, const std::string& name, const Outfit_t creatureOutfit)
 {
  	bool isCorpseEmpty = corpse->empty();

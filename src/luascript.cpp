@@ -2021,6 +2021,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::WARN_UNSAFE_SCRIPTS)
 	registerEnumIn("configKeys", ConfigManager::CONVERT_UNSAFE_SCRIPTS)
 	registerEnumIn("configKeys", ConfigManager::CLASSIC_EQUIPMENT_SLOTS)
+	registerEnumIn("configKeys", ConfigManager::ENABLE_LIVE_CASTING)
 	registerEnumIn("configKeys", ConfigManager::ALLOW_BLOCK_SPAWN)
 	registerEnumIn("configKeys", ConfigManager::CLASSIC_ATTACK_SPEED)
 	registerEnumIn("configKeys", ConfigManager::REMOVE_WEAPON_AMMO)
@@ -2083,7 +2084,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::MAX_MARKET_OFFERS_AT_A_TIME_PER_PLAYER)
 	registerEnumIn("configKeys", ConfigManager::EXP_FROM_PLAYERS_LEVEL_RANGE)
 	registerEnumIn("configKeys", ConfigManager::MAX_PACKETS_PER_SECOND)
-	registerEnumIn("configKeys", ConfigManager::STORE_COIN_PACKET)
+	registerEnumIn("configKeys", ConfigManager::LIVE_CAST_PORT)
 	registerEnumIn("configKeys", ConfigManager::VERSION_MIN)
 	registerEnumIn("configKeys", ConfigManager::VERSION_MAX)
 	registerEnumIn("configKeys", ConfigManager::DAY_KILLS_TO_RED)
@@ -2641,11 +2642,6 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Player", "getContainerId", LuaScriptInterface::luaPlayerGetContainerId);
 	registerMethod("Player", "getContainerById", LuaScriptInterface::luaPlayerGetContainerById);
 	registerMethod("Player", "getContainerIndex", LuaScriptInterface::luaPlayerGetContainerIndex);
-    
-    // Cast System
-	registerMethod("Player", "startLiveCast", LuaScriptInterface::luaPlayerStartLiveCast);
-	registerMethod("Player", "stopLiveCast", LuaScriptInterface::luaPlayerStopLiveCast);
-	registerMethod("Player", "isLiveCaster", LuaScriptInterface::luaPlayerIsLiveCaster);
 
 	registerMethod("Player", "getInstantSpells", LuaScriptInterface::luaPlayerGetInstantSpells);
 	registerMethod("Player", "getRuneSpells", LuaScriptInterface::luaPlayerGetRuneSpells );
@@ -2654,6 +2650,11 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Player", "hasChaseMode", LuaScriptInterface::luaPlayerHasChaseMode);
 	registerMethod("Player", "hasSecureMode", LuaScriptInterface::luaPlayerHasSecureMode);
 	registerMethod("Player", "getFightMode", LuaScriptInterface::luaPlayerGetFightMode);
+
+	registerMethod("Player", "startLiveCast", LuaScriptInterface::luaPlayerStartLiveCast);
+	registerMethod("Player", "stopLiveCast", LuaScriptInterface::luaPlayerStopLiveCast);
+	registerMethod("Player", "isLiveCaster", LuaScriptInterface::luaPlayerIsLiveCaster);
+	registerMethod("Player", "getSpectators", LuaScriptInterface::luaPlayerGetSpectators);
 
 	registerMethod("Player", "getBaseXpGain", LuaScriptInterface::luaPlayerGetBaseXpGain);
 	registerMethod("Player", "setBaseXpGain", LuaScriptInterface::luaPlayerSetBaseXpGain);
@@ -6208,7 +6209,7 @@ int LuaScriptInterface::luaNetworkMessageSkipBytes(lua_State* L)
 
 int LuaScriptInterface::luaNetworkMessageSendToPlayer(lua_State* L)
 {
-	// networkMessage:sendToPlayer(player[, broadcast])
+	// networkMessage:sendToPlayer(player)
 	NetworkMessage* message = getUserdata<NetworkMessage>(L, 1);
 	if (!message) {
 		lua_pushnil(L);
@@ -6217,8 +6218,7 @@ int LuaScriptInterface::luaNetworkMessageSendToPlayer(lua_State* L)
 
 	Player* player = getPlayer(L, 2);
 	if (player) {
-		bool broadcast = getBoolean(L, 3, true);
-		player->sendNetworkMessage(*message, broadcast);
+		player->sendNetworkMessage(*message);
 		pushBoolean(L, true);
 	} else {
 		reportErrorFunc(getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND));
@@ -11170,47 +11170,6 @@ int LuaScriptInterface::luaPlayerGetContainerIndex(lua_State* L)
 	return 1;
 }
 
-int32_t LuaScriptInterface::luaPlayerStartLiveCast(lua_State* L)
-{
-	Player* player = getUserdata<Player>(L, 1);
-	if (!player) {
-		lua_pushnil(L);
-		return 1;
-	}
-
-	std::string password;
-	if (lua_gettop(L) == 2) {
-		password = getString(L, 2);
-	}
-
-	lua_pushboolean(L, player->startLiveCast(password));
-	return 1;
-}
-
-int32_t LuaScriptInterface::luaPlayerStopLiveCast(lua_State* L)
-{
-	Player* player = getUserdata<Player>(L, 1);
-	if (!player) {
-		lua_pushnil(L);
-		return 1;
-	}
-
-	lua_pushboolean(L, player->stopLiveCast());
-	return 1;
-}
-
-int32_t LuaScriptInterface::luaPlayerIsLiveCaster(lua_State* L)
-{
-	Player* player = getUserdata<Player>(L, 1);
-	if (!player) {
-		lua_pushnil(L);
-		return 1;
-	}
-
-	lua_pushboolean(L, player->isLiveCaster());
-	return 1;
-}
-
 int LuaScriptInterface::luaPlayerGetInstantSpells(lua_State* L)
 {
 	// player:getInstantSpells()
@@ -11316,6 +11275,77 @@ int LuaScriptInterface::luaPlayerCanCast(lua_State* L)
 		lua_pushnil(L);
 	}
 	return 1;
+}
+
+int32_t LuaScriptInterface::luaPlayerStartLiveCast(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	std::string password;
+	if (lua_gettop(L) == 2) {
+		password = getString(L, 2);
+	}
+
+	lua_pushboolean(L, player->startLiveCast(password));
+	return 1;
+}
+
+int32_t LuaScriptInterface::luaPlayerStopLiveCast(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	lua_pushboolean(L, player->stopLiveCast());
+	return 1;
+}
+
+int32_t LuaScriptInterface::luaPlayerIsLiveCaster(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	lua_pushboolean(L, player->isLiveCaster());
+	return 1;
+}
+
+int32_t LuaScriptInterface::luaPlayerGetSpectators(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player || !player->isLiveCaster()) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	std::lock_guard<std::mutex> lock(player->client->liveCastLock);
+	std::vector<ProtocolSpectator_ptr> spectators;
+	player->getSpectators(spectators);
+
+	lua_createtable(L, spectators.size(), 0);
+
+	int idx = 0, anonymous = 0;
+	for (const auto spectator : spectators) {
+		std::string specName = spectator->getName();
+		if (specName.empty()) {
+			anonymous += 1;
+		}
+		else {
+			pushString(L, specName);
+			lua_rawseti(L, -2, ++idx);
+		}
+	}
+
+	lua_pushnumber(L, anonymous);
+	return 2;
 }
 
 int LuaScriptInterface::luaPlayerHasChaseMode(lua_State* L)

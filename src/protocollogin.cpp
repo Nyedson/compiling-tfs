@@ -44,46 +44,8 @@ void ProtocolLogin::disconnectClient(const std::string& message, uint16_t versio
 	disconnect();
 }
 
-void ProtocolLogin::getCharacterList(const std::string& accountName, const std::string& password, uint16_t version)
+void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& accountName, const std::string& password, uint16_t, bool isLiveCastLogin /*=false*/)
 {
-	//dispatcher thread
-	Account account;
-	if (!IOLoginData::loginserverAuthentication(accountName, password, account)) {
-		disconnectClient("Account name or password is not correct.", version);
-		return;
-	}
-
-	auto output = OutputMessagePool::getOutputMessage();
-	//Update premium days
-	Game::updatePremium(account);
-	addWorldInfo(output, accountName, password, version);
-
-	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), account.characters.size());
-	output->addByte(size);
-	for (uint8_t i = 0; i < size; i++) {
-		output->addByte(0);
-		output->addString(account.characters[i]);
-	}
-
-	//Add premium days
-	output->addByte(0);
-	if (g_config.getBoolean(ConfigManager::FREE_PREMIUM)) {
-		output->addByte(1);
-		output->add<uint32_t>(0);
-	} else {
-		output->addByte(0);
-		output->add<uint32_t>(time(nullptr) + (account.premiumDays * 86400));
-	}
-
-	send(output);
-
-	disconnect();
-}
-
-
-void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& accountName, const std::string& password, uint16_t version, bool isLiveCastLogin /*=false*/)
-{
-	//
 	const std::string& motd = g_config.getString(ConfigManager::MOTD);
 	if (!motd.empty()) {
 		//Add MOTD
@@ -110,7 +72,7 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 	if (isLiveCastLogin) {
 		output->add<uint16_t>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
 	} else {
-		output->add<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT));
+		output->add<uint16_t>(g_config.getShortNumber(ConfigManager::GAME_PORT));
 	}
 	output->addByte(0);
 }
@@ -126,16 +88,52 @@ void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t 
 	std::ostringstream entry;
 	for (const auto& cast : casts) {
 		output->addByte(0);
-		int vers = version/10;
-		entry << cast.first->getName() << " [" << cast.second->getSpectatorCount() << " viewers (" << vers <<")]";
+		entry << cast.first->getName() << " [" << cast.second->getSpectatorCount() << " viewers]";
 		output->addString(entry.str());
 		entry.str(std::string());
 	}
+
 	output->addByte(0);
 	output->addByte(g_config.getBoolean(ConfigManager::FREE_PREMIUM));
-	output->add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (OS_TIME(nullptr)));
+	output->add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (time(nullptr)));
 
 	send(std::move(output));
+
+	disconnect();
+}
+
+void ProtocolLogin::getCharacterList(const std::string& accountName, const std::string& password, uint16_t version)
+{
+	//dispatcher thread
+	Account account;
+	if (!IOLoginData::loginserverAuthentication(accountName, password, account)) {
+		disconnectClient("Account name or password is not correct.", version);
+		return;
+	}
+
+	auto output = OutputMessagePool::getOutputMessage();
+	//Update premium days
+	Game::updatePremium(account);
+
+	addWorldInfo(output, accountName, password, version);
+	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), account.characters.size());
+	output->addByte(size);
+	for (uint8_t i = 0; i < size; i++) {
+		output->addByte(0);
+		output->addString(account.characters[i]);
+	}
+
+	//Add premium days
+	output->addByte(0);
+	if (g_config.getBoolean(ConfigManager::FREE_PREMIUM)) {
+		output->addByte(1);
+		output->add<uint32_t>(0);
+	} else {
+		output->addByte(0);
+		output->add<uint32_t>(time(nullptr) + (account.premiumDays * 86400));
+	}
+
+	send(output);
 
 	disconnect();
 }
@@ -219,6 +217,7 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	std::string accountName = msg.getString();
+
 	std::string password = msg.getString();
 	auto thisPtr = std::static_pointer_cast<ProtocolLogin>(shared_from_this());
 	if (accountName.empty()) {
@@ -227,11 +226,6 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 		} else {
 			disconnectClient("Invalid account name.", version);
 		}
-		return;
-	}
-
-	if (password.empty()) {
-		disconnectClient("Invalid password.", version);
 		return;
 	}
 
