@@ -19,6 +19,7 @@
 
 #include "otpch.h"
 
+#include "boost/asio/dispatch.hpp"
 #include "configmanager.h"
 #include "connection.h"
 #include "outputmessage.h"
