@@ -336,35 +336,35 @@ void ProtocolGameBase::AddPlayerSkills(NetworkMessage& msg)
 	}
 }
 
-void ProtocolGame::sendBlessStatus()
-{
+void ProtocolGameBase::sendBlessStatus() {
 	NetworkMessage msg;
-	//uint8_t maxClientBlessings = (player->operatingSystem == CLIENTOS_NEW_WINDOWS) ? 8 : 6; (compartability for the client 10)
-	//Ignore ToF (bless 1)
 	uint8_t blessCount = 0;
-	uint16_t flag = 0;
-	uint16_t pow2 = 2;
-	for (int i = 1; i <= 8; i++) {
+	uint8_t maxBlessings = (player->operatingSystem == CLIENTOS_NEW_WINDOWS) ? 8 : 6;
+	for (int i = 1; i <= maxBlessings; i++) {
 		if (player->hasBlessing(i)) {
-			if (i > 1)
-				blessCount++;
-			flag |= pow2;
+			blessCount++;
 		}
-		pow2 = pow2 * 2;
 	}
 
 	msg.addByte(0x9C);
+	if (blessCount >= 5) {
+		if (player->getProtocolVersion() >= 1120) {
+			uint8_t blessFlag = 0;
+			uint8_t maxFlag = static_cast<uint8_t>((maxBlessings == 8) ? 256 : 64);
+			for (int i = 2; i < maxFlag; i *= 2) {
+				blessFlag += i;
+			}
 
-	if (player->getProtocolVersion() >= 1120) {
-		if (blessCount >= 5) //Show up the glowing effect in items if have all blesses
-			flag |= 1;
-
-		msg.add<uint16_t>(flag);
-		msg.addByte((blessCount >= 7) ? 3 : ((blessCount >= 5) ? 2 : 1)); // 1 = Disabled | 2 = normal | 3 = green
-	}else if (blessCount >= 5) {
-		msg.add<uint16_t>(0x01);
+			msg.add<uint16_t>(blessFlag - 1);
+		} else {
+			msg.add<uint16_t>(0x01);
+		}
 	} else {
 		msg.add<uint16_t>(0x00);
+	}
+
+	if (player->getProtocolVersion() >= 1120) {
+		msg.addByte((blessCount >= 5) ? 2 : 1); // 1 = Disabled | 2 = normal | 3 = green
 	}
 
 	writeToOutputBuffer(msg);
@@ -914,10 +914,9 @@ void ProtocolGameBase::sendBasicData()
 		msg.addByte(1); // has reached Main (allow player to open Prey window)
 	}
 
-	std::list<uint16_t> spellsList = g_spells->getSpellsByVocation(player->getVocationId());
-	msg.add<uint16_t>(spellsList.size());
-	for (uint8_t sid : spellsList) {
-		msg.addByte(sid);
+	msg.add<uint16_t>(0xFF); // number of known spells
+	for (uint8_t spellId = 0x00; spellId < 0xFF; spellId++) {
+		msg.addByte(spellId);
 	}
 	writeToOutputBuffer(msg);
 }
