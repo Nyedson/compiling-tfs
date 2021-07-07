@@ -3507,6 +3507,10 @@ void Game::playerApplyImbuement(uint32_t playerId, uint32_t imbuementid, uint8_t
 		return;
 	}
 
+	if (item->getTopParent() != player || item->getParent() == player) {
+    return;
+    }
+
 	g_events->eventPlayerOnApplyImbuement(player, imbuement, item, slot, protectionCharm);
 }
 
