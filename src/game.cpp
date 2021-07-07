@@ -3508,6 +3508,7 @@ void Game::playerApplyImbuement(uint32_t playerId, uint32_t imbuementid, uint8_t
 	}
 
 	if (item->getTopParent() != player || item->getParent() == player) {
+		player->sendTextMessage(MESSAGE_STATUS_SMALL, "You cannot imbue this item by having it equipped.");
     return;
     }
 
