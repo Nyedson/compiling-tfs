@@ -347,7 +347,7 @@ void ProtocolGameBase::sendBlessStatus() {
 	}
 
 	msg.addByte(0x9C);
-	if (blessCount == 8) {
+	if (blessCount > 7) {
 		if (player->getProtocolVersion() >= 1120) {
 			uint8_t blessFlag = 0;
 			uint8_t maxFlag = static_cast<uint8_t>((maxBlessings == 8) ? 256 : 64);
