@@ -17,4 +17,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "otpch.h"
+#ifndef FS_SCRIPTMANAGER_H_F9428B7803A44FB88EB1A915CFD37F8B
+#define FS_SCRIPTMANAGER_H_F9428B7803A44FB88EB1A915CFD37F8B
+
+class ScriptingManager
+{
+	public:
+		ScriptingManager() = default;
+		~ScriptingManager();
+
+		// non-copyable
+		ScriptingManager(const ScriptingManager&) = delete;
+		ScriptingManager& operator=(const ScriptingManager&) = delete;
+
+		static ScriptingManager& getInstance() {
+			static ScriptingManager instance;
+			return instance;
+		}
+
+		bool loadScriptSystems();
+};
+
+#endif

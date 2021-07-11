@@ -17,4 +17,33 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "otpch.h"
+#ifndef FS_PROTOCOLLOGIN_H_1238F4B473074DF2ABC595C29E81C46D
+#define FS_PROTOCOLLOGIN_H_1238F4B473074DF2ABC595C29E81C46D
+
+#include "protocol.h"
+
+class NetworkMessage;
+class OutputMessage;
+
+class ProtocolLogin : public Protocol
+{
+	public:
+		// static protocol information
+		enum {server_sends_first = false};
+		enum {protocol_identifier = 0x01};
+		enum {use_checksum = true};
+		static const char* protocol_name() {
+			return "login protocol";
+		}
+
+		explicit ProtocolLogin(Connection_ptr loginConnection) : Protocol(loginConnection) {}
+
+		void onRecvFirstMessage(NetworkMessage& msg);
+
+	private:
+		void disconnectClient(const std::string& message, uint16_t version);
+
+		void getCharacterList(const std::string& accountName, const std::string& password, uint16_t version);
+};
+
+#endif

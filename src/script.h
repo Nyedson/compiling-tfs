@@ -17,4 +17,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "otpch.h"
+#ifndef FS_SCRIPTS_H
+#define FS_SCRIPTS_H
+
+#include "luascript.h"
+#include "enums.h"
+
+class Scripts
+{
+	public:
+		Scripts();
+		~Scripts();
+
+		bool loadEventSchedulerScripts(const std::string& fileName);
+		bool loadScripts(std::string folderName, bool isLib, bool reload);
+		LuaScriptInterface& getScriptInterface() {
+			return scriptInterface;
+		}
+	private:
+		LuaScriptInterface scriptInterface;
+};
+
+#endif

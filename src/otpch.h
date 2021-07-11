@@ -21,7 +21,7 @@
 #define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
 
 // Definitions should be global.
-#include "utils/definitions.h"
+#include "definitions.h"
 
 #include <algorithm>
 #include <chrono>
@@ -43,7 +43,5 @@
 #include <boost/asio.hpp>
 
 #include <pugixml.hpp>
-
-#include "spdlog/spdlog.h"
 
 #endif
