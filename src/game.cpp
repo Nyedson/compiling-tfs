@@ -2386,7 +2386,8 @@ void Game::internalQuickLootCorpse(Player* player, Container* corpse)
 		bool success = ret == RETURNVALUE_NOERROR;
 		if (worth != 0) {
 			missedAnyGold = missedAnyGold || !success;
-			player->sendLootStats(item, baseCount);
+			if (success) {
+				player->sendLootStats(item, baseCount);
 				totalLootedGold += worth;
 			} else {
 				// item is not completely moved
