@@ -6529,11 +6529,11 @@ bool Game::gameIsDay()
 {
 	if (lightHour >= (6 * 60) && lightHour <= (18 * 60)) {
 		isDay = true;
-
-	return isDay;
 	} else {
 		isDay = false;
 	}
+
+	return isDay;
 }
 
 void Game::shutdown()
