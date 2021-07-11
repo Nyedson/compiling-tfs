@@ -106,9 +106,9 @@ int main(int argc, char* argv[]) {
 }
 
 // No RB
-__attribute__ ((used)) void saveServer() {
-	g_game.saveGameState();
-}
+//__attribute__ ((used)) void saveServer() {
+//	g_game.saveGameState();
+//}
 #endif
 
 void mainLoader(int, char*[], ServiceManager* services) {
