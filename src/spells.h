@@ -64,6 +64,10 @@ class Spells final : public BaseEvents
 			return instants;
 		};
 
+		const std::map<uint16_t, RuneSpell>& getRuneSpells() const{
+				return runes;
+		};
+
 		void clearMaps(bool fromLua);
 		void clear(bool fromLua) override final;
 		bool registerInstantLuaEvent(InstantSpell* event);
@@ -251,9 +255,6 @@ class Spell : public BaseSpell
 		bool getNeedTarget() const {
 			return needTarget;
 		}
-		bool getPzOnUse() const {
-			return pzLocked;
-		}		
 		void setNeedTarget(bool n) {
 			needTarget = n;
 		}
@@ -331,7 +332,6 @@ class Spell : public BaseSpell
 		bool learnable = false;
 		bool enabled = true;
 		bool premium = false;
-		bool pzLocked = false;
 
 
 	private:
@@ -407,6 +407,7 @@ class RuneSpell final : public Action, public Spell
 		explicit RuneSpell(LuaScriptInterface* interface) : Action(interface) {}
 
 		bool configureEvent(const pugi::xml_node& node) override;
+		bool canUseRune(const Player* player, bool ignoreLevel=false);
 
 		ReturnValue canExecuteAction(const Player* player, const Position& toPos) override;
 		bool hasOwnErrorHandler() override {

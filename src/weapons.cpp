@@ -139,7 +139,9 @@ bool Weapons::registerEvent(Event_ptr event, const pugi::xml_node&)
 
 bool Weapons::registerLuaEvent(Weapon* event)
 {
-	weapons[event->getID()] = event;
+	Weapon_ptr weapon{ event };
+	weapons[weapon->getID()] = weapon.release();
+
 	return true;
 }
 
@@ -424,13 +426,13 @@ void Weapon::internalUseWeapon(Player* player, Item* item, Creature* target, int
 		damage.primary.type = params.combatType;
 		damage.secondary.type = getElementType();
 
-    if (damage.secondary.type == COMBAT_NONE) {
+		if (damage.secondary.type == COMBAT_NONE) {
     	damage.primary.value = (getWeaponDamage(player, target, item) * damageModifier) / 100;
     	damage.secondary.value = 0;
-    } else {
+    	} else {
     	damage.primary.value = (getWeaponDamage(player, target, item) * damageModifier) / 100;
     	damage.secondary.value = (getElementDamage(player, target, item) * damageModifier) / 100;
-    }
+    	}
 
 	  	Combat::doCombatHealth(player, target, damage, params);
 	}
@@ -540,13 +542,7 @@ bool Weapon::executeUseWeapon(Player* player, const LuaVariant& var) const
 {
 	//onUseWeapon(player, var)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - Weapon::executeUseWeapon"
-				<< " Player " 
-				<< player->getName() 
-				<< " weaponId "
-				<< getID()
-				<< "] Call stack overflow. Too many lua script calls being nested."
-				<< std::endl;
+		std::cout << "[Error - Weapon::executeUseWeapon] Call stack overflow" << std::endl;
 		return false;
 	}
 
@@ -871,7 +867,7 @@ int32_t WeaponDistance::getElementDamage(const Player* player, const Creature* t
 	if (item->getWeaponType() == WEAPON_AMMO) {
 		Item* weapon = player->getWeapon(true);
 		if (weapon) {
-      		attackValue += item->getAttack();
+			attackValue += item->getAttack();
 			attackValue += weapon->getAttack();
 		}
 	}
@@ -879,7 +875,7 @@ int32_t WeaponDistance::getElementDamage(const Player* player, const Creature* t
 	int32_t attackSkill = player->getSkillLevel(SKILL_DISTANCE);
 	float attackFactor = player->getAttackFactor();
 
-  	int32_t minValue = std::round(player->getLevel() / 5);
+	int32_t minValue = std::round(player->getLevel() / 5);
   	int32_t maxValue = std::round((0.09f * attackFactor) * attackSkill * attackValue + minValue) / 2;
 
   	if (target) {
@@ -902,17 +898,17 @@ int16_t WeaponDistance::getElementDamageValue() const
 int32_t WeaponDistance::getWeaponDamage(const Player* player, const Creature* target, const Item* item, bool maxDamage /*= false*/) const
 {
 	int32_t attackValue = item->getAttack();
-  	bool hasElement = false;
+	bool hasElement = false;
 
 	if (item->getWeaponType() == WEAPON_AMMO) {
 		Item* weapon = player->getWeapon(true);
 		if (weapon) {
-      		const ItemType& it = Item::items[item->getID()];
+			const ItemType& it = Item::items[item->getID()];
       		if (it.abilities && it.abilities->elementDamage != 0) {
         		attackValue += it.abilities->elementDamage;
         		hasElement = true;
       		}
-
+      		
 			attackValue += weapon->getAttack();
 		}
 	}
@@ -920,13 +916,13 @@ int32_t WeaponDistance::getWeaponDamage(const Player* player, const Creature* ta
 	int32_t attackSkill = player->getSkillLevel(SKILL_DISTANCE);
 	float attackFactor = player->getAttackFactor();
 
-  	int32_t minValue = player->getLevel() / 5;
+	int32_t minValue = player->getLevel() / 5;
   	int32_t maxValue = std::round((0.09f * attackFactor) * attackSkill * attackValue + minValue);
 	if (maxDamage) {
 		return -maxValue;
 	}
 
-  	if (target->getPlayer()) {
+	if (target->getPlayer()) {
     	if (hasElement) {
       	minValue /= 4;
     	} else {
@@ -1011,8 +1007,7 @@ bool WeaponWand::configureEvent(const pugi::xml_node& node)
 void WeaponWand::configureWeapon(const ItemType& it)
 {
 	params.distanceEffect = it.shootType;
-  const_cast<ItemType&>(it).combatType = params.combatType;
-	const_cast<ItemType&>(it).maxHitChance = (minChange + maxChange) / 2;
+
 	Weapon::configureWeapon(it);
 }
 

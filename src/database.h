@@ -21,11 +21,8 @@
 #define FS_DATABASE_H_A484B0CDFDE542838F506DCE3D40C693
 
 #include <boost/lexical_cast.hpp>
+
 #include <mysql/mysql.h>
-#include <memory>
-#include <mutex>
-#include <map>
-#include <iostream>
 
 class DBResult;
 using DBResult_ptr = std::shared_ptr<DBResult>;
@@ -58,22 +55,7 @@ class Database
 		 */
 		bool connect();
 
-    /**
-     * @brief Connect to the database using parameters
-     *
-     * @param host
-     * @param user
-     * @param password
-     * @param database
-     * @param port
-     * @param sock
-     * @return true Success
-     * @return false Fail
-     */
-    bool connect(const char *host, const char *user, const char *password,
-                const char *database, uint32_t port, const char *sock);
-
-    /**
+		/**
 		 * Executes command.
 		 *
 		 * Executes query which doesn't generates results (eg. INSERT, UPDATE, DELETE...).
@@ -204,7 +186,6 @@ class DBResult
 		std::string getString(const std::string& s) const;
 		const char* getStream(const std::string& s, unsigned long& size) const;
 
-    size_t countResults() const;  
 		bool hasNext() const;
 		bool next();
 

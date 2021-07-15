@@ -26,7 +26,9 @@
 #include "game.h"
 #include "pugicast.h"
 #include "spells.h"
+
 #include "rewardchest.h"
+
 
 extern Game g_game;
 extern Spells* g_spells;
@@ -113,8 +115,7 @@ bool Actions::registerEvent(Event_ptr event, const pugi::xml_node& node)
 		if (!result.second) {
 			std::cout << "[Warning - Actions::registerEvent] Duplicate \
 			registered item with id: " << iterId << " in fromid: " << fromId
-											<< ", toid: " << toId << std::endl;
-		}
+											<< ", toid: " << toId << std::endl;		}
 
 		bool success = result.second;
 		while (++iterId <= toId) {
@@ -286,8 +287,9 @@ ReturnValue Actions::canUse(const Player* player, const Position& pos, const Ite
 }
 
 ReturnValue Actions::canUseFar(const Creature* creature, const Position& toPos,
-										bool checkLineOfSight, bool checkFloor)
+								bool checkLineOfSight, bool checkFloor)
 {
+
 	if (toPos.x == 0xFFFF) {
 		return RETURNVALUE_NOERROR;
 	}
@@ -311,6 +313,7 @@ ReturnValue Actions::canUseFar(const Creature* creature, const Position& toPos,
 
 Action* Actions::getAction(const Item* item)
 {
+
 	if (item->hasAttribute(ITEM_ATTRIBUTE_UNIQUEID)) {
 		auto it = uniqueItemMap.find(item->getUniqueId());
 		if (it != uniqueItemMap.end()) {
@@ -336,8 +339,9 @@ Action* Actions::getAction(const Item* item)
 
 ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_t index, Item* item, bool isHotkey)
 {
+
 	if (Door* door = item->getDoor()) {
-		if (!door->canUse(player)) {
+			if (!door->canUse(player)) {
 			return RETURNVALUE_CANNOTUSETHISOBJECT;
 		}
 	}
@@ -375,7 +379,7 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
 	if (Container* container = item->getContainer()) {
 		Container* openContainer;
 
-		//depot container
+		// depot container
 		if (DepotLocker* depot = container->getDepotLocker()) {
 			DepotLocker* myDepotLocker = player->getDepotLocker(depot->getDepotId());
 			myDepotLocker->setParent(depot->getParent()->getTile());
@@ -385,7 +389,7 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
 			openContainer = container;
 		}
 
-		//reward chest
+		// reward chest
 		if (container->getRewardChest() != nullptr) {
 			RewardChest* myRewardChest = player->getRewardChest();
 			if (myRewardChest->size() == 0) {
@@ -413,7 +417,7 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
 		uint32_t corpseOwner = container->getCorpseOwner();
 		if (container->isRewardCorpse()) {
 			//only players who participated in the fight can open the corpse
-			if (player->getGroup()->id >= account::GROUP_TYPE_GAMEMASTER || player->getAccountType() >= account::ACCOUNT_TYPE_SENIORTUTOR) {
+			if (player->getGroup()->id >= 4 || player->getAccountType() >= 3) {
 				return RETURNVALUE_YOUCANTOPENCORPSEADM;
 			}
 			if (!player->getReward(container->getIntAttr(ITEM_ATTRIBUTE_DATE), false)) {
@@ -423,7 +427,7 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
 			return RETURNVALUE_YOUARENOTTHEOWNER;
 		}
 
-		//open/close container
+		// open/close container
 		int32_t oldContainerId = player->getContainerID(openContainer);
 		if (oldContainerId != -1) {
 			player->onCloseContainer(openContainer);
@@ -455,7 +459,7 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
 bool Actions::useItem(Player* player, const Position& pos, uint8_t index, Item* item, bool isHotkey)
 {
 	const ItemType& it = Item::items[item->getID()];
-	if (it.isRune() || it.type == ITEM_TYPE_POTION) {
+	if (it.isRune()) {
 		if (player->walkExhausted()) {
 			player->sendCancelMessage(RETURNVALUE_YOUAREEXHAUSTED);
 			return false;
@@ -483,7 +487,7 @@ bool Actions::useItemEx(Player* player, const Position& fromPos, const Position&
                         uint8_t toStackPos, Item* item, bool isHotkey, Creature* creature/* = nullptr*/)
 {
 	const ItemType& it = Item::items[item->getID()];
-	if (it.isRune() || it.type == ITEM_TYPE_POTION) {
+	if (it.isRune()) {
 		if (player->walkExhausted()) {
 			player->sendCancelMessage(RETURNVALUE_YOUAREEXHAUSTED);
 			return false;
@@ -523,6 +527,7 @@ bool Actions::useItemEx(Player* player, const Position& fromPos, const Position&
 		}
 		return false;
 	}
+
 	return true;
 }
 
@@ -538,7 +543,7 @@ void Actions::showUseHotkeyMessage(Player* player, const Item* item, uint32_t co
 	} else {
 		ss << "Using one of " << count << ' ' << item->getPluralName() << "...";
 	}
-	player->sendTextMessage(MESSAGE_HOTKEY_PRESSED, ss.str());
+	player->sendTextMessage(MESSAGE_INFO_DESCR, ss.str());
 }
 
 Action::Action(LuaScriptInterface* interface) :
@@ -564,6 +569,74 @@ bool Action::configureEvent(const pugi::xml_node& node)
 	return true;
 }
 
+namespace {
+
+bool enterMarket(Player* player, Item*, const Position&, Thing*,
+														const Position&, bool) {
+
+	if (player->getLastDepotId() == -1) {
+		return false;
+	}
+
+	player->sendMarketEnter(player->getLastDepotId());
+	return true;
+}
+
+bool useImbueShrine(Player* player, Item*, const Position&, Thing* target,
+												const Position& toPos, bool) {
+
+	Item* item = target != nullptr ? target->getItem() : nullptr;
+	if (item == nullptr) {
+		player->sendTextMessage(MESSAGE_STATUS_SMALL, "This item is not imbuable.");
+		return false;
+	}
+
+	const ItemType& it = Item::items[item->getID()];
+	if(it.imbuingSlots <= 0 ) {
+		player->sendTextMessage(MESSAGE_STATUS_SMALL, "This item is not imbuable.");
+		return false;
+	}
+
+	if (item->getTopParent() != player) {
+		player->sendTextMessage(MESSAGE_STATUS_SMALL, "You have to pick up the item to imbue it.");
+		return false;
+	}
+
+	if ((toPos.y & 0x40) == 0) {
+		player->sendTextMessage(MESSAGE_STATUS_SMALL,
+			"You cannot imbue an equipped item.");
+		return false;
+	}
+
+	player->sendImbuementWindow(target->getItem());
+	return true;
+}
+
+}  // namespace
+
+bool Action::loadFunction(const pugi::xml_attribute& attr, bool isScripted)
+{
+
+	const char* functionName = attr.as_string();
+	if (strcasecmp(functionName, "market") == 0) {
+		function = enterMarket;
+	} else if (strcasecmp(functionName, "imbuement") == 0) {
+		function = useImbueShrine;
+	} else {
+		if (!isScripted) {
+			std::cout << "[Warning - Action::loadFunction] Function \""
+						<< functionName << "\" does not exist." << std::endl;
+			return false;
+		}
+	}
+
+	if (!isScripted) {
+		scripted = false;
+	}
+
+	return true;
+}
+
 std::string Action::getScriptEventName() const
 {
 	return "onUse";
@@ -581,6 +654,7 @@ ReturnValue Action::canExecuteAction(const Player* player, const Position& toPos
 Thing* Action::getTarget(Player* player, Creature* targetCreature,
 						const Position& toPosition, uint8_t toStackPos) const
 {
+
 	if (targetCreature != nullptr) {
 		return targetCreature;
 	}
@@ -591,13 +665,7 @@ bool Action::executeUse(Player* player, Item* item, const Position& fromPosition
 {
 	//onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - Action::executeUse"
-				<< " Player "
-				<< player->getName()
-				<< " on item "
-				<< item->getName()
-				<< "] Call stack overflow. Too many lua script calls being nested."
-				<< std::endl;
+		std::cout << "[Error - Action::executeUse] Call stack overflow" << std::endl;
 		return false;
 	}
 
@@ -618,5 +686,6 @@ bool Action::executeUse(Player* player, Item* item, const Position& fromPosition
 	LuaScriptInterface::pushPosition(L, toPosition);
 
 	LuaScriptInterface::pushBoolean(L, isHotkey);
+
 	return scriptInterface->callFunction(6);
 }

@@ -37,12 +37,10 @@ struct DatabaseTask {
 class DatabaseTasks : public ThreadHolder<DatabaseTasks>
 {
 	public:
-		DatabaseTasks();
-    bool SetDatabaseInterface(Database *database);
-    void start();
-    void startThread();
-    void flush();
-    void shutdown();
+		DatabaseTasks() = default;
+		void start();
+		void flush();
+		void shutdown();
 
 		void addTask(std::string query, std::function<void(DBResult_ptr, bool)> callback = nullptr, bool store = false);
 
@@ -50,7 +48,7 @@ class DatabaseTasks : public ThreadHolder<DatabaseTasks>
 	private:
 		void runTask(const DatabaseTask& task);
 
-		Database *db_;
+		Database db;
 		std::thread thread;
 		std::list<DatabaseTask> tasks;
 		std::mutex taskLock;

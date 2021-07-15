@@ -55,12 +55,6 @@ class Guild
 		void setMemberCount(uint32_t count) {
 			memberCount = count;
 		}
-    uint64_t getBankBalance() const {
-      return bankBalance;
-    }
-    void setBankBalance(uint64_t balance) {
-      bankBalance = balance;
-    }
 
 		const std::vector<GuildRank_ptr>& getRanks() const {
 			return ranks;
@@ -82,7 +76,6 @@ class Guild
 		std::list<Player*> membersOnline;
 		std::vector<GuildRank_ptr> ranks;
 		std::string name;
-    uint64_t bankBalance = 0;
 		std::string motd;
 		uint32_t id;
 		uint32_t memberCount = 0;
