@@ -2940,7 +2940,7 @@ void ProtocolGame::sendCyclopediaCharacterInspection()
 		}
 	}
 	msg.addString(player->getName());
-	AddOutfit(msg, player->getDefaultOutfit(), false);
+	AddOutfit(msg, player->getDefaultOutfit());
 
 	msg.addByte(3);
 	msg.addString("Level");
@@ -3039,6 +3039,29 @@ void ProtocolGame::sendPreyRerollPrice(uint32_t price /*= 0*/, uint8_t wildcard 
 		msg.add<uint32_t>(0);
 		msg.addByte(0);
 		msg.addByte(0);
+	}
+
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendPreyData(PreySlotNum_t slot, PreyState_t slotState)
+{
+	NetworkMessage msg;
+	msg.addByte(0xE8);
+	msg.addByte(slot);
+
+	if (version >= 1200)
+		msg.addByte(slotState);
+	else
+		msg.addByte(0x00);
+	msg.addByte(0x00); // empty byte
+	if (version >= 1200)
+		msg.add<uint32_t>(0); // next free roll
+	else
+		msg.add<uint16_t>(0);
+
+	if (version >= 1200) {
+		msg.addByte(0x00); // wildCards
 	}
 
 	writeToOutputBuffer(msg);
