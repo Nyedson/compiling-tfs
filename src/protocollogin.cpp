@@ -127,15 +127,13 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 	auto output = OutputMessagePool::getOutputMessage();
 	// Update premium days
 	Game::updatePremium(account);
-
+	
 	addWorldInfo(output, accountName, password, version);
-
-	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(),
-                                  players.size());
+	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), account.characters.size());
 	output->addByte(size);
 	for (uint8_t i = 0; i < size; i++) {
 		output->addByte(0);
-		output->addString(players[i].name);
+		output->addString(account.characters[i]);
 	}
 
 	// Add premium days
