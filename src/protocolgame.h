@@ -64,7 +64,7 @@ struct TextMessage
 	TextMessage(MessageClasses initType, std::string initText) : type(initType), text(std::move(initText)) {}
 };
 
-class ProtocolGame final : public Protocol
+class ProtocolGame final : public ProtocolGameBase
 {
 public:
 	// static protocol information
