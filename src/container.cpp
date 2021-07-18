@@ -179,13 +179,13 @@ uint32_t Container::getWeight() const
 	return Item::getWeight() + totalWeight;
 }
 
-std::string Container::getContentDescription() const
+std::string Container::getContentDescription(bool oldClient) const
 {
 	std::ostringstream os;
-	return getContentDescription(os).str();
+	return getContentDescription(os, oldClient).str();
 }
 
-std::ostringstream& Container::getContentDescription(std::ostringstream& os) const
+std::ostringstream& Container::getContentDescription(std::ostringstream& os, bool oldClient) const
 {
 	bool firstitem = true;
 	for (ContainerIterator it = iterator(); it.hasNext(); it.advance()) {
@@ -202,7 +202,10 @@ std::ostringstream& Container::getContentDescription(std::ostringstream& os) con
 			os << ", ";
 		}
 
-		os << item->getNameDescription();
+		if (!oldClient)
+			os << "{" << item->getClientID() << "|" << item->getNameDescription() << "}";
+		else
+			os << item->getNameDescription();
 	}
 
 	if (firstitem) {
@@ -370,6 +373,8 @@ ReturnValue Container::queryAdd(int32_t addIndex, const Thing& addThing, uint32_
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 	}
+  if (getWeaponType() == WEAPON_QUIVER && item->getWeaponType() != WEAPON_AMMO)
+    return RETURNVALUE_ONLYAMMOINQUIVER;
 
 	const Cylinder* topParent = getTopParent();
 	if (topParent != this) {
@@ -412,13 +417,11 @@ ReturnValue Container::queryMaxCount(int32_t index, const Thing& thing, uint32_t
 		} else {
 			const Item* destItem = getItemByIndex(index);
 			if (item->equals(destItem) && destItem->getItemCount() < 100) {
-				uint32_t remainder = 100 - destItem->getItemCount();
-				if (queryAdd(index, *item, remainder, flags) == RETURNVALUE_NOERROR) {
-					n = remainder;
-				}
+				n = 100 - destItem->getItemCount();
 			}
 		}
 
+		// maxQueryCount is the limit of items I can add
 		maxQueryCount = freeSlots * 100 + n;
 		if (maxQueryCount < count) {
 			return RETURNVALUE_CONTAINERNOTENOUGHROOM;
@@ -432,7 +435,8 @@ ReturnValue Container::queryMaxCount(int32_t index, const Thing& thing, uint32_t
 	return RETURNVALUE_NOERROR;
 }
 
-ReturnValue Container::queryRemove(const Thing& thing, uint32_t count, uint32_t flags) const
+ReturnValue Container::queryRemove(const Thing& thing, uint32_t count, uint32_t flags,
+                                   Creature* actor /*= nullptr */) const
 {
 	int32_t index = getThingIndex(&thing);
 	if (index == -1) {
@@ -450,6 +454,10 @@ ReturnValue Container::queryRemove(const Thing& thing, uint32_t count, uint32_t 
 
 	if (!item->isMoveable() && !hasBitSet(FLAG_IGNORENOTMOVEABLE, flags)) {
 		return RETURNVALUE_NOTMOVEABLE;
+	}
+  const HouseTile* houseTile = dynamic_cast<const HouseTile*>(getTopParent());
+	if (houseTile) {
+		return houseTile->queryRemove(thing, count, flags, actor);
 	}
 	return RETURNVALUE_NOERROR;
 }

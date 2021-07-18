@@ -16,6 +16,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#include <algorithm>
 
 #include "otpch.h"
 
@@ -142,9 +143,21 @@ void Creature::onThink(uint32_t interval)
 		blockCount = std::min<uint32_t>(blockCount + 1, 2);
 		blockTicks = 0;
 	}
+	if (returnToMasterInterval > 0) {
+		returnToMasterInterval -= interval;
+		int32_t distX = Position::getDistanceX(master->getPosition(), getPosition());
+		int32_t distY = Position::getDistanceY(master->getPosition(), getPosition());
+		if (returnToMasterInterval <= 0 || (distX + distY <= 2)) {
+			returnToMasterInterval = 0;
+			if (master)
+				setAttackedCreature(master->getAttackedCreature());
+		}
+	}
+
 
 	if (followCreature) {
 		walkUpdateTicks += interval;
+
 		if (forceUpdateFollowPath || walkUpdateTicks >= 2000) {
 			walkUpdateTicks = 0;
 			forceUpdateFollowPath = false;
@@ -210,6 +223,18 @@ void Creature::onCreatureWalk()
 		}
 	}
 
+	if(isSummon() && followCreature && followCreature != master && master->getPosition().z == getPosition().z) {
+		int32_t distX = Position::getDistanceX(master->getPosition(), getPosition());
+		int32_t distY = Position::getDistanceY(master->getPosition(), getPosition());
+		if (distX >= Map::maxClientViewportX || distY >= Map::maxClientViewportY) {
+			stopEventWalk();
+			followCreature = master;
+			forceUpdateFollowPath = true;
+			attackedCreature = nullptr;
+			returnToMasterInterval = 2000;
+		}
+	}
+
 	if (cancelNextWalk) {
 		listWalkDir.clear();
 		onWalkAborted();
@@ -249,6 +274,10 @@ bool Creature::getNextStep(Direction& dir, uint32_t&)
 
 void Creature::startAutoWalk(const std::forward_list<Direction>& listDir)
 {
+	if (hasCondition(CONDITION_ROOTED)) {
+		return;
+	}
+
 	listWalkDir = listDir;
 
 	size_t size = 0;
@@ -409,16 +438,12 @@ void Creature::onCreatureAppear(Creature* creature, bool isLogin)
 
 void Creature::onRemoveCreature(Creature* creature, bool)
 {
-	onCreatureDisappear(creature, true);
-	if (creature == this) {
-		if (master && !master->isRemoved()) {
-			setMaster(nullptr);
-		}
-	} else if (isMapLoaded) {
-		if (creature->getPosition().z == getPosition().z) {
-			updateTileCache(creature->getTile(), creature->getPosition());
-		}
-	}
+  onCreatureDisappear(creature, true);
+  if (creature != this && isMapLoaded) {
+    if (creature->getPosition().z == getPosition().z) {
+      updateTileCache(creature->getTile(), creature->getPosition());
+    }
+  }
 }
 
 void Creature::onCreatureDisappear(const Creature* creature, bool isLogout)
@@ -472,11 +497,9 @@ void Creature::onCreatureMove(Creature* creature, const Tile* newTile, const Pos
 			std::forward_list<Creature*> despawnList;
 			for (Creature* summon : summons) {
 				const Position& pos = summon->getPosition();
-				if (summon->getMonster()->isPet() && (Position::getDistanceZ(newPos, pos) >= 1 || (std::max<int32_t>(Position::getDistanceX(newPos, pos), Position::getDistanceY(newPos, pos)) >= 15))) {
-					g_game.internalTeleport(summon, summon->getMaster()->getPosition(), true);
-				} else if (!summon->getMonster()->isPet() && (Position::getDistanceZ(newPos, pos) >= 2 || (std::max<int32_t>(Position::getDistanceX(newPos, pos), Position::getDistanceY(newPos, pos)) >= 30))) {
-					despawnList.push_front(summon);
-				}
+        if (Position::getDistanceZ(newPos, pos) > 0 || (std::max<int32_t>(Position::getDistanceX(newPos, pos), Position::getDistanceY(newPos, pos)) > 15)) {
+          g_game.internalTeleport(summon, summon->getMaster()->getPosition(), true);
+        }
 			}
 
 			for (Creature* despawnCreature : despawnList) {
@@ -587,6 +610,7 @@ void Creature::onCreatureMove(Creature* creature, const Tile* newTile, const Pos
 	if (creature == followCreature || (creature == this && followCreature)) {
 		if (hasFollowPath) {
 			isUpdatingPath = true;
+			g_dispatcher.addTask(createTask(std::bind(&Game::updateCreatureWalk, &g_game, getID())));
 		}
 
 		if (newPos.z != oldPos.z || !canSee(followCreature->getPosition())) {
@@ -944,6 +968,9 @@ void Creature::goToFollowCreature()
 bool Creature::setFollowCreature(Creature* creature)
 {
 	if (creature) {
+		if (returnToMasterInterval > 0 && master && creature != master)
+			return false;
+
 		if (followCreature == creature) {
 			return true;
 		}
@@ -1144,6 +1171,9 @@ void Creature::onGainExperience(uint64_t gainExp, Creature* target)
 }
 
 bool Creature::setMaster(Creature* newMaster) {
+	// Persists if this creature has ever been a summon
+	this->summoned = true;
+
 	if (!newMaster && !master) {
 		return false;
 	}
@@ -1570,7 +1600,6 @@ bool FrozenPathingConditionCall::isInRange(const Position& startPos, const Posit
 	}
 	return true;
 }
-
 bool FrozenPathingConditionCall::operator()(const Position& startPos, const Position& testPos,
         const FindPathParams& fpp, int32_t& bestMatchDist) const
 {
@@ -1582,19 +1611,22 @@ bool FrozenPathingConditionCall::operator()(const Position& startPos, const Posi
 		return false;
 	}
 
-	int32_t testDist = std::max<int32_t>(Position::getDistanceX(targetPos, testPos), Position::getDistanceY(targetPos, testPos));
+	int32_t testDist;
+	if(fpp.absoluteDist)
+		testDist = Position::getDistanceX(targetPos, testPos) + Position::getDistanceY(targetPos, testPos);
+	else
+		testDist = std::max<int32_t>(Position::getDistanceX(targetPos, testPos), Position::getDistanceY(targetPos, testPos));
+
 	if (fpp.maxTargetDist == 1) {
 		if (testDist < fpp.minTargetDist || testDist > fpp.maxTargetDist) {
 			return false;
 		}
-
 		return true;
 	} else if (testDist <= fpp.maxTargetDist) {
 		if (testDist < fpp.minTargetDist) {
 			return false;
-		}
-
-		if (testDist == fpp.maxTargetDist) {
+		} else if (testDist == fpp.maxTargetDist && (!fpp.preferDiagonal ||
+						Position::getDistanceX(targetPos, testPos) == Position::getDistanceY(targetPos, testPos))) {
 			bestMatchDist = 0;
 			return true;
 		} else if (testDist > bestMatchDist) {

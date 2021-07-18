@@ -20,13 +20,18 @@
 #ifndef FS_PROTOCOLGAME_H_FACA2A2D1A9348B78E8FD7E8003EBB87
 #define FS_PROTOCOLGAME_H_FACA2A2D1A9348B78E8FD7E8003EBB87
 
+#include <string>
+
 #include "protocol.h"
 #include "chat.h"
+#include "configmanager.h"
 #include "creature.h"
 #include "tasks.h"
 #include "protocolgamebase.h"
 #include "protocolspectator.h"
 #include "gamestore.h"
+
+
 
 class NetworkMessage;
 class Player;
@@ -40,15 +45,17 @@ class ProtocolGame;
 class ProtocolSpectator;
 using ProtocolGame_ptr = std::shared_ptr<ProtocolGame>;
 
+extern ConfigManager g_config;
 extern Game g_game;
 
 struct TextMessage
 {
-	MessageClasses type = MESSAGE_STATUS_DEFAULT;
+	MessageClasses type = MESSAGE_STATUS;
 	std::string text;
 	Position position;
 	uint16_t channelId;
-	struct {
+	struct
+	{
 		int32_t value = 0;
 		TextColor_t color;
 	} primary, secondary;
@@ -57,28 +64,40 @@ struct TextMessage
 	TextMessage(MessageClasses initType, std::string initText) : type(initType), text(std::move(initText)) {}
 };
 
-class ProtocolGame final : public ProtocolGameBase
+class ProtocolGame final : public Protocol
 {
-	public:
-		// static protocol information
-		enum {server_sends_first = true};
-		enum {protocol_identifier = 0}; // Not required as we send first
-		enum {use_checksum = true};
-		static const char* protocol_name() {
-			return "gameworld protocol";
-		}
+public:
+	// static protocol information
+	enum
+	{
+		server_sends_first = true
+	};
+	enum
+	{
+		protocol_identifier = 0
+	}; // Not required as we send first
+	enum
+	{
+		use_checksum = true
+	};
+	static const char *protocol_name()
+	{
+		return "gameworld protocol";
+	}
 
-		explicit ProtocolGame(Connection_ptr connection) :
-			ProtocolGameBase(connection) {}
+	explicit ProtocolGame(Connection_ptr connection) : ProtocolGameBase(connection) {}
 
-		void login(const std::string& name, uint32_t accnumber, OperatingSystem_t operatingSystem);
-		void logout(bool displayEffect, bool forced);
+	void login(const std::string &name, uint32_t accnumber, OperatingSystem_t operatingSystem);
+	void logout(bool displayEffect, bool forced);
 
-		uint16_t getVersion() const {
-			return version;
-		}
+	void sendLockerItems(std::map<uint16_t, uint16_t> itemMap, uint16_t count);
 
-		const std::unordered_set<uint32_t>& getKnownCreatures() const {
+	uint32_t getVersion() const
+	{
+		return version;
+	}
+
+	const std::unordered_set<uint32_t>& getKnownCreatures() const {
 			return knownCreatureSet;
 		}
 
@@ -178,243 +197,321 @@ class ProtocolGame final : public ProtocolGameBase
 			return std::numeric_limits<int8_t>::max();
 		}
 
-	private:
-		ProtocolGame_ptr getThis() {
-			return std::static_pointer_cast<ProtocolGame>(shared_from_this());
-		}
-		void connect(uint32_t playerId, OperatingSystem_t operatingSystem);
-		void disconnectClient(const std::string& message) const;
-		void writeToOutputBuffer(const NetworkMessage& msg, bool broadcast = true) final;
+private:
+	ProtocolGame_ptr getThis()
+	{
+		return std::static_pointer_cast<ProtocolGame>(shared_from_this());
+	}
+	void connect(uint32_t playerId, OperatingSystem_t operatingSystem);
+	void disconnectClient(const std::string &message) const;
+	void writeToOutputBuffer(const NetworkMessage& msg, bool broadcast = true) final;
 
-		void release() override;
+	void release() override;
 
-		void checkCreatureAsKnown(uint32_t id, bool& known, uint32_t& removedKnown);
+	void checkCreatureAsKnown(uint32_t id, bool &known, uint32_t &removedKnown);
 
-		// we have all the parse methods
-		void parsePacket(NetworkMessage& msg) override;
-		void onRecvFirstMessage(NetworkMessage& msg) override;
+	// we have all the parse methods
+	void parsePacket(NetworkMessage &msg) override;
+	void onRecvFirstMessage(NetworkMessage &msg) override;
 
-		//Parse methods
-		void parseAutoWalk(NetworkMessage& msg);
-		void parseSetOutfit(NetworkMessage& msg);
-		void parseSay(NetworkMessage& msg);
-		void parseLookAt(NetworkMessage& msg);
-		void parseLookInBattleList(NetworkMessage& msg);
-		void parseFightModes(NetworkMessage& msg);
-		void parseAttack(NetworkMessage& msg);
-		void parseFollow(NetworkMessage& msg);
+	//Parse methods
+	void parseAutoWalk(NetworkMessage &msg);
+	void parseSetOutfit(NetworkMessage &msg);
+	void parseSay(NetworkMessage &msg);
+	void parseLookAt(NetworkMessage &msg);
+	void parseLookInBattleList(NetworkMessage &msg);
 
-		void parseBugReport(NetworkMessage& msg);
-		void parseDebugAssert(NetworkMessage& msg);
-		void parseRuleViolationReport(NetworkMessage &msg);
+	void parseQuickLoot(NetworkMessage &msg);
+	void parseLootContainer(NetworkMessage &msg);
+	void parseQuickLootBlackWhitelist(NetworkMessage &msg);
+	void parseRequestLockItems();
 
-		void parseThrow(NetworkMessage& msg);
-		void parseUseItemEx(NetworkMessage& msg);
-		void parseUseWithCreature(NetworkMessage& msg);
-		void parseUseItem(NetworkMessage& msg);
-		void parseCloseContainer(NetworkMessage& msg);
-		void parseUpArrowContainer(NetworkMessage& msg);
-		void parseUpdateContainer(NetworkMessage& msg);
-		void parseTextWindow(NetworkMessage& msg);
-		void parseHouseWindow(NetworkMessage& msg);
+	void parseFightModes(NetworkMessage &msg);
+	void parseAttack(NetworkMessage &msg);
+	void parseFollow(NetworkMessage &msg);
 
-		void parseLookInShop(NetworkMessage& msg);
-		void parsePlayerPurchase(NetworkMessage& msg);
-		void parsePlayerSale(NetworkMessage& msg);
+	void sendItemInspection(uint16_t itemId, uint8_t itemCount, const Item *item, bool cyclopedia);
+	void parseInspectionObject(NetworkMessage &msg);
 
-		void parseQuestLine(NetworkMessage& msg);
+	void parseCyclopediaCharacterInfo(NetworkMessage &msg);
 
-		void parseInviteToParty(NetworkMessage& msg);
-		void parseJoinParty(NetworkMessage& msg);
-		void parseRevokePartyInvite(NetworkMessage& msg);
-		void parsePassPartyLeadership(NetworkMessage& msg);
-		void parseEnableSharedPartyExperience(NetworkMessage& msg);
+	void parseHighscores(NetworkMessage &msg);
+	void sendHighscoresNoData();
+	void sendHighscores(const std::vector<HighscoreCharacter> &characters, uint8_t categoryId, uint32_t vocationId, uint16_t page, uint16_t pages);
 
-		void parseToggleMount(NetworkMessage& msg);
+	void parseTournamentLeaderboard(NetworkMessage &msg);
 
-		// Imbuements
-		void parseApplyImbuement(NetworkMessage& msg);
-		void parseClearingImbuement(NetworkMessage& msg);
-		void parseCloseImbuingWindow(NetworkMessage& msg);
+	void parseGreet(NetworkMessage &msg);
+	void parseBugReport(NetworkMessage &msg);
+	void parseDebugAssert(NetworkMessage &msg);
+	void parseRuleViolationReport(NetworkMessage &msg);
 
-		void parseModalWindowAnswer(NetworkMessage& msg);
+	void parseBestiarysendRaces();
+	void parseBestiarysendCreatures(NetworkMessage &msg);
+	void BestiarysendCharms();
+	void sendBestiaryEntryChanged(uint16_t raceid);
+	void refreshBestiaryTracker(std::list<MonsterType *> trackerList);
+	void sendTeamFinderList();
+	void sendLeaderTeamFinder(bool reset);
+	void createLeaderTeamFinder(NetworkMessage &msg);
+	void parseLeaderFinderWindow(NetworkMessage &msg);
+	void parseMemberFinderWindow(NetworkMessage &msg);
+	void parseSendBuyCharmRune(NetworkMessage &msg);
+	void parseBestiarysendMonsterData(NetworkMessage &msg);
+	void addBestiaryTrackerList(NetworkMessage &msg);
 
-		void parseBrowseField(NetworkMessage& msg);
-		void parseSeekInContainer(NetworkMessage& msg);
+	void parseTeleport(NetworkMessage &msg);
+	void parseThrow(NetworkMessage &msg);
+	void parseUseItemEx(NetworkMessage &msg);
+	void parseUseWithCreature(NetworkMessage &msg);
+	void parseUseItem(NetworkMessage &msg);
+	void parseCloseContainer(NetworkMessage &msg);
+	void parseUpArrowContainer(NetworkMessage &msg);
+	void parseUpdateContainer(NetworkMessage &msg);
+	void parseTextWindow(NetworkMessage &msg);
+	void parseHouseWindow(NetworkMessage &msg);
 
-		//trade methods
-		void parseRequestTrade(NetworkMessage& msg);
-		void parseLookInTrade(NetworkMessage& msg);
+	void parseLookInShop(NetworkMessage &msg);
+	void parsePlayerPurchase(NetworkMessage &msg);
+	void parsePlayerSale(NetworkMessage &msg);
 
-		//market methods
-		void parseMarketLeave();
-		void parseMarketBrowse(NetworkMessage& msg);
-		void parseMarketCreateOffer(NetworkMessage& msg);
-		void parseMarketCancelOffer(NetworkMessage& msg);
-		void parseMarketAcceptOffer(NetworkMessage& msg);
+	void parseQuestLine(NetworkMessage &msg);
 
-		//VIP methods
-		void parseAddVip(NetworkMessage& msg);
-		void parseRemoveVip(NetworkMessage& msg);
-		void parseEditVip(NetworkMessage& msg);
+	void parseInviteToParty(NetworkMessage &msg);
+	void parseJoinParty(NetworkMessage &msg);
+	void parseRevokePartyInvite(NetworkMessage &msg);
+	void parsePassPartyLeadership(NetworkMessage &msg);
+	void parseEnableSharedPartyExperience(NetworkMessage &msg);
 
-		void parseRotateItem(NetworkMessage& msg);
-		void parseWrapableItem(NetworkMessage& msg);
+	void parseToggleMount(NetworkMessage &msg);
 
-		//Channel tabs
-		void parseChannelInvite(NetworkMessage& msg);
-		void parseChannelExclude(NetworkMessage& msg);
-		void parseOpenChannel(NetworkMessage& msg);
-		void parseOpenPrivateChannel(NetworkMessage& msg);
-		void parseCloseChannel(NetworkMessage& msg);
+	// Imbuements
+	void parseApplyImbuement(NetworkMessage &msg);
+	void parseClearingImbuement(NetworkMessage &msg);
+	void parseCloseImbuingWindow(NetworkMessage &msg);
 
-		//Store methods
-		void parseStoreOpen(NetworkMessage &message);
-		void parseStoreRequestOffers(NetworkMessage &message);
-		void parseStoreBuyOffer(NetworkMessage &message);
-		void parseCoinTransfer(NetworkMessage &msg);
+	void parseModalWindowAnswer(NetworkMessage &msg);
 
-		// imbue info
-		void addImbuementInfo(NetworkMessage &msg, uint32_t imbuid);
+	void parseBrowseField(NetworkMessage &msg);
+	void parseSeekInContainer(NetworkMessage &msg);
 
-		//Send functions
-		void sendChannelEvent(uint16_t channelId, const std::string& playerName, ChannelEvent_t channelEvent);
-		void sendClosePrivate(uint16_t channelId);
-		void sendCreatePrivateChannel(uint16_t channelId, const std::string& channelName);
-		void sendChannelsDialog();
-		void sendOpenPrivateChannel(const std::string& receiver);
-		void sendToChannel(const Creature* creature, SpeakClasses type, const std::string& text, uint16_t channelId);
-		void sendPrivateMessage(const Player* speaker, SpeakClasses type, const std::string& text);
-		void sendIcons(uint16_t icons);
-		void sendRestingAreaIcon(bool activate=false, bool activeResting=false);
-		void sendFYIBox(const std::string& message);
+	//trade methods
+	void parseRequestTrade(NetworkMessage &msg);
+	void parseLookInTrade(NetworkMessage &msg);
 
-		void sendImbuementWindow(Item* item);
-		void sendItemsPrice();
+	//market methods
+	void parseMarketLeave();
+	void parseMarketBrowse(NetworkMessage &msg);
+	void parseMarketCreateOffer(NetworkMessage &msg);
+	void parseMarketCancelOffer(NetworkMessage &msg);
+	void parseMarketAcceptOffer(NetworkMessage &msg);
 
-		void sendDistanceShoot(const Position& from, const Position& to, uint8_t type);
-		void sendCreatureHealth(const Creature* creature);
-		void sendCreatureTurn(const Creature* creature, uint32_t stackpos);
-		void sendCreatureSay(const Creature* creature, SpeakClasses type, const std::string& text, const Position* pos = nullptr);
+	//VIP methods
+	void parseAddVip(NetworkMessage &msg);
+	void parseRemoveVip(NetworkMessage &msg);
+	void parseEditVip(NetworkMessage &msg);
 
-		void sendChangeSpeed(const Creature* creature, uint32_t speed);
-		void sendCancelTarget();
-		void sendCreatureOutfit(const Creature* creature, const Outfit_t& outfit);
-		void sendTextMessage(const TextMessage& message);
-		void sendReLoginWindow(uint8_t unfairFightReduction);
+	void parseRotateItem(NetworkMessage &msg);
+	void parseWrapableItem(NetworkMessage &msg);
 
-		void sendTutorial(uint8_t tutorialId);
-		void sendAddMarker(const Position& pos, uint8_t markType, const std::string& desc);
+	//Channel tabs
+	void parseChannelInvite(NetworkMessage &msg);
+	void parseChannelExclude(NetworkMessage &msg);
+	void parseOpenChannel(NetworkMessage &msg);
+	void parseOpenPrivateChannel(NetworkMessage &msg);
+	void parseCloseChannel(NetworkMessage &msg);
 
-		void sendCreatureWalkthrough(const Creature* creature, bool walkthrough);
-		void sendCreatureShield(const Creature* creature);
-		void sendCreatureSkull(const Creature* creature);
-		void sendCreatureType(const Creature* creature, uint8_t creatureType);
-		void sendCreatureHelpers(uint32_t creatureId, uint16_t helpers);
+	//Store methods
+	void parseStoreOpen(NetworkMessage &message);
+	void parseStoreRequestOffers(NetworkMessage &message);
+	void parseStoreBuyOffer(NetworkMessage &message);
+	void parseCoinTransfer(NetworkMessage &msg);
 
-		void sendShop(Npc* npc, const ShopInfoList& itemList);
-		void sendCloseShop();
-		void sendClientCheck();
-		void sendGameNews();
-		void sendResourceBalance(uint64_t money, uint64_t bank);
-		void sendSaleItemList(const std::list<ShopInfo>& shop);
-		void sendMarketEnter(uint32_t depotId);
-		void updateCoinBalance();
-		void sendMarketLeave();
-		void sendMarketBrowseItem(uint16_t itemId, const MarketOfferList& buyOffers, const MarketOfferList& sellOffers);
-		void sendMarketAcceptOffer(const MarketOfferEx& offer);
-		void sendMarketBrowseOwnOffers(const MarketOfferList& buyOffers, const MarketOfferList& sellOffers);
-		void sendMarketCancelOffer(const MarketOfferEx& offer);
-		void sendMarketBrowseOwnHistory(const HistoryMarketOfferList& buyOffers, const HistoryMarketOfferList& sellOffers);
-		void sendMarketDetail(uint16_t itemId);
-		void sendTradeItemRequest(const std::string& traderName, const Item* item, bool ack);
-		void sendCloseTrade();
+	// imbue info
+	void addImbuementInfo(NetworkMessage &msg, uint32_t imbuid);
 
-		void sendTextWindow(uint32_t windowTextId, Item* item, uint16_t maxlen, bool canWrite);
-		void sendTextWindow(uint32_t windowTextId, uint32_t itemId, const std::string& text);
-		void sendHouseWindow(uint32_t windowTextId, const std::string& text);
-		void sendOutfitWindow();
+	//Send functions
+	void sendChannelEvent(uint16_t channelId, const std::string &playerName, ChannelEvent_t channelEvent);
+	void sendClosePrivate(uint16_t channelId);
+	void sendCreatePrivateChannel(uint16_t channelId, const std::string &channelName);
+	void sendChannelsDialog();
+	void sendOpenPrivateChannel(const std::string &receiver);
+	void sendToChannel(const Creature *creature, SpeakClasses type, const std::string &text, uint16_t channelId);
+	void sendPrivateMessage(const Player *speaker, SpeakClasses type, const std::string &text);
+	void sendIcons(uint32_t icons);
+	void sendFYIBox(const std::string &message);
 
-		void sendUpdatedVIPStatus(uint32_t guid, VipStatus_t newStatus);
+	void sendImbuementWindow(Item *item);
+	void sendItemsPrice();
 
-		void sendFightModes();
+	void sendDistanceShoot(const Position &from, const Position &to, uint8_t type);
+	void sendRestingStatus(uint8_t protection);
+	void sendCreatureHealth(const Creature *creature);
+	void sendCreatureHelpers(uint32_t creatureId, uint16_t helpers);
+	void sendCreatureTurn(const Creature *creature, uint32_t stackpos);
+	void sendCreatureSay(const Creature *creature, SpeakClasses type, const std::string &text, const Position *pos = nullptr);
 
-		void sendCreatureSquare(const Creature* creature, SquareColor_t color);
+	// Send preyInfo
+	void closeImbuingWindow();
+	void initPreyData();
+	void sendPreyRerollPrice(uint32_t price = 0, uint8_t wildcard = 0, uint8_t directly = 0);
 
-		void sendSpellCooldown(uint8_t spellId, uint32_t time);
-		void sendSpellGroupCooldown(SpellGroup_t groupId, uint32_t time);
+	void sendChangeSpeed(const Creature *creature, uint32_t speed);
+	void sendCancelTarget();
+	void sendCreatureOutfit(const Creature *creature, const Outfit_t &outfit);
+	void sendTextMessage(const TextMessage &message);
+	void sendReLoginWindow(uint8_t unfairFightReduction);
 
-		void sendCoinBalance();
+	void sendTutorial(uint8_t tutorialId);
+	void sendAddMarker(const Position &pos, uint8_t markType, const std::string &desc);
 
-		void sendOpenStore(uint8_t serviceType);
-		void sendStoreCategoryOffers(StoreCategory* category);
-		void sendStoreError(GameStoreError_t error, const std::string& message);
-		void sendStorePurchaseSuccessful(const std::string& message, const uint32_t coinBalance);
-		void sendStoreRequestAdditionalInfo(uint32_t offerId, ClientOffer_t clientOfferType);
-		void sendStoreTrasactionHistory(HistoryStoreOfferList& list, uint32_t page, uint8_t entriesPerPage);
-		void parseStoreOpenTransactionHistory(NetworkMessage &msg);
-		void parseStoreRequestTransactionHistory(NetworkMessage &msg);
+	void sendTournamentLeaderboard();
 
-		//tiles
-		void sendAddTileItem(const Position& pos, uint32_t stackpos, const Item* item);
-		void sendUpdateTileItem(const Position& pos, uint32_t stackpos, const Item* item);
-		void sendRemoveTileThing(const Position& pos, uint32_t stackpos);
+	void sendCyclopediaCharacterNoData(CyclopediaCharacterInfoType_t characterInfoType, uint8_t errorCode);
+	void sendCyclopediaCharacterBaseInformation();
+	void sendCyclopediaCharacterGeneralStats();
+	void sendCyclopediaCharacterCombatStats();
+	void sendCyclopediaCharacterRecentDeaths(uint16_t page, uint16_t pages, const std::vector<RecentDeathEntry> &entries);
+	void sendCyclopediaCharacterRecentPvPKills(uint16_t page, uint16_t pages, const std::vector<RecentPvPKillEntry> &entries);
+	void sendCyclopediaCharacterAchievements();
+	void sendCyclopediaCharacterItemSummary();
+	void sendCyclopediaCharacterOutfitsMounts();
+	void sendCyclopediaCharacterStoreSummary();
+	void sendCyclopediaCharacterInspection();
+	void sendCyclopediaCharacterBadges();
+	void sendCyclopediaCharacterTitles();
 
-		void sendMoveCreature(const Creature* creature, const Position& newPos, int32_t newStackPos,
-							  const Position& oldPos, int32_t oldStackPos, bool teleport);
+	void sendCreatureWalkthrough(const Creature *creature, bool walkthrough);
+	void sendCreatureShield(const Creature *creature);
+	void sendCreatureSkull(const Creature *creature);
+	void sendCreatureType(const Creature *creature, uint8_t creatureType);
 
-		//containers
-		void sendAddContainerItem(uint8_t cid, uint16_t slot, const Item* item);
-		void sendUpdateContainerItem(uint8_t cid, uint16_t slot, const Item* item);
-		void sendRemoveContainerItem(uint8_t cid, uint16_t slot, const Item* lastItem);
+	void sendShop(Npc *npc, const ShopInfoList &itemList);
+	void sendCloseShop();
+	void sendClientCheck();
+	void sendGameNews();
+	void sendResourcesBalance(uint64_t money = 0, uint64_t bank = 0, uint64_t prey = 0);
+	void sendResourceBalance(Resource_t resourceType, uint64_t value);
+	void sendSaleItemList(const std::vector<ShopInfo> &shop, const std::map<uint32_t, uint32_t> &inventoryMap);
+	void sendMarketEnter(uint32_t depotId);
+	void updateCoinBalance();
+	void sendMarketLeave();
+	void sendMarketBrowseItem(uint16_t itemId, const MarketOfferList &buyOffers, const MarketOfferList &sellOffers);
+	void sendMarketAcceptOffer(const MarketOfferEx &offer);
+	void sendMarketBrowseOwnOffers(const MarketOfferList &buyOffers, const MarketOfferList &sellOffers);
+	void sendMarketCancelOffer(const MarketOfferEx &offer);
+	void sendMarketBrowseOwnHistory(const HistoryMarketOfferList &buyOffers, const HistoryMarketOfferList &sellOffers);
+	void sendMarketDetail(uint16_t itemId);
+	void sendTradeItemRequest(const std::string &traderName, const Item *item, bool ack);
+	void sendCloseTrade();
 
-		void sendCloseContainer(uint8_t cid);
+	void sendTextWindow(uint32_t windowTextId, Item *item, uint16_t maxlen, bool canWrite);
+	void sendTextWindow(uint32_t windowTextId, uint32_t itemId, const std::string &text);
+	void sendHouseWindow(uint32_t windowTextId, const std::string &text);
+	void sendOutfitWindow();
 
-		//messages
-		void sendModalWindow(const ModalWindow& modalWindow);
+	void sendUpdatedVIPStatus(uint32_t guid, VipStatus_t newStatus);
 
-		//analyzers
-		void sendKillTrackerUpdate(Container* corpse, const std::string& name, const Outfit_t creatureOutfit);
-		void sendUpdateSupplyTracker(const Item* item);
-		void sendUpdateImpactTracker(int32_t quantity, bool isHeal);
-		void sendUpdateLootTracker(Item* item);
+	void sendFightModes();
 
-		//Help functions
-		void MoveUpCreature(NetworkMessage& msg, const Creature* creature, const Position& newPos, const Position& oldPos);
-		void MoveDownCreature(NetworkMessage& msg, const Creature* creature, const Position& newPos, const Position& oldPos);
+	void sendCreatureIcon(const Creature* creature);
+	void sendTibiaTime(int32_t time);
 
-		//shop
-		void AddShopItem(NetworkMessage& msg, const ShopInfo& item);
+	void sendCreatureSquare(const Creature *creature, SquareColor_t color);
 
-		//otclient
-		void parseExtendedOpcode(NetworkMessage& msg);
+	void sendSpellCooldown(uint8_t spellId, uint32_t time);
+	void sendSpellGroupCooldown(SpellGroup_t groupId, uint32_t time);
 
-		friend class Player;
+	void sendCoinBalance();
 
-		// Helpers so we don't need to bind every time
-		template <typename Callable, typename... Args>
-		void addGameTask(Callable function, Args&&... args) {
-			g_dispatcher.addTask(createTask(std::bind(function, &g_game, std::forward<Args>(args)...)));
-		}
+	void sendOpenStore(uint8_t serviceType);
+	void sendStoreCategoryOffers(StoreCategory *category);
+	void sendStoreError(GameStoreError_t error, const std::string &message);
+	void sendStorePurchaseSuccessful(const std::string &message, const uint32_t coinBalance);
+	void sendStoreRequestAdditionalInfo(uint32_t offerId, ClientOffer_t clientOfferType);
+	void sendStoreTrasactionHistory(HistoryStoreOfferList &list, uint32_t page, uint8_t entriesPerPage);
+	void parseStoreOpenTransactionHistory(NetworkMessage &msg);
+	void parseStoreRequestTransactionHistory(NetworkMessage &msg);
 
-		template <typename Callable, typename... Args>
-		void addGameTaskTimed(uint32_t delay, Callable function, Args&&... args) {
-			g_dispatcher.addTask(createTask(delay, std::bind(function, &g_game, std::forward<Args>(args)...)));
-		}
+	//tiles
+	void sendAddTileItem(const Position &pos, uint32_t stackpos, const Item *item);
+	void sendUpdateTileItem(const Position &pos, uint32_t stackpos, const Item *item);
+	void sendRemoveTileThing(const Position &pos, uint32_t stackpos);
 
-		static LiveCastsMap liveCasts; ///< Stores all available casts.
+	void sendMoveCreature(const Creature *creature, const Position &newPos, int32_t newStackPos,
+						  const Position &oldPos, int32_t oldStackPos, bool teleport);
 
-		std::atomic<bool> isCaster { false }; ///< Determines if this \ref ProtocolGame object is casting
+	//containers
+	void sendAddContainerItem(uint8_t cid, uint16_t slot, const Item *item);
+	void sendUpdateContainerItem(uint8_t cid, uint16_t slot, const Item *item);
+	void sendRemoveContainerItem(uint8_t cid, uint16_t slot, const Item *lastItem);
 
-		/// list of spectators \warning This variable should only be accessed after locking \ref liveCastLock
-		CastSpectatorVec spectators;
+	void sendCloseContainer(uint8_t cid);
 
-		/// Live cast name that is also used as login
-		std::string liveCastName;
+	//quickloot
+	void sendLootContainers();
+	void sendLootStats(Item *item, uint8_t count);
 
-		/// Password used to access the live cast
-		std::string liveCastPassword;
-		void sendInventory();
+	//messages
+	void sendModalWindow(const ModalWindow &modalWindow);
+
+	//analyzers
+	void sendKillTrackerUpdate(Container *corpse, const std::string &name, const Outfit_t creatureOutfit);
+	void sendUpdateSupplyTracker(const Item *item);
+	void sendUpdateImpactTracker(CombatType_t type, int32_t amount);
+	void sendUpdateInputAnalyzer(CombatType_t type, int32_t amount, std::string target);
+	void sendUpdateLootTracker(Item *item);
+
+	// Hotkey equip/dequip item
+	void parseHotkeyEquip(NetworkMessage &msg);
+
+	//Help functions
+	void MoveUpCreature(NetworkMessage &msg, const Creature *creature, const Position &newPos, const Position &oldPos);
+	void MoveDownCreature(NetworkMessage &msg, const Creature *creature, const Position &newPos, const Position &oldPos);
+
+	//shop
+	void AddShopItem(NetworkMessage &msg, const ShopInfo &item);
+
+	//otclient
+	void parseExtendedOpcode(NetworkMessage &msg);
+
+	//reloadCreature
+	void reloadCreature(const Creature *creature);
+
+	friend class Player;
+
+	// Helpers so we don't need to bind every time
+	template <typename Callable, typename... Args>
+	void addGameTask(Callable function, Args &&... args)
+	{
+		g_dispatcher.addTask(createTask(std::bind(function, &g_game, std::forward<Args>(args)...)));
+	}
+
+	template <typename Callable, typename... Args>
+	void addGameTaskTimed(uint32_t delay, Callable function, Args &&... args)
+	{
+		g_dispatcher.addTask(createTask(delay, std::bind(function, &g_game, std::forward<Args>(args)...)));
+	}
+
+	static LiveCastsMap liveCasts; ///< Stores all available casts.
+
+	std::atomic<bool> isCaster { false }; ///< Determines if this \ref ProtocolGame object is casting
+
+	/// list of spectators \warning This variable should only be accessed after locking \ref liveCastLock
+	CastSpectatorVec spectators;
+
+	/// Live cast name that is also used as login
+	std::string liveCastName;
+
+	/// Password used to access the live cast
+	std::string liveCastPassword;
+
+	void sendInventory();
+
+	void sendOpenStash();
+	void AddPlayerStowedItems(NetworkMessage &msg);
+	void parseStashWithdraw(NetworkMessage &msg);
+	void sendSpecialContainersAvailable(bool supplyStashAvailable);
 };
 
 #endif

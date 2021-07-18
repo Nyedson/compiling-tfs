@@ -26,11 +26,14 @@
 #include "configmanager.h"
 #include "events.h"
 #include "monster.h"
+#include "iobestiary.h"
+#include "monsters.h"
 
 extern Game g_game;
 extern Weapons* g_weapons;
 extern ConfigManager g_config;
 extern Events* g_events;
+extern Monsters g_monsters;
 
 CombatDamage Combat::getCombatDamage(Creature* creature, Creature* target) const
 {
@@ -294,6 +297,7 @@ bool Combat::isProtected(const Player* attacker, const Player* target)
 ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 {
 	if (attacker) {
+		const Creature* attackerMaster = attacker->getMaster();
 		if (const Player* targetPlayer = target->getPlayer()) {
 			if (targetPlayer->hasFlag(PlayerFlag_CannotBeAttacked)) {
 				return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
@@ -317,8 +321,8 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 				}
 			}
 
-			if (attacker->isSummon()) {
-				if (const Player* masterAttackerPlayer = attacker->getMaster()->getPlayer()) {
+			if (attackerMaster) {
+				if (const Player* masterAttackerPlayer = attackerMaster->getPlayer()) {
 					if (masterAttackerPlayer->hasFlag(PlayerFlag_CannotAttackPlayer)) {
 						return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
 					}
@@ -332,7 +336,17 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 					}
 				}
 			}
-		} else if (target->getMonster()) {
+			if (attacker->getMonster() && (!attackerMaster || attackerMaster->getMonster())) {
+				if (attacker->getFaction() != FACTION_DEFAULT && !attacker->getMonster()->isEnemyFaction(targetPlayer->getFaction())) {
+					return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
+				}
+			}
+		} else if (target && target->getMonster()) {
+
+			if (attacker->getFaction() != FACTION_DEFAULT && attacker->getFaction() != FACTION_PLAYER && !attacker->getMonster()->isEnemyFaction(target->getFaction())) {
+				return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
+			}
+
 			if (const Player* attackerPlayer = attacker->getPlayer()) {
 				if (attackerPlayer->hasFlag(PlayerFlag_CannotAttackMonster)) {
 					return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
@@ -341,28 +355,21 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 				if (target->isSummon() && target->getMaster()->getPlayer() && target->getZone() == ZONE_NOPVP) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
+	
 			} else if (attacker->getMonster()) {
-				/* Monsters can attack each other but only if they are monsters attackers */
-				const Monster* monster = attacker->getMonster();
+				const Creature* targetMaster = target->getMaster();
 
-				if (monster) {
-					if (!monster->isMonsterAttacker()) {
-						const Creature* targetMaster = target->getMaster();
+				if ((!targetMaster || !targetMaster->getPlayer()) && attacker->getFaction() == FACTION_DEFAULT) {
 
-					if (!targetMaster || !targetMaster->getPlayer()) {
-							const Creature* attackerMaster = attacker->getMaster();
-
-							if (!attackerMaster || !attackerMaster->getPlayer()) {
-								return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
-							}
-						}
+					if (!attackerMaster || !attackerMaster->getPlayer()) {
+						return RETURNVALUE_YOUMAYNOTATTACKTHISCREATURE;
 					}
 				}
 			}
 		}
 
 		if (g_game.getWorldType() == WORLD_TYPE_NO_PVP) {
-			if (attacker->getPlayer() || (attacker->isSummon() && attacker->getMaster()->getPlayer())) {
+			if (attacker->getPlayer() || (attackerMaster && attackerMaster->getPlayer())) {
 				if (target->getPlayer()) {
 					if (!isInPvpZone(attacker, target)) {
 						return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
@@ -538,6 +545,32 @@ void Combat::CombatConditionFunc(Creature* caster, Creature* target, const Comba
 	}
 
 	for (const auto& condition : params.conditionList) {
+		//Cleanse charm rune (target as player)
+		Player* player = target->getPlayer();
+		if (player) {
+			if (player->isImmuneCleanse(condition->getType())) {
+				player->sendCancelMessage("You are still immune against this spell.");
+				return;
+			} else if (caster->getMonster()) {
+				uint16_t playerCharmRaceid = player->parseRacebyCharm(CHARM_CLEANSE, false, 0);
+				if (playerCharmRaceid != 0) {
+					MonsterType* mType = g_monsters.getMonsterType(caster->getName());
+					if (mType && playerCharmRaceid == mType->info.raceid) {
+						IOBestiary g_bestiary;
+						Charm* charm = g_bestiary.getBestiaryCharm(CHARM_CLEANSE);
+						if (charm && (charm->chance > normal_random(0, 100))) {
+							if (player->hasCondition(condition->getType())) {
+								player->removeCondition(condition->getType());
+							}
+							player->setImmuneCleanse(condition->getType());
+							player->sendCancelMessage(charm->cancelMsg);
+							return;
+						}
+					}
+				}
+			}
+		}
+
 		if (caster == target || !target->isImmune(condition->getType())) {
 			Condition* conditionCopy = condition->clone();
 			if (caster) {
@@ -830,14 +863,28 @@ void Combat::doCombatHealth(Creature* caster, Creature* target, CombatDamage& da
 	}
 
 	if(caster && caster->getPlayer()){
-			// Critical damage
-			uint16_t chance = caster->getPlayer()->getSkillLevel(SKILL_CRITICAL_HIT_CHANCE);
-			if (damage.primary.type != COMBAT_HEALING && chance != 0 && uniform_random(1, 100) <= chance) {
-				damage.critical = true;
-				damage.primary.value += (damage.primary.value * caster->getPlayer()->getSkillLevel(SKILL_CRITICAL_HIT_DAMAGE ))/100;
-				damage.secondary.value += (damage.secondary.value * caster->getPlayer()->getSkillLevel(SKILL_CRITICAL_HIT_DAMAGE ))/100;
+		// Critical damage
+		uint16_t chance = caster->getPlayer()->getSkillLevel(SKILL_CRITICAL_HIT_CHANCE);
+		// Charm low blow rune)
+		if (target && target->getMonster()) {
+			uint16_t playerCharmRaceid = caster->getPlayer()->parseRacebyCharm(CHARM_LOW, false, 0);
+			if (playerCharmRaceid != 0) {
+				MonsterType* mType = g_monsters.getMonsterType(target->getName());
+				if (mType && playerCharmRaceid == mType->info.raceid) {
+					IOBestiary g_bestiary;
+					Charm* charm = g_bestiary.getBestiaryCharm(CHARM_LOW);
+					if (charm) {
+						chance += charm->percent;
+					}
+				}
 			}
 		}
+		if (damage.primary.type != COMBAT_HEALING && chance != 0 && uniform_random(1, 100) <= chance) {
+			damage.critical = true;
+			damage.primary.value += (damage.primary.value * caster->getPlayer()->getSkillLevel(SKILL_CRITICAL_HIT_DAMAGE ))/100;
+			damage.secondary.value += (damage.secondary.value * caster->getPlayer()->getSkillLevel(SKILL_CRITICAL_HIT_DAMAGE ))/100;
+		}
+	}
 	if (canCombat) {
 		if (caster && params.distanceEffect != CONST_ANI_NONE) {
 			addDistanceEffect(caster, caster->getPosition(), target->getPosition(), params.distanceEffect);
@@ -985,7 +1032,13 @@ void ValueCallback::getMinMaxValues(Player* player, CombatDamage& damage, bool u
 {
 	//onGetPlayerMinMaxValues(...)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - ValueCallback::getMinMaxValues] Call stack overflow" << std::endl;
+		std::cout << "[Error - ValueCallback::getMinMaxValues"
+				<< " Player "
+				<< player->getName()
+				<< " Formula "
+				<< type
+				<< "] Call stack overflow. Too many lua script calls being nested."
+				<< std::endl;
 		return;
 	}
 
@@ -1020,11 +1073,12 @@ void ValueCallback::getMinMaxValues(Player* player, CombatDamage& damage, bool u
 			//onGetPlayerMinMaxValues(player, attackSkill, attackValue, attackFactor)
 			Item* tool = player->getWeapon();
 			const Weapon* weapon = g_weapons->getWeapon(tool);
+			Item* item = nullptr;
 
 			if (weapon) {
 				attackValue = tool->getAttack();
 				if (tool->getWeaponType() == WEAPON_AMMO) {
-					Item* item = player->getWeapon(true);
+					item = player->getWeapon(true);
 					if (item) {
 						attackValue += item->getAttack();
 					}
@@ -1052,7 +1106,7 @@ void ValueCallback::getMinMaxValues(Player* player, CombatDamage& damage, bool u
 				}
 			}
 
-			lua_pushnumber(L, player->getWeaponSkill(tool));
+			lua_pushnumber(L, player->getWeaponSkill(item ? item : tool));
 			lua_pushnumber(L, attackValue);
 			lua_pushnumber(L, player->getAttackFactor());
 			parameters += 3;
@@ -1106,7 +1160,17 @@ void TileCallback::onTileCombat(Creature* creature, Tile* tile) const
 {
 	//onTileCombat(creature, pos)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - TileCallback::onTileCombat] Call stack overflow" << std::endl;
+		std::cout << "[Error - TileCallback::onTileCombat"
+				<< " Creature " 
+				<< creature->getName() 
+				<< " type "
+				<< type
+				<< " on tile " 
+				<< "x:" << (tile->getPosition()).getX() << " "
+				<< "y:" << (tile->getPosition()).getY() << " "
+				<< "z:" << (tile->getPosition()).getZ() << " "
+				<< "] Call stack overflow. Too many lua script calls being nested." 
+				<< std::endl;
 		return;
 	}
 
@@ -1136,7 +1200,10 @@ void TargetCallback::onTargetCombat(Creature* creature, Creature* target) const
 {
 	//onTargetCombat(creature, target)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - TargetCallback::onTargetCombat] Call stack overflow" << std::endl;
+		std::cout << "[Error - TargetCallback::onTargetCombat"
+				<< " Creature " 
+				<< creature->getName() 
+				<< "] Call stack overflow. Too many lua script calls being nested." << std::endl;
 		return;
 	}
 
