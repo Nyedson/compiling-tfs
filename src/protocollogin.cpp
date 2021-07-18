@@ -100,7 +100,8 @@ void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t 
 	}
 
 	output->addByte(0);
-  output->addByte(g_config.getBoolean(ConfigManager::FREE_PREMIUM));
+
+	output->addByte(g_config.getBoolean(ConfigManager::FREE_PREMIUM));
 	output->add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (time(nullptr)));
 
 	send(std::move(output));
@@ -110,7 +111,7 @@ void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t 
 
 void ProtocolLogin::getCharacterList(const std::string& accountName, const std::string& password, uint16_t version)
 {
-	// Dispatcher Thread
+	// Load Account Information
   int result = 0;
   account::Account account;
   result = account.LoadAccountDB(accountName);
@@ -129,6 +130,7 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 	Game::updatePremium(account);
 
 	addWorldInfo(output, accountName, password, version);
+
 	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(),
                                   players.size());
 	output->addByte(size);
@@ -217,17 +219,17 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	std::string accountName = msg.getString();
-
-	std::string password = msg.getString();
-	auto thisPtr = std::static_pointer_cast<ProtocolLogin>(shared_from_this());
 	if (accountName.empty()) {
-		if (g_config.getBoolean(ConfigManager::ENABLE_LIVE_CASTING)) {
-			g_dispatcher.addTask(createTask(std::bind(&ProtocolLogin::getCastingStreamsList, thisPtr, password, version)));
-		} else {
-			disconnectClient("Invalid account name.", version);
-		}
+		disconnectClient("Invalid account name.", version);
 		return;
 	}
 
+	std::string password = msg.getString();
+	if (password.empty()) {
+		disconnectClient("Invalid password.", version);
+		return;
+	}
+
+	auto thisPtr = std::static_pointer_cast<ProtocolLogin>(shared_from_this());
 	g_dispatcher.addTask(createTask(std::bind(&ProtocolLogin::getCharacterList, thisPtr, accountName, password, version)));
 }
