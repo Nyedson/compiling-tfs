@@ -2483,7 +2483,7 @@ void ProtocolGame::sendCyclopediaCharacterBaseInformation()
 	msg.addString(player->getName());
 	msg.addString(player->getVocation()->getVocName());
 	msg.add<uint16_t>(player->getLevel());
-	AddOutfit(msg, player->getDefaultOutfit(), false);
+	AddOutfit(msg, player->getDefaultOutfit());
 
 	msg.addByte(0x00); // hide stamina
 	msg.addByte(0x00); // enable store summary & character titles

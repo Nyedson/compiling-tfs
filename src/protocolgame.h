@@ -355,6 +355,7 @@ private:
 	void closeImbuingWindow();
 	void initPreyData();
 	void sendPreyRerollPrice(uint32_t price = 0, uint8_t wildcard = 0, uint8_t directly = 0);
+	void sendPreyData(PreySlotNum_t slot, PreyState_t slotState);
 
 	void sendChangeSpeed(const Creature *creature, uint32_t speed);
 	void sendCancelTarget();
