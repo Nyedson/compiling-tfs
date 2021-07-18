@@ -64,10 +64,8 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 	output->addByte(0x28);
 	output->addString(accountName + "\n" + password);
 
-	// Add char list
-  std::vector<account::Player> players;
-  account.GetAccountPlayers(&players);
-  output->addByte(0x64);
+	//Add char list
+	output->addByte(0x64);
 
   output->addByte(1);  // number of worlds
 
@@ -76,9 +74,9 @@ void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& a
 	output->addString(g_config.getString(ConfigManager::IP));
 
 	if (isLiveCastLogin) {
-		output->add<uint16_t>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT)));
+		output->add<uint16_t>(g_config.getNumber(ConfigManager::LIVE_CAST_PORT));
 	} else {
-		output->add<uint16_t>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT)));
+		output->add<uint16_t>(g_config.getNumber(ConfigManager::GAME_PORT));
 	}
 	output->addByte(0);
 }
@@ -98,9 +96,7 @@ void ProtocolLogin::getCastingStreamsList(const std::string& password, uint16_t 
 		output->addString(entry.str());
 		entry.str(std::string());
 	}
-
 	output->addByte(0);
-
 	output->addByte(g_config.getBoolean(ConfigManager::FREE_PREMIUM));
 	output->add<uint32_t>(g_config.getBoolean(ConfigManager::FREE_PREMIUM) ? 0 : (time(nullptr)));
 
@@ -128,8 +124,35 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 	auto output = OutputMessagePool::getOutputMessage();
 	// Update premium days
 	Game::updatePremium(account);
-
 	addWorldInfo(output, accountName, password, version);
+	const std::string& motd = g_config.getString(ConfigManager::MOTD);
+	if (!motd.empty()) {
+		// Add MOTD
+		output->addByte(0x14);
+
+		std::ostringstream ss;
+		ss << g_game.getMotdNum() << "\n" << motd;
+		output->addString(ss.str());
+	}
+
+	// Add session key
+	output->addByte(0x28);
+	output->addString(accountName + "\n" + password);
+
+	// Add char list
+  std::vector<account::Player> players;
+  account.GetAccountPlayers(&players);
+  output->addByte(0x64);
+
+  output->addByte(1);  // number of worlds
+
+	output->addByte(0);  // world id
+	output->addString(g_config.getString(ConfigManager::SERVER_NAME));
+	output->addString(g_config.getString(ConfigManager::IP));
+
+	output->add<uint16_t>(g_config.getShortNumber(ConfigManager::GAME_PORT));
+
+	output->addByte(0);
 
 	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(),
                                   players.size());
@@ -150,7 +173,6 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
     output->addByte(0);
     output->add<uint32_t>(time(nullptr) + (days * 86400));
   }
-
 	send(output);
 
 	disconnect();
@@ -219,17 +241,16 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	std::string accountName = msg.getString();
-	if (accountName.empty()) {
-		disconnectClient("Invalid account name.", version);
-		return;
-	}
-
 	std::string password = msg.getString();
-	if (password.empty()) {
-		disconnectClient("Invalid password.", version);
+	auto thisPtr = std::static_pointer_cast<ProtocolLogin>(shared_from_this());
+	if (accountName.empty()) {
+		if (g_config.getBoolean(ConfigManager::ENABLE_LIVE_CASTING)) {
+			g_dispatcher.addTask(createTask(std::bind(&ProtocolLogin::getCastingStreamsList, thisPtr, password, version)));
+		} else {
+			disconnectClient("Invalid account name.", version);
+		}
 		return;
 	}
 
-	auto thisPtr = std::static_pointer_cast<ProtocolLogin>(shared_from_this());
 	g_dispatcher.addTask(createTask(std::bind(&ProtocolLogin::getCharacterList, thisPtr, accountName, password, version)));
 }
