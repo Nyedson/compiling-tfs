@@ -154,23 +154,18 @@ void ProtocolGameBase::AddItem(NetworkMessage& msg, const Item* item)
 void ProtocolGameBase::AddOutfit(NetworkMessage& msg, const Outfit_t& outfit)
 {
 	msg.add<uint16_t>(outfit.lookType);
-	if (outfit.lookType != 0)
-	{
+
+	if (outfit.lookType != 0) {
 		msg.addByte(outfit.lookHead);
 		msg.addByte(outfit.lookBody);
 		msg.addByte(outfit.lookLegs);
 		msg.addByte(outfit.lookFeet);
 		msg.addByte(outfit.lookAddons);
-	}
-	else
-	{
+	} else {
 		msg.addItemId(outfit.lookTypeEx);
 	}
 
-	if (addMount)
-	{
-		msg.add<uint16_t>(outfit.lookMount);
-	}
+	msg.add<uint16_t>(outfit.lookMount);
 }
 
 void ProtocolGameBase::checkCreatureAsKnown(uint32_t id, bool& known, uint32_t& removedKnown)
@@ -950,7 +945,7 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	writeToOutputBuffer(msg);
 
 	if (version >= 1200)
-		sendTibiaTime(g_game.getLightHour());
+		//sendTibiaTime(g_game.getLightHour());
 	sendPendingStateEntered();
 	sendEnterWorld();
 	sendMapDescription(pos);
@@ -974,7 +969,7 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	sendStoreHighlight();
 
 	if (version >= 1200) {
-		sendItemsPrice();
+		//sendItemsPrice();
 	}
 
 	//gameworld light-settings
@@ -1038,9 +1033,9 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	}
 
 	if (version >= 1200)
-		sendLootContainers();
+		//sendLootContainers();
 	sendBasicData();
-	initPreyData();
+	//initPreyData();
 
 	if (version >= 1200) {
 		player->sendClientCheck();
@@ -1093,11 +1088,9 @@ void ProtocolGameBase::sendBasicData()
 		msg.addByte(1); // has reached Main (allow player to open Prey window)
 	}
 
-	std::list<uint16_t> spellsList = g_spells->getSpellsByVocation(player->getVocationId());
-	msg.add<uint16_t>(spellsList.size());
-	for (uint16_t sid : spellsList)
-	{
-		msg.addByte(sid);
+	msg.add<uint16_t>(0xFF); // number of known spells
+	for (uint8_t spellId = 0x00; spellId < 0xFF; spellId++) {
+		msg.addByte(spellId);
 	}
 	if (version >= 1200)
 		msg.addByte(player->getVocation()->getMagicShield()); // bool - determine whether magic shield is active or not
