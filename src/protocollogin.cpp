@@ -50,6 +50,12 @@ void ProtocolLogin::disconnectClient(const std::string& message, uint16_t versio
 
 void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& accountName, const std::string& password, uint16_t, bool isLiveCastLogin /*=false*/)
 {
+	account::Account account;
+  result = account.LoadAccountDB(accountName);
+  if (result) {
+    return;
+  }
+  
 	const std::string& motd = g_config.getString(ConfigManager::MOTD);
 	if (!motd.empty()) {
 		// Add MOTD
@@ -129,11 +135,11 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 	Game::updatePremium(account);
 	
 	addWorldInfo(output, accountName, password, version);
-	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), account.players.size());
+	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), players.size());
 	output->addByte(size);
 	for (uint8_t i = 0; i < size; i++) {
 		output->addByte(0);
-		output->addString(account.players[i].name);
+		output->addString(players[i].name);
 	}
 
 	// Add premium days
