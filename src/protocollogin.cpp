@@ -129,7 +129,6 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 	// Add char list
   std::vector<account::Player> players;
   account.GetAccountPlayers(&players);
-  output->addByte(0x64);
 	
 	addWorldInfo(output, accountName, password, version);
 	uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(), players.size());
