@@ -50,12 +50,14 @@ void ProtocolLogin::disconnectClient(const std::string& message, uint16_t versio
 
 void ProtocolLogin::addWorldInfo(OutputMessage_ptr& output, const std::string& accountName, const std::string& password, uint16_t, bool isLiveCastLogin /*=false*/)
 {
+	// Load Account Information
+  int result = 0;
 	account::Account account;
   result = account.LoadAccountDB(accountName);
   if (result) {
     return;
   }
-  
+
 	const std::string& motd = g_config.getString(ConfigManager::MOTD);
 	if (!motd.empty()) {
 		// Add MOTD
