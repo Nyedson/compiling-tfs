@@ -60,94 +60,51 @@ void ProtocolGameBase::onConnect()
 
 void ProtocolGameBase::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count)
 {
-	const ItemType &it = Item::items[id];
+	const ItemType& it = Item::items[id];
 
 	msg.add<uint16_t>(it.clientId);
+
 	if (version < 1200) {
 		msg.addByte(0xFF); // MARK_UNMARKED
 	}
-	if (it.stackable)
-	{
+
+	if (it.stackable) {
 		msg.addByte(count);
-	}
-	else if (it.isSplash() || it.isFluidContainer())
-	{
+	} else if (it.isSplash() || it.isFluidContainer()) {
 		msg.addByte(fluidMap[count & 7]);
 	}
-	else if (version >= 1200 && it.isContainer() && player->getOperatingSystem() <= CLIENTOS_NEW_MAC)
-	{
-		msg.addByte(0x00);
-		msg.addByte(0x00);
-	}
-	if (version < 1200 && it.isAnimation) {
+
+	if (it.isAnimation) {
 		msg.addByte(0xFE); // random phase (0xFF for async)
+	}
+
+	if (version >= 1150 && it.isContainer()) {
+		msg.addByte(0x00);
 	}
 }
 
 void ProtocolGameBase::AddItem(NetworkMessage& msg, const Item* item)
 {
-	if (!item)
-	{
-		return;
-	}
-
-	const ItemType &it = Item::items[item->getID()];
+	const ItemType& it = Item::items[item->getID()];
 
 	msg.add<uint16_t>(it.clientId);
+
 	if (version < 1200) {
 		msg.addByte(0xFF); // MARK_UNMARKED
 	}
-	if (it.stackable)
-	{
+
+	if (it.stackable) {
 		msg.addByte(std::min<uint16_t>(0xFF, item->getItemCount()));
-	}
-	else if (it.isSplash() || it.isFluidContainer())
-	{
+	} else if (it.isSplash() || it.isFluidContainer()) {
 		msg.addByte(fluidMap[item->getFluidType() & 7]);
 	}
-	else if (version >= 1200 && it.isContainer() && player->getOperatingSystem() <= CLIENTOS_NEW_MAC)
-	{
-		const Container *container = item->getContainer();
-		if (container && container->getHoldingPlayer() == player)
-		{
-			uint32_t lootFlags = 0;
-			for (auto itt : player->quickLootContainers)
-			{
-				if (itt.second == container)
-				{
-					lootFlags |= 1 << itt.first;
-				}
-			}
 
-			if (lootFlags != 0)
-			{
-				msg.addByte(0x01);
-				msg.add<uint32_t>(lootFlags);
-			}
-			else
-			{
-				msg.addByte(0x00);
-			}
-		}
-		else
-		{
-			msg.addByte(0x00);
-		}
-
-		// Quiver ammo count
-    	if (item->getWeaponType() == WEAPON_QUIVER && player->getThing(CONST_SLOT_RIGHT) == item) {
-      		uint16_t ammoTotal = 0;
-      		for (Item* listItem : container->getItemList()) {
-        		ammoTotal += listItem->getItemCount();
-      		}
-      		msg.addByte(0x01);
-      		msg.add<uint32_t>(ammoTotal);
-    	}
-    	else
-      		msg.addByte(0x00);
-	}
-	if (version < 1200 && it.isAnimation) {
+	if (it.isAnimation) {
 		msg.addByte(0xFE); // random phase (0xFF for async)
+	}
+
+	if (version >= 1150 && it.isContainer()) {
+		msg.addByte(0x00);
 	}
 }
 
@@ -171,22 +128,18 @@ void ProtocolGameBase::AddOutfit(NetworkMessage& msg, const Outfit_t& outfit)
 void ProtocolGameBase::checkCreatureAsKnown(uint32_t id, bool& known, uint32_t& removedKnown)
 {
 	auto result = knownCreatureSet.insert(id);
-	if (!result.second)
-	{
+	if (!result.second) {
 		known = true;
 		return;
 	}
 
 	known = false;
 
-	if (knownCreatureSet.size() > 1300)
-	{
+	if (knownCreatureSet.size() > 1300) {
 		// Look for a creature to remove
-		for (auto it = knownCreatureSet.begin(), end = knownCreatureSet.end(); it != end; ++it)
-		{
-			Creature *creature = g_game.getCreatureByID(*it);
-			if (!canSee(creature))
-			{
+		for (auto it = knownCreatureSet.begin(), end = knownCreatureSet.end(); it != end; ++it) {
+			Creature* creature = g_game.getCreatureByID(*it);
+			if (!canSee(creature)) {
 				removedKnown = *it;
 				knownCreatureSet.erase(it);
 				return;
@@ -195,16 +148,13 @@ void ProtocolGameBase::checkCreatureAsKnown(uint32_t id, bool& known, uint32_t& 
 
 		// Bad situation. Let's just remove anyone.
 		auto it = knownCreatureSet.begin();
-		if (*it == id)
-		{
+		if (*it == id) {
 			++it;
 		}
 
 		removedKnown = *it;
 		knownCreatureSet.erase(it);
-	}
-	else
-	{
+	} else {
 		removedKnown = 0;
 	}
 }
@@ -486,13 +436,11 @@ void ProtocolGameBase::AddCreatureLight(NetworkMessage& msg, const Creature* cre
 
 bool ProtocolGameBase::canSee(const Creature* c) const
 {
-	if (!c || !player || c->isRemoved())
-	{
+	if (!c || !player || c->isRemoved()) {
 		return false;
 	}
 
-	if (!player->canSeeCreature(c))
-	{
+	if (!player->canSeeCreature(c)) {
 		return false;
 	}
 
@@ -506,27 +454,21 @@ bool ProtocolGameBase::canSee(const Position& pos) const
 
 bool ProtocolGameBase::canSee(int32_t x, int32_t y, int32_t z) const
 {
-	if (!player)
-	{
+	if (!player) {
 		return false;
 	}
 
-	const Position &myPos = player->getPosition();
-	if (myPos.z <= 7)
-	{
+	const Position& myPos = player->getPosition();
+	if (myPos.z <= 7) {
 		//we are on ground level or above (7 -> 0)
 		//view is from 7 -> 0
-		if (z > 7)
-		{
+		if (z > 7) {
 			return false;
 		}
-	}
-	else if (myPos.z >= 8)
-	{
+	} else if (myPos.z >= 8) {
 		//we are underground (8 -> 15)
 		//view is +/- 2 from the floor we stand on
-		if (std::abs(myPos.getZ() - z) > 2)
-		{
+		if (std::abs(myPos.getZ() - z) > 2) {
 			return false;
 		}
 	}
@@ -534,8 +476,7 @@ bool ProtocolGameBase::canSee(int32_t x, int32_t y, int32_t z) const
 	//negative offset means that the action taken place is on a lower floor than ourself
 	int32_t offsetz = myPos.getZ() - z;
 	if ((x >= myPos.getX() - 8 + offsetz) && (x <= myPos.getX() + 9 + offsetz) &&
-		(y >= myPos.getY() - 6 + offsetz) && (y <= myPos.getY() + 7 + offsetz))
-	{
+			(y >= myPos.getY() - 6 + offsetz) && (y <= myPos.getY() + 7 + offsetz)) {
 		return true;
 	}
 	return false;
@@ -544,8 +485,7 @@ bool ProtocolGameBase::canSee(int32_t x, int32_t y, int32_t z) const
 //tile
 void ProtocolGameBase::RemoveTileThing(NetworkMessage& msg, const Position& pos, uint32_t stackpos)
 {
-	if (stackpos >= 10)
-	{
+	if (stackpos >= 10) {
 		return;
 	}
 
@@ -569,8 +509,7 @@ void ProtocolGameBase::sendChannelMessage(const std::string& author, const std::
 
 void ProtocolGameBase::sendUpdateTile(const Tile* tile, const Position& pos)
 {
-	if (!canSee(pos))
-	{
+	if (!canSee(pos)) {
 		return;
 	}
 
@@ -578,14 +517,11 @@ void ProtocolGameBase::sendUpdateTile(const Tile* tile, const Position& pos)
 	msg.addByte(0x69);
 	msg.addPosition(pos);
 
-	if (tile)
-	{
+	if (tile) {
 		GetTileDescription(tile, msg);
 		msg.addByte(0x00);
 		msg.addByte(0xFF);
-	}
-	else
-	{
+	} else {
 		msg.addByte(0x01);
 		msg.addByte(0xFF);
 	}
@@ -598,55 +534,44 @@ void ProtocolGameBase::GetTileDescription(const Tile* tile, NetworkMessage& msg)
 	if (version < 1200) {
 		msg.add<uint16_t>(0x00); //environmental effects
 	}
+
 	int32_t count;
-	Item *ground = tile->getGround();
-	if (ground)
-	{
+	Item* ground = tile->getGround();
+	if (ground) {
 		AddItem(msg, ground);
 		count = 1;
-	}
-	else
-	{
+	} else {
 		count = 0;
 	}
 
-	const TileItemVector *items = tile->getItemList();
-	if (items)
-	{
-		for (auto it = items->getBeginTopItem(), end = items->getEndTopItem(); it != end; ++it)
-		{
+	const TileItemVector* items = tile->getItemList();
+	if (items) {
+		for (auto it = items->getBeginTopItem(), end = items->getEndTopItem(); it != end; ++it) {
 			AddItem(msg, *it);
 
 			count++;
-			if (count == 9 && tile->getPosition() == player->getPosition())
-			{
+			if (count == 9 && tile->getPosition() == player->getPosition()) {
 				break;
 			}
-			else if (count == 10)
-			{
+			else if (count == 10) {
 				return;
 			}
 		}
 	}
 
-	const CreatureVector *creatures = tile->getCreatures();
-	if (creatures)
-	{
+	const CreatureVector* creatures = tile->getCreatures();
+	if (creatures) {
 		bool playerAdded = false;
-		for (const Creature *creature : boost::adaptors::reverse(*creatures))
-		{
-			if (!player->canSeeCreature(creature))
-			{
+		for (const Creature* creature : boost::adaptors::reverse(*creatures)) {
+			if (!player->canSeeCreature(creature)) {
 				continue;
 			}
 
-			if (tile->getPosition() == player->getPosition() && count == 9 && !playerAdded)
-			{
+			if (tile->getPosition() == player->getPosition() && count == 9 && !playerAdded) {
 				creature = player;
 			}
 
-			if (creature->getID() == player->getID())
-			{
+			if (creature->getID() == player->getID()) {
 				playerAdded = true;
 			}
 
@@ -655,21 +580,17 @@ void ProtocolGameBase::GetTileDescription(const Tile* tile, NetworkMessage& msg)
 			checkCreatureAsKnown(creature->getID(), known, removedKnown);
 			AddCreature(msg, creature, known, removedKnown);
 
-			if (++count == 10)
-			{
+			if (++count == 10) {
 				return;
 			}
 		}
 	}
 
-	if (items)
-	{
-		for (auto it = items->getBeginDownItem(), end = items->getEndDownItem(); it != end; ++it)
-		{
+	if (items) {
+		for (auto it = items->getBeginDownItem(), end = items->getEndDownItem(); it != end; ++it) {
 			AddItem(msg, *it);
 
-			if (++count == 10)
-			{
+			if (++count == 10) {
 				return;
 			}
 		}
@@ -681,26 +602,21 @@ void ProtocolGameBase::GetMapDescription(int32_t x, int32_t y, int32_t z, int32_
 	int32_t skip = -1;
 	int32_t startz, endz, zstep;
 
-	if (z > 7)
-	{
+	if (z > 7) {
 		startz = z - 2;
 		endz = std::min<int32_t>(MAP_MAX_LAYERS - 1, z + 2);
 		zstep = 1;
-	}
-	else
-	{
+	} else {
 		startz = 7;
 		endz = 0;
 		zstep = -1;
 	}
 
-	for (int32_t nz = startz; nz != endz + zstep; nz += zstep)
-	{
+	for (int32_t nz = startz; nz != endz + zstep; nz += zstep) {
 		GetFloorDescription(msg, x, y, nz, width, height, z - nz, skip);
 	}
 
-	if (skip >= 0)
-	{
+	if (skip >= 0) {
 		msg.addByte(skip);
 		msg.addByte(0xFF);
 	}
@@ -708,30 +624,22 @@ void ProtocolGameBase::GetMapDescription(int32_t x, int32_t y, int32_t z, int32_
 
 void ProtocolGameBase::GetFloorDescription(NetworkMessage& msg, int32_t x, int32_t y, int32_t z, int32_t width, int32_t height, int32_t offset, int32_t& skip)
 {
-	for (int32_t nx = 0; nx < width; nx++)
-	{
-		for (int32_t ny = 0; ny < height; ny++)
-		{
-			Tile *tile = g_game.map.getTile(x + nx + offset, y + ny + offset, z);
-			if (tile)
-			{
-				if (skip >= 0)
-				{
+	for (int32_t nx = 0; nx < width; nx++) {
+		for (int32_t ny = 0; ny < height; ny++) {
+			Tile* tile = g_game.map.getTile(x + nx + offset, y + ny + offset, z);
+			if (tile) {
+				if (skip >= 0) {
 					msg.addByte(skip);
 					msg.addByte(0xFF);
 				}
 
 				skip = 0;
 				GetTileDescription(tile, msg);
-			}
-			else if (skip == 0xFE)
-			{
+			} else if (skip == 0xFE) {
 				msg.addByte(0xFF);
 				msg.addByte(0xFF);
 				skip = -1;
-			}
-			else
-			{
+			} else {
 				++skip;
 			}
 		}
@@ -745,13 +653,10 @@ void ProtocolGameBase::sendContainer(uint8_t cid, const Container* container, bo
 
 	msg.addByte(cid);
 
-	if (container->getID() == ITEM_BROWSEFIELD)
-	{
-		AddItem(msg, ITEM_BAG, 1);
+	if (container->getID() == ITEM_BROWSEFIELD) {
+		AddItem(msg, 1987, 1);
 		msg.addString("Browse Field");
-	}
-	else
-	{
+	} else {
 		AddItem(msg, container);
 		msg.addString(container->getName());
 	}
@@ -760,10 +665,7 @@ void ProtocolGameBase::sendContainer(uint8_t cid, const Container* container, bo
 
 	msg.addByte(hasParent ? 0x01 : 0x00);
 
-	if (version >= 1200)
-		msg.addByte(0x00); // To-do: Depot Find (boolean)
-
-	msg.addByte(container->isUnlocked() ? 0x01 : 0x00);	   // Drag and drop
+	msg.addByte(container->isUnlocked() ? 0x01 : 0x00); // Drag and drop
 	msg.addByte(container->hasPagination() ? 0x01 : 0x00); // Pagination
 
 	uint32_t containerSize = container->size();
@@ -772,27 +674,20 @@ void ProtocolGameBase::sendContainer(uint8_t cid, const Container* container, bo
 
 	uint32_t maxItemsToSend;
 
-	if (container->hasPagination() && firstIndex > 0)
-	{
+	if (container->hasPagination() && firstIndex > 0) {
 		maxItemsToSend = std::min<uint32_t>(container->capacity(), containerSize - firstIndex);
-	}
-	else
-	{
+	} else {
 		maxItemsToSend = container->capacity();
 	}
 
-	if (firstIndex >= containerSize)
-	{
+	if (firstIndex >= containerSize) {
 		msg.addByte(0x00);
-	}
-	else
-	{
+	} else {
 		msg.addByte(std::min<uint32_t>(maxItemsToSend, containerSize));
 
 		uint32_t i = 0;
-		const ItemDeque &itemList = container->getItemList();
-		for (ItemDeque::const_iterator it = itemList.begin() + firstIndex, end = itemList.end(); i < maxItemsToSend && it != end; ++it, ++i)
-		{
+		const ItemDeque& itemList = container->getItemList();
+		for (ItemDeque::const_iterator it = itemList.begin() + firstIndex, end = itemList.end(); i < maxItemsToSend && it != end; ++it, ++i) {
 			AddItem(msg, *it);
 		}
 	}
@@ -807,29 +702,21 @@ void ProtocolGameBase::sendChannel(uint16_t channelId, const std::string& channe
 	msg.add<uint16_t>(channelId);
 	msg.addString(channelName);
 
-	if (channelUsers)
-	{
+	if (channelUsers) {
 		msg.add<uint16_t>(channelUsers->size());
-		for (const auto &it : *channelUsers)
-		{
+		for (const auto& it : *channelUsers) {
 			msg.addString(it.second->getName());
 		}
-	}
-	else
-	{
+	} else {
 		msg.add<uint16_t>(0x00);
 	}
 
-	if (invitedUsers)
-	{
+	if (invitedUsers) {
 		msg.add<uint16_t>(invitedUsers->size());
-		for (const auto &it : *invitedUsers)
-		{
+		for (const auto& it : *invitedUsers) {
 			msg.addString(it.second->getName());
 		}
-	}
-	else
-	{
+	} else {
 		msg.add<uint16_t>(0x00);
 	}
 	writeToOutputBuffer(msg);
@@ -844,11 +731,7 @@ void ProtocolGameBase::sendMagicEffect(const Position& pos, uint8_t type)
 	NetworkMessage msg;
 	msg.addByte(0x83);
 	msg.addPosition(pos);
-	if (version >= 1200)
-		msg.addByte(MAGIC_EFFECTS_CREATE_EFFECT);
 	msg.addByte(type);
-	if (version >= 1200)
-		msg.addByte(MAGIC_EFFECTS_END_LOOP);
 	writeToOutputBuffer(msg);
 }
 
@@ -868,15 +751,12 @@ void ProtocolGameBase::sendUnjustifiedPoints(const uint8_t& dayProgress, const u
 
 void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position& pos, int32_t stackpos, bool isLogin)
 {
-	if (!canSee(pos))
-	{
+	if (!canSee(pos)) {
 		return;
 	}
 
-	if (creature != player)
-	{
-		if (stackpos >= 10)
-		{
+	if (creature != player) {
+		if (stackpos >= 10) {
 			return;
 		}
 
@@ -891,18 +771,8 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 		AddCreature(msg, creature, known, removedKnown);
 		writeToOutputBuffer(msg);
 
-		if (isLogin)
-		{
-			if (const Player *creaturePlayer = creature->getPlayer())
-			{
-				if (!creaturePlayer->isAccessPlayer() ||
-					creaturePlayer->getAccountType() == account::ACCOUNT_TYPE_NORMAL)
-					sendMagicEffect(pos, CONST_ME_TELEPORT);
-			}
-			else
-			{
-				sendMagicEffect(pos, CONST_ME_TELEPORT);
-			}
+		if (isLogin) {
+			sendMagicEffect(pos, CONST_ME_TELEPORT);
 		}
 
 		return;
@@ -919,12 +789,9 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	msg.addDouble(Creature::speedC, 3);
 
 	// can report bugs?
-	if (player->getAccountType() >= account::ACCOUNT_TYPE_NORMAL)
-	{
+	if (player->getAccountType() >= ACCOUNT_TYPE_NORMAL) {
 		msg.addByte(0x01);
-	}
-	else
-	{
+	} else {
 		msg.addByte(0x00);
 	}
 
@@ -934,43 +801,34 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	msg.addString(g_config.getString(ConfigManager::STORE_IMAGES_URL));
 	msg.add<uint16_t>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::STORE_COIN_PACKET)));
 
-	if (version >= 1200) {
-		msg.addByte(shouldAddExivaRestrictions ? 0x01 : 0x00); // exiva button enabled
+	if (version >= 1150 || shouldAddExivaRestrictions) {
+		msg.addByte(0x00); // exiva button enabled
 	}
 
-	if (version >= 1200) {
-		msg.addByte(0x00); // tournament button enabled
+	if (version >= 1215) {
+		msg.addByte(0x01); // tournament button enabled
 	}
 
 	writeToOutputBuffer(msg);
 
-	if (version >= 1200)
-		//sendTibiaTime(g_game.getLightHour());
 	sendPendingStateEntered();
 	sendEnterWorld();
 	sendMapDescription(pos);
 	loggedIn = true;
 
-	if (isLogin)
-	{
+	if (isLogin) {
 		sendMagicEffect(pos, CONST_ME_TELEPORT);
 	}
 
-	for (int i = CONST_SLOT_FIRST; i <= CONST_SLOT_LAST; ++i)
-	{
+	for (int i = CONST_SLOT_FIRST; i <= CONST_SLOT_LAST; ++i) {
 		sendInventoryItem(static_cast<slots_t>(i), player->getInventoryItem(static_cast<slots_t>(i)));
 	}
 
 	sendStats();
 	sendSkills();
 	sendBlessStatus();
-
 	sendPremiumTrigger();
 	sendStoreHighlight();
-
-	if (version >= 1200) {
-		//sendItemsPrice();
-	}
 
 	//gameworld light-settings
 	sendWorldLight(g_game.getWorldLightInfo());
@@ -978,40 +836,29 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 	//player light level
 	sendCreatureLight(creature);
 
-	const std::forward_list<VIPEntry> &vipEntries = IOLoginData::getVIPEntries(player->getAccount());
+	const std::forward_list<VIPEntry>& vipEntries = IOLoginData::getVIPEntries(player->getAccount());
 
-	if (player->isAccessPlayer())
-	{
-		for (const VIPEntry &entry : vipEntries)
-		{
+	if (player->isAccessPlayer()) {
+		for (const VIPEntry& entry : vipEntries) {
 			VipStatus_t vipStatus;
 
-			Player *vipPlayer = g_game.getPlayerByGUID(entry.guid);
-			if (!vipPlayer)
-			{
+			Player* vipPlayer = g_game.getPlayerByGUID(entry.guid);
+			if (!vipPlayer) {
 				vipStatus = VIPSTATUS_OFFLINE;
-			}
-			else
-			{
+			} else {
 				vipStatus = VIPSTATUS_ONLINE;
 			}
 
 			sendVIP(entry.guid, entry.name, entry.description, entry.icon, entry.notify, vipStatus);
 		}
-	}
-	else
-	{
-		for (const VIPEntry &entry : vipEntries)
-		{
+	} else {
+		for (const VIPEntry& entry : vipEntries) {
 			VipStatus_t vipStatus;
 
-			Player *vipPlayer = g_game.getPlayerByGUID(entry.guid);
-			if (!vipPlayer || vipPlayer->isInGhostMode())
-			{
+			Player* vipPlayer = g_game.getPlayerByGUID(entry.guid);
+			if (!vipPlayer || vipPlayer->isInGhostMode()) {
 				vipStatus = VIPSTATUS_OFFLINE;
-			}
-			else
-			{
+			} else {
 				vipStatus = VIPSTATUS_ONLINE;
 			}
 
@@ -1019,25 +866,10 @@ void ProtocolGameBase::sendAddCreature(const Creature* creature, const Position&
 		}
 	}
 
-	sendInventoryClientIds();
-	Item *slotItem = player->getInventoryItem(CONST_SLOT_BACKPACK);
-	if (slotItem)
-	{
-		Container *mainBackpack = slotItem->getContainer();
-		Container *hasQuickLootContainer = player->getLootContainer(OBJECTCATEGORY_DEFAULT);
-		if (mainBackpack && !hasQuickLootContainer)
-		{
-			player->setLootContainer(OBJECTCATEGORY_DEFAULT, mainBackpack);
-			sendInventoryItem(CONST_SLOT_BACKPACK, player->getInventoryItem(CONST_SLOT_BACKPACK));
-		}
-	}
-
-	if (version >= 1200)
-		//sendLootContainers();
 	sendBasicData();
-	//initPreyData();
-
-	if (version >= 1200) {
+	sendInventoryClientIds();
+	sendPreyData();
+	if (player->getProtocolVersion() >= 1130) {
 		player->sendClientCheck();
 		player->sendGameNews();
 	}
@@ -1066,25 +898,19 @@ void ProtocolGameBase::sendBasicData()
 {
 	NetworkMessage msg;
 	msg.addByte(0x9F);
-	if (player->isPremium())
-	{
+	if (player->isPremium()) {
 		msg.addByte(1);
 		msg.add<uint32_t>(time(nullptr) + (player->premiumDays * 86400));
-	}
-	else
-	{
+	} else {
 		msg.addByte(0);
 		msg.add<uint32_t>(0);
 	}
 	msg.addByte(player->getVocation()->getClientId());
 
 	// Prey window
-	if (player->getVocation()->getId() == 0)
-	{
+	if (player->getVocation()->getId() == 0) {
 		msg.addByte(0);
-	}
-	else
-	{
+	} else {
 		msg.addByte(1); // has reached Main (allow player to open Prey window)
 	}
 
@@ -1092,8 +918,6 @@ void ProtocolGameBase::sendBasicData()
 	for (uint8_t spellId = 0x00; spellId < 0xFF; spellId++) {
 		msg.addByte(spellId);
 	}
-	if (version >= 1200)
-		msg.addByte(player->getVocation()->getMagicShield()); // bool - determine whether magic shield is active or not
 	writeToOutputBuffer(msg);
 }
 
@@ -1114,14 +938,11 @@ void ProtocolGameBase::sendEnterWorld()
 void ProtocolGameBase::sendInventoryItem(slots_t slot, const Item* item)
 {
 	NetworkMessage msg;
-	if (item)
-	{
+	if (item) {
 		msg.addByte(0x78);
 		msg.addByte(slot);
 		AddItem(msg, item);
-	}
-	else
-	{
+	} else {
 		msg.addByte(0x79);
 		msg.addByte(slot);
 	}
@@ -1136,15 +957,13 @@ void ProtocolGameBase::sendInventoryClientIds()
 	msg.addByte(0xF5);
 	msg.add<uint16_t>(items.size() + 11);
 
-	for (uint16_t i = 1; i <= 11; i++)
-	{
+	for (uint16_t i = 1; i <= 11; i++) {
 		msg.add<uint16_t>(i);
 		msg.addByte(0x00);
 		msg.add<uint16_t>(0x01);
 	}
 
-	for (const auto &it : items)
-	{
+	for (const auto& it : items) {
 		msg.add<uint16_t>(it.first);
 		msg.addByte(0x00);
 		msg.add<uint16_t>(it.second);
@@ -1196,8 +1015,11 @@ void ProtocolGameBase::sendVIP(uint32_t guid, const std::string& name, const std
 	msg.add<uint32_t>(std::min<uint32_t>(10, icon));
 	msg.addByte(notify ? 0x01 : 0x00);
 	msg.addByte(status);
-	if (version >= 1200)
-		msg.addByte(0x00); // vipGroups
+	if (version >= 1110) {
+		/* vipGroups: This is used for showing VipGroups by ids */
+		msg.addByte(0x00);
+	}
+
 	writeToOutputBuffer(msg);
 }
 

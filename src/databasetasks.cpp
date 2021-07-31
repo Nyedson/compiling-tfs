@@ -24,30 +24,10 @@
 
 extern Dispatcher g_dispatcher;
 
-DatabaseTasks::DatabaseTasks() {
-  db_ = &Database::getInstance();
-}
-
-bool DatabaseTasks::SetDatabaseInterface(Database *database) {
-  if (database == nullptr) {
-    return false;
-  }
-
-  db_ = database;
-  return true;
-}
 
 void DatabaseTasks::start()
 {
-  if (db_ == nullptr) {
-    return;
-  }
-	db_->connect();
-	ThreadHolder::start();
-}
-
-void DatabaseTasks::startThread()
-{
+	db.connect();
 	ThreadHolder::start();
 }
 
@@ -88,17 +68,14 @@ void DatabaseTasks::addTask(std::string query, std::function<void(DBResult_ptr, 
 
 void DatabaseTasks::runTask(const DatabaseTask& task)
 {
-  if (db_ == nullptr) {
-    return;
-  }
-  bool success;
+	bool success;
 	DBResult_ptr result;
 	if (task.store) {
-		result = db_->storeQuery(task.query);
+		result = db.storeQuery(task.query);
 		success = true;
 	} else {
 		result = nullptr;
-		success = db_->executeQuery(task.query);
+		success = db.executeQuery(task.query);
 	}
 
 	if (task.callback) {

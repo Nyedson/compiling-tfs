@@ -103,14 +103,9 @@ void ProtocolSpectator::onRecvFirstMessage(NetworkMessage& msg)
 		return;
 	}
 
-	bool allowClientOld = g_config.getBoolean(ConfigManager::ALLOW_CLIENT_OLD);
-	if (clientVersion != g_config.getNumber(ConfigManager::CLIENT_VERSION) && (allowClientOld && version != 1100))
-	{
+	if (version < g_config.getNumber(ConfigManager::VERSION_MIN) || version > g_config.getNumber(ConfigManager::VERSION_MAX)) {
 		std::ostringstream ss;
-		ss << "Only clients with protocol " << g_config.getString(ConfigManager::CLIENT_VERSION_STR);
-		if (allowClientOld)
-			ss << " and 10.00";
-		ss << " allowed!";
+		ss << "Only clients with protocol " << g_config.getString(ConfigManager::VERSION_STR) << " allowed!";
 		disconnectSpectator(ss.str());
 		return;
 	}
