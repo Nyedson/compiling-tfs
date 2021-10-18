@@ -532,6 +532,7 @@ class Creature : virtual public Thing
 		int32_t varSpeed = 0;
 		int32_t health = 1000;
 		int32_t healthMax = 1000;
+		int32_t varBuffs[BUFF_LAST + 1] = { 100, 100 };
 
 		Outfit_t currentOutfit;
 		Outfit_t defaultOutfit;
