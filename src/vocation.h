@@ -86,6 +86,10 @@ class Vocation
 			return fromVocation;
 		}
 
+		bool getMagicShield() const {
+			return magicShield;
+		}
+
 		float meleeDamageMultiplier = 1.0f;
 		float distDamageMultiplier = 1.0f;
 		float defenseMultiplier = 1.0f;

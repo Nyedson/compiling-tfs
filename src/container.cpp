@@ -371,6 +371,9 @@ ReturnValue Container::queryAdd(int32_t addIndex, const Thing& addThing, uint32_
 		}
 	}
 
+	if (getWeaponType() == WEAPON_QUIVER && item->getWeaponType() != WEAPON_AMMO)
+		return RETURNVALUE_ONLYAMMOINQUIVER;
+
 	const Cylinder* topParent = getTopParent();
 	if (topParent != this) {
 		return topParent->queryAdd(INDEX_WHEREEVER, *item, addCount, flags | FLAG_CHILDISOWNER, actor);

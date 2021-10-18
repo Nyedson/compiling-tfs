@@ -48,6 +48,7 @@ struct AStarNode {
 static constexpr int32_t MAX_NODES = 512;
 
 static constexpr int32_t MAP_NORMALWALKCOST = 10;
+static constexpr int32_t MAP_PREFERDIAGONALWALKCOST = 14;
 static constexpr int32_t MAP_DIAGONALWALKCOST = 25;
 
 class AStarNodes
@@ -63,6 +64,7 @@ class AStarNodes
 		AStarNode* getNodeByPosition(uint32_t x, uint32_t y);
 
 		static int_fast32_t getMapWalkCost(AStarNode* node, const Position& neighborPos);
+		static int_fast32_t getMapWalkCost(AStarNode* node, const Position& neighborPos, bool preferDiagonal = false);
 		static int_fast32_t getTileWalkCost(const Creature& creature, const Tile* tile);
 
 	private:
@@ -252,6 +254,8 @@ class Map
 
 		bool getPathMatching(const Creature& creature, std::forward_list<Direction>& dirList,
 						const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const;
+		bool getPathMatching(const Position& startPos, std::forward_list<Direction>& dirList,
+			const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const;
 
 		std::map<std::string, Position> waypoints;
 

@@ -81,6 +81,17 @@ void ProtocolGameBase::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count)
 	if (version >= 1150 && it.isContainer()) {
 		msg.addByte(0x00);
 	}
+
+	if (item->getWeaponType() == WEAPON_QUIVER && player->getThing(CONST_SLOT_RIGHT) == item) {
+		uint16_t ammoTotal = 0;
+		for (Item* listItem : container->getItemList()) {
+			ammoTotal += listItem->getItemCount();
+		}
+		msg.addByte(0x01);
+		msg.add<uint32_t>(ammoTotal);
+	}
+	else
+		msg.addByte(0x00);	
 }
 
 void ProtocolGameBase::AddItem(NetworkMessage& msg, const Item* item)
@@ -207,6 +218,14 @@ void ProtocolGameBase::AddCreature(NetworkMessage& msg, const Creature* creature
 
 	msg.add<uint16_t>(creature->getStepSpeed() / 2);
 
+    
+    CreatureIcon_t icon = creature->getIcon();
+	msg.addByte(icon != CREATUREICON_NONE); // Icons
+	if (icon != CREATUREICON_NONE) {
+		msg.addByte(icon);
+		msg.addByte(1);
+		msg.add<uint16_t>(0);
+	}
 	msg.addByte(player->getSkullClient(creature));
 	msg.addByte(player->getPartyShield(otherPlayer));
 
@@ -986,6 +1005,24 @@ void ProtocolGameBase::sendCreatureLight(const Creature* creature)
 
 	NetworkMessage msg;
 	AddCreatureLight(msg, creature);
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::sendCreatureIcon(const Creature* creature)
+{
+	if (!creature)
+    	return;
+  	CreatureIcon_t icon = creature->getIcon();
+  	NetworkMessage msg;
+ 	msg.addByte(0x8B);
+  	msg.add<uint32_t>(creature->getID());
+  	msg.addByte(14); // type 14 for this
+  	msg.addByte(icon != CREATUREICON_NONE); // 0 = no icon, 1 = we'll send an icon
+  	if (icon != CREATUREICON_NONE) {
+    	msg.addByte(icon);
+    	msg.addByte(1); // ???
+    	msg.add<uint16_t>(0); // used for the life in the new quest
+  	}
 	writeToOutputBuffer(msg);
 }
 

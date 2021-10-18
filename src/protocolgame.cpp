@@ -532,6 +532,7 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0x70: addGameTaskTimed(DISPATCHER_TASK_EXPIRATION, &Game::playerTurn, player->getID(), DIRECTION_EAST); break;
 		case 0x71: addGameTaskTimed(DISPATCHER_TASK_EXPIRATION, &Game::playerTurn, player->getID(), DIRECTION_SOUTH); break;
 		case 0x72: addGameTaskTimed(DISPATCHER_TASK_EXPIRATION, &Game::playerTurn, player->getID(), DIRECTION_WEST); break;
+		case 0x77: parseHotkeyEquip(msg); break;
 		case 0x78: parseThrow(msg); break;
 		case 0x79: parseLookInShop(msg); break;
 		case 0x7A: parsePlayerPurchase(msg); break;
@@ -617,6 +618,16 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 			disconnect();
 		}
 	*/
+}
+
+void ProtocolGame::parseHotkeyEquip(NetworkMessage& msg)
+{
+	if (!player) {
+		return;
+	}
+	uint16_t spriteid = msg.get<uint16_t>();
+  addGameTask(&Game::onPressHotkeyEquip, player, spriteid);
+	return;	
 }
 
 // Parse methods
@@ -1394,7 +1405,7 @@ void ProtocolGame::sendChannelsDialog()
 	writeToOutputBuffer(msg);
 }
 
-void ProtocolGame::sendIcons(uint16_t icons)
+void ProtocolGame::sendIcons(uint32_t icons)
 {
 	NetworkMessage msg;
 	msg.addByte(0xA2);

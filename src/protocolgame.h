@@ -285,7 +285,7 @@ class ProtocolGame final : public ProtocolGameBase
 		void sendOpenPrivateChannel(const std::string& receiver);
 		void sendToChannel(const Creature* creature, SpeakClasses type, const std::string& text, uint16_t channelId);
 		void sendPrivateMessage(const Player* speaker, SpeakClasses type, const std::string& text);
-		void sendIcons(uint16_t icons);
+		void sendIcons(uint32_t icons);
 		void sendRestingAreaIcon(bool activate=false, bool activeResting=false);
 		void sendFYIBox(const std::string& message);
 
@@ -378,6 +378,9 @@ class ProtocolGame final : public ProtocolGameBase
 		void sendUpdateSupplyTracker(const Item* item);
 		void sendUpdateImpactTracker(int32_t quantity, bool isHeal);
 		void sendUpdateLootTracker(Item* item);
+
+		// Hotkey equip/dequip item
+		void parseHotkeyEquip(NetworkMessage& msg);
 
 		//Help functions
 		void MoveUpCreature(NetworkMessage& msg, const Creature* creature, const Position& newPos, const Position& oldPos);

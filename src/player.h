@@ -341,7 +341,7 @@ class Player final : public Creature, public Cylinder
 			return inbox;
 		}
 
-		uint16_t getClientIcons() const;
+		uint32_t getClientIcons() const;
 
 		const GuildWarVector& getGuildWarVector() const {
 			return guildWarVector;
@@ -665,6 +665,11 @@ class Player final : public Creature, public Cylinder
 			return shopOwner;
 		}
 
+		Npc* getOnlyShopOwner() {
+			return shopOwner;
+		}
+
+
 		const Npc* getShopOwner(int32_t& onBuy, int32_t& onSell) const {
 			onBuy = purchaseCallback;
 			onSell = saleCallback;
@@ -925,6 +930,11 @@ class Player final : public Creature, public Cylinder
 		void sendCreatureLight(const Creature* creature) {
 			if (client) {
 				client->sendCreatureLight(creature);
+			}
+		}
+		void sendCreatureIcon(const Creature* creature) {
+			if (client) {
+				client->sendCreatureIcon(creature);
 			}
 		}
 		void sendCreatureWalkthrough(const Creature* creature, bool walkthrough) {
