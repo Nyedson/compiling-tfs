@@ -202,7 +202,6 @@ Condition* Condition::createCondition(ConditionId_t id, ConditionType_t type, in
 		case CONDITION_CHANNELMUTEDTICKS:
 		case CONDITION_YELLTICKS:
 		case CONDITION_PACIFIED:
-		case CONDITION_MANASHIELD:
 			return new ConditionGeneric(id, type, ticks, buff, subId);
 
 		default:
@@ -331,9 +330,6 @@ uint32_t ConditionGeneric::getIcons() const
 	uint32_t icons = Condition::getIcons();
 
 	switch (conditionType) {
-		case CONDITION_MANASHIELD:
-			icons |= ICON_MANASHIELD;
-			break;
 
 		case CONDITION_INFIGHT:
 			icons |= ICON_SWORDS;
