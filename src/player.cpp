@@ -224,28 +224,26 @@ Item* Player::getWeapon(slots_t slot, bool ignoreAmmo) const
 	}
 
 	if (!ignoreAmmo && weaponType == WEAPON_DISTANCE) {
-		const ItemType& it = Item::items[item->getID()];
-		if (it.ammoType != AMMO_NONE) {
-			Item* ammoItem = inventory[CONST_SLOT_AMMO];
-			if (!ammoItem) {
-				return nullptr;
-			}
-
-			if (Container* container = ammoItem->getContainer()) {
-				for (ContainerIterator iter = container->iterator(); iter.hasNext(); iter.advance()) {
-					if ((*iter)->getAmmoType() == it.ammoType) {
-						item = (*iter);
-						return item;
-					}
-				}
-			}
-
-			if (ammoItem->getAmmoType() != it.ammoType) {
-				return nullptr;
-			}
-			item = ammoItem;
-		}
-	}
+    const ItemType& it = Item::items[item->getID()];
+    if (it.ammoType != AMMO_NONE) {
+      Item* quiver = inventory[CONST_SLOT_RIGHT];
+      if (!quiver || quiver->getWeaponType() != WEAPON_QUIVER)
+        return nullptr;
+      Container* container = quiver->getContainer();
+      if (!container)
+        return nullptr;
+      bool found = false;
+      for (Item* ammoItem : container->getItemList()) {
+        if (ammoItem->getAmmoType() == it.ammoType) {
+          item = ammoItem;
+          found = true;
+          break;
+        }
+      }
+      if (!found)
+        return nullptr;
+    }
+  }
 	return item;
 }
 
@@ -2499,20 +2497,26 @@ ReturnValue Player::queryAdd(int32_t index, const Thing& thing, uint32_t count, 
 		case CONST_SLOT_RIGHT: {
 			if (slotPosition & SLOTP_RIGHT) {
 				if (!g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
-					if (item->getWeaponType() != WEAPON_SHIELD) {
-						ret = RETURNVALUE_CANNOTBEDRESSED;
-					} else {
-						const Item* leftItem = inventory[CONST_SLOT_LEFT];
-						if (leftItem) {
-							if ((leftItem->getSlotPosition() | slotPosition) & SLOTP_TWO_HAND) {
-								ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
-							} else {
-								ret = RETURNVALUE_NOERROR;
-							}
-						} else {
-							ret = RETURNVALUE_NOERROR;
-						}
-					}
+					if (item->getWeaponType() != WEAPON_SHIELD && item->getWeaponType() != WEAPON_QUIVER) {
+            ret = RETURNVALUE_CANNOTBEDRESSED;
+          }
+          else {
+            const Item* leftItem = inventory[CONST_SLOT_LEFT];
+            if (leftItem) {
+              if ((leftItem->getSlotPosition() | slotPosition) & SLOTP_TWO_HAND) {
+                if (item->getWeaponType() == WEAPON_QUIVER && leftItem->getWeaponType() == WEAPON_DISTANCE)
+                  ret = RETURNVALUE_NOERROR;
+                else
+                  ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
+              }
+              else {
+                ret = RETURNVALUE_NOERROR;
+              }
+            }
+            else {
+              ret = RETURNVALUE_NOERROR;
+            }
+          }
 				} else if (slotPosition & SLOTP_TWO_HAND) {
 					if (inventory[CONST_SLOT_LEFT] && inventory[CONST_SLOT_LEFT] != item) {
 						ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
@@ -2547,10 +2551,15 @@ ReturnValue Player::queryAdd(int32_t index, const Thing& thing, uint32_t count, 
 			if (slotPosition & SLOTP_LEFT) {
 				if (!g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
 					WeaponType_t type = item->getWeaponType();
-					if (type == WEAPON_NONE || type == WEAPON_SHIELD) {
+					if (type == WEAPON_NONE || type == WEAPON_SHIELD || type == WEAPON_AMMO) {
 						ret = RETURNVALUE_CANNOTBEDRESSED;
 					} else if (inventory[CONST_SLOT_RIGHT] && (slotPosition & SLOTP_TWO_HAND)) {
-						ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
+						if (type == WEAPON_DISTANCE && inventory[CONST_SLOT_RIGHT]->getWeaponType() == WEAPON_QUIVER) {
+							ret = RETURNVALUE_NOERROR;
+						}
+						else {
+							ret = RETURNVALUE_BOTHHANDSNEEDTOBEFREE;
+						}
 					} else {
 						ret = RETURNVALUE_NOERROR;
 					}
@@ -2607,8 +2616,6 @@ ReturnValue Player::queryAdd(int32_t index, const Thing& thing, uint32_t count, 
 
 		case CONST_SLOT_AMMO: {
 			if ((slotPosition & SLOTP_AMMO) || g_config.getBoolean(ConfigManager::CLASSIC_EQUIPMENT_SLOTS)) {
-				ret = RETURNVALUE_NOERROR;
-			} else if (slotPosition & SLOTP_BACKPACK && item->getName() == "Quiver") {
 				ret = RETURNVALUE_NOERROR;
 			}
 			break;
