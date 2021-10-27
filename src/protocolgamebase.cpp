@@ -114,11 +114,12 @@ void ProtocolGameBase::AddItem(NetworkMessage& msg, const Item* item)
 		for (Item* listItem : container->getItemList()) {
 			ammoTotal += listItem->getItemCount();
 		}
-		msg.addByte(0x01);
+
+		if (version >= 1150 && it.isContainer()) {
+			msg.addByte(0x01);
+		}
 		msg.add<uint32_t>(ammoTotal);
 	}
-	else
-		msg.addByte(0x00);
 }
 
 void ProtocolGameBase::AddOutfit(NetworkMessage& msg, const Outfit_t& outfit)
