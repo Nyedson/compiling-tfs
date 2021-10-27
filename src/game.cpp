@@ -4052,6 +4052,16 @@ void Game::changeLight(const Creature* creature)
 	}
 }
 
+void Game::updateCreatureIcon(const Creature* creature)
+{
+	//send to clients
+	SpectatorHashSet spectators;
+	map.getSpectators(spectators, creature->getPosition(), true, true);
+	for (Creature* spectator : spectators) {
+		spectator->getPlayer()->sendCreatureIcon(creature);
+	}
+}
+
 bool Game::combatBlockHit(CombatDamage& damage, Creature* attacker, Creature* target, bool checkDefense, bool checkArmor, bool field)
 {
 	if (damage.primary.type == COMBAT_NONE && damage.secondary.type == COMBAT_NONE) {

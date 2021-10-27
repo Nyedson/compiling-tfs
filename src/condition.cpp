@@ -892,6 +892,83 @@ bool ConditionRegeneration::setParam(ConditionParam_t param, int32_t value)
 	}
 }
 
+bool ConditionManaShield::startCondition(Creature* creature)
+{
+  if (!Condition::startCondition(creature)) {
+    return false;
+  }
+  creature->setManaShield(manaShield);
+  creature->setMaxManaShield(manaShield);
+  if (Player* player = creature->getPlayer()) {
+    player->sendStats();
+  }
+  return true;
+}
+
+void ConditionManaShield::endCondition(Creature* creature)
+{
+  creature->setManaShield(0);
+  creature->setMaxManaShield(0);
+  if (Player* player = creature->getPlayer()) {
+    player->sendStats();
+  }
+}
+
+void ConditionManaShield::addCondition(Creature* creature, const Condition* addCondition)
+{
+	endCondition(creature);
+	setTicks(addCondition->getTicks());
+
+	const ConditionManaShield& conditionManaShield = static_cast<const ConditionManaShield&>(*addCondition);
+
+	manaShield = conditionManaShield.manaShield;
+	creature->setManaShield(manaShield);
+	creature->setMaxManaShield(manaShield);
+
+	if (Player* player = creature->getPlayer()) {
+		player->sendStats();
+	}
+}
+
+bool ConditionManaShield::unserializeProp(ConditionAttr_t attr, PropStream& propStream)
+{
+  if (attr == CONDITIONATTR_MANASHIELD) {
+    return propStream.read<uint16_t>(manaShield);
+  }
+  return Condition::unserializeProp(attr, propStream);
+}
+
+void ConditionManaShield::serialize(PropWriteStream& propWriteStream)
+{
+  Condition::serialize(propWriteStream);
+
+  propWriteStream.write<uint8_t>(CONDITIONATTR_MANASHIELD);
+  propWriteStream.write<uint16_t>(manaShield);
+}
+
+bool ConditionManaShield::setParam(ConditionParam_t param, int32_t value)
+{
+  bool ret = Condition::setParam(param, value);
+
+  switch (param) {
+  case CONDITION_PARAM_MANASHIELD:
+    manaShield = value;
+    return true;
+  default:
+    return ret;
+  }
+}
+
+uint32_t ConditionManaShield::getIcons() const
+{
+	uint32_t icons = Condition::getIcons();
+	if(manaShield != 0)
+		icons |= ICON_NEWMANASHIELD;
+	else
+		icons |= ICON_MANASHIELD;
+	return icons;
+}
+
 void ConditionSoul::addCondition(Creature*, const Condition* addCondition)
 {
 	if (updateCondition(addCondition)) {

@@ -341,7 +341,7 @@ class Player final : public Creature, public Cylinder
 			return inbox;
 		}
 
-		uint16_t getClientIcons() const;
+		uint32_t getClientIcons() const;
 
 		const GuildWarVector& getGuildWarVector() const {
 			return guildWarVector;
@@ -671,6 +671,10 @@ class Player final : public Creature, public Cylinder
 			return shopOwner;
 		}
 
+		Npc* getOnlyShopOwner() {
+			return shopOwner;
+		}
+
 		//V.I.P. functions
 		void notifyStatusChange(Player* player, VipStatus_t status);
 		bool removeVIP(uint32_t vipGuid);
@@ -925,6 +929,11 @@ class Player final : public Creature, public Cylinder
 		void sendCreatureLight(const Creature* creature) {
 			if (client) {
 				client->sendCreatureLight(creature);
+			}
+		}
+		void sendCreatureIcon(const Creature* creature) {
+			if (client) {
+				client->sendCreatureIcon(creature);
 			}
 		}
 		void sendCreatureWalkthrough(const Creature* creature, bool walkthrough) {
