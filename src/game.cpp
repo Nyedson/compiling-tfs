@@ -2110,6 +2110,179 @@ ReturnValue Game::internalTeleport(Thing* thing, const Position& newPos, bool pu
 	return RETURNVALUE_NOTPOSSIBLE;
 }
 
+ReturnValue Game::internalQuickLootItem(Player* player, Item* item, ObjectCategory_t category /* = OBJECTCATEGORY_DEFAULT*/)
+{
+  if (!player || !item) {
+    return RETURNVALUE_NOTPOSSIBLE;
+  }
+
+	bool fallbackConsumed = false;
+	uint16_t baseId = 0;
+
+	Container* lootContainer = player->getLootContainer(category);
+	if (!lootContainer) {
+    	if (player->quickLootFallbackToMainContainer) {
+    		Item* fallbackItem = player->getInventoryItem(CONST_SLOT_BACKPACK);
+
+      	if (fallbackItem) {
+        	Container* mainBackpack = fallbackItem->getContainer();
+        	if (mainBackpack && !fallbackConsumed) {
+          		player->setLootContainer(OBJECTCATEGORY_DEFAULT, mainBackpack);
+          		player->sendInventoryItem(CONST_SLOT_BACKPACK, player->getInventoryItem(CONST_SLOT_BACKPACK));
+        	}
+      	}
+
+			lootContainer = fallbackItem ? fallbackItem->getContainer() : nullptr;
+			fallbackConsumed = true;
+		} else {
+			return RETURNVALUE_NOTPOSSIBLE;
+		}
+	} else {
+		baseId = lootContainer->getID();
+	}
+
+	if (!lootContainer) {
+		return RETURNVALUE_NOTPOSSIBLE;
+	}
+
+	Container* lastSubContainer = nullptr;
+	uint32_t remainderCount = item->getItemCount();
+	ContainerIterator it = lootContainer->iterator();
+
+	ReturnValue ret;
+	do {
+		Item* moveItem = nullptr;
+		if (item->getParent()) { // Stash retrive dont have parent cylinder.
+		ret = internalMoveItem(item->getParent(), lootContainer, INDEX_WHEREEVER, item, item->getItemCount(), &moveItem, 0, player);
+		} else {
+		ret = internalAddItem(lootContainer, item, INDEX_WHEREEVER);
+		}
+		if (moveItem) {
+			remainderCount -= moveItem->getItemCount();
+		}
+
+		if (ret != RETURNVALUE_CONTAINERNOTENOUGHROOM) {
+			break;
+		}
+
+		// search for a sub container
+		bool obtainedNewContainer = false;
+		while (it.hasNext()) {
+			Item* cur = *it;
+			Container* subContainer = cur ? cur->getContainer() : nullptr;
+			it.advance();
+
+			if (subContainer) {
+				lastSubContainer = subContainer;
+				lootContainer = subContainer;
+				obtainedNewContainer = true;
+				break;
+			}
+		}
+
+		// a hack to fix last empty sub-container
+		if (!obtainedNewContainer && lastSubContainer && lastSubContainer->size() > 0) {
+			Item* cur = lastSubContainer->getItemByIndex(lastSubContainer->size() - 1);
+			Container* subContainer = cur ? cur->getContainer() : nullptr;
+
+			if (subContainer) {
+				lootContainer = subContainer;
+				obtainedNewContainer = true;
+			}
+
+			lastSubContainer = nullptr;
+		}
+
+		// consumed all sub-container & there is simply no more containers to iterate over.
+		// check if fallback should be used and if not, then break
+		bool quickFallback = (player->quickLootFallbackToMainContainer);
+		bool noFallback = fallbackConsumed || !quickFallback;
+		if (noFallback && (!lootContainer || !obtainedNewContainer)) {
+			break;
+		} else if (!lootContainer || !obtainedNewContainer) {
+			Item* fallbackItem = player->getInventoryItem(CONST_SLOT_BACKPACK);
+			if (!fallbackItem || !fallbackItem->getContainer()) {
+				break;
+			}
+
+			lootContainer = fallbackItem->getContainer();
+			it = lootContainer->iterator();
+
+			fallbackConsumed = true;
+		}
+	} while (remainderCount != 0);
+	return ret;
+}
+
+ObjectCategory_t Game::getObjectCategory(const Item* item)
+{
+	ObjectCategory_t category = OBJECTCATEGORY_DEFAULT;
+  if (!item) {
+    return OBJECTCATEGORY_NONE;
+  }
+
+	const ItemType& it = Item::items[item->getID()];
+	if (item->getWorth() != 0) {
+		category = OBJECTCATEGORY_GOLD;
+	} else if (it.weaponType != WEAPON_NONE) {
+		switch (it.weaponType) {
+			case WEAPON_SWORD:
+				category = OBJECTCATEGORY_SWORDS;
+				break;
+			case WEAPON_CLUB:
+				category = OBJECTCATEGORY_CLUBS;
+				break;
+			case WEAPON_AXE:
+				category = OBJECTCATEGORY_AXES;
+				break;
+			case WEAPON_SHIELD:
+				category = OBJECTCATEGORY_SHIELDS;
+				break;
+			case WEAPON_DISTANCE:
+				category = OBJECTCATEGORY_DISTANCEWEAPONS;
+				break;
+			case WEAPON_WAND:
+				category = OBJECTCATEGORY_WANDS;
+				break;
+			case WEAPON_AMMO:
+				category = OBJECTCATEGORY_AMMO;
+				break;
+			default:
+				break;
+		}
+	} else if (it.slotPosition != SLOTP_HAND) { // if it's a weapon/shield should have been parsed earlier
+		if ((it.slotPosition & SLOTP_HEAD) != 0) {
+			category = OBJECTCATEGORY_HELMETS;
+		} else if ((it.slotPosition & SLOTP_NECKLACE) != 0) {
+			category = OBJECTCATEGORY_NECKLACES;
+		} else if ((it.slotPosition & SLOTP_BACKPACK) != 0) {
+			category = OBJECTCATEGORY_CONTAINERS;
+		} else if ((it.slotPosition & SLOTP_ARMOR) != 0) {
+			category = OBJECTCATEGORY_ARMORS;
+		} else if ((it.slotPosition & SLOTP_LEGS) != 0) {
+			category = OBJECTCATEGORY_LEGS;
+		} else if ((it.slotPosition & SLOTP_FEET) != 0) {
+			category = OBJECTCATEGORY_BOOTS;
+		} else if ((it.slotPosition & SLOTP_RING) != 0) {
+			category = OBJECTCATEGORY_RINGS;
+		}
+	} else if (it.type == ITEM_TYPE_RUNE) {
+		category = OBJECTCATEGORY_RUNES;
+	} else if (it.type == ITEM_TYPE_CREATUREPRODUCT) {
+		category = OBJECTCATEGORY_CREATUREPRODUCTS;
+	} else if (it.type == ITEM_TYPE_FOOD) {
+		category = OBJECTCATEGORY_FOOD;
+	} else if (it.type == ITEM_TYPE_VALUABLE) {
+		category = OBJECTCATEGORY_VALUABLES;
+	} else if (it.type == ITEM_TYPE_POTION) {
+		category = OBJECTCATEGORY_POTIONS;
+	} else {
+		category = OBJECTCATEGORY_OTHERS;
+	}
+
+	return category;
+}
+
 Item* searchForItem(Container* container, uint16_t itemId)
 {
 	for (ContainerIterator it = container->iterator(); it.hasNext(); it.advance()) {
