@@ -96,7 +96,6 @@ class ProtocolGameBase : public Protocol {
 		void sendPreyData();
 
 		void sendCreatureLight(const Creature* creature);
-		void sendCreatureIcon(const Creature* creature);
 		void sendWorldLight(const LightInfo& lightInfo);
 		void sendMapDescription(const Position& pos);
 
