@@ -661,7 +661,7 @@ void ProtocolGameBase::sendContainer(uint8_t cid, const Container* container, bo
 		msg.addString(container->getName());
 	}
 
-	msg.addByte(container->capacity());
+	msg.addByte(container->getName() == "Quiver" ? 4 : container->capacity());
 
 	msg.addByte(hasParent ? 0x01 : 0x00);
 

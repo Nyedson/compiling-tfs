@@ -324,6 +324,10 @@ ReturnValue Container::queryAdd(int32_t addIndex, const Thing& addThing, uint32_
 		return RETURNVALUE_THISISIMPOSSIBLE;
 	}
 
+	if (getName() == "Quiver" && !(item->getSlotPosition() & SLOTP_AMMO)) {
+		return RETURNVALUE_NOTENOUGHROOM;
+	}
+
 	const Cylinder* cylinder = getParent();
 	if (!hasBitSet(FLAG_NOLIMIT, flags)) {
 		while (cylinder) {
