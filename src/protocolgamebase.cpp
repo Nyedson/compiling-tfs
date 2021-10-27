@@ -82,19 +82,16 @@ void ProtocolGameBase::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count)
 		msg.addByte(0x00);
 	}
 
-	if (item->getWeaponType() == WEAPON_QUIVER && player->getThing(CONST_SLOT_RIGHT) == item) {
-      		uint16_t ammoTotal = 0;
-      		for (Item* listItem : container->getItemList()) {
-        		ammoTotal += listItem->getItemCount();
-      		}
-      		msg.addByte(0x01);
-      		msg.add<uint32_t>(ammoTotal);
-    	}
-    	else {
-      		msg.addByte(0x00);
-  }
+	// Quiver ammo count
+	if (container && item->getWeaponType() == WEAPON_QUIVER && player->getThing(CONST_SLOT_RIGHT) == item) {
+		uint16_t ammoTotal = 0;
+		for (Item* listItem : container->getItemList()) {
+			ammoTotal += listItem->getItemCount();
+		}
+		msg.addByte(0x01);
+		msg.add<uint32_t>(ammoTotal);
+	}
 }
-
 
 void ProtocolGameBase::AddItem(NetworkMessage& msg, const Item* item)
 {
