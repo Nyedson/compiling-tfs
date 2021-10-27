@@ -804,7 +804,6 @@ void Monster::onThink(uint32_t interval)
 		if (challengeMeleeDuration <= 0) {
 			challengeMeleeDuration = 0;
 			targetDistance = mType->info.targetDistance;
-			g_game.updateCreatureIcon(this);
 		}
 	}
 
@@ -2084,11 +2083,6 @@ bool Monster::changeTargetDistance(int32_t distance)
 	bool shouldUpdate = mType->info.targetDistance > distance ? true : false;
 	challengeMeleeDuration = 12000;
 	targetDistance = distance;
-
-	if (shouldUpdate) {
-		g_game.updateCreatureIcon(this);
-	}
-	return true;
 }
 
 
