@@ -83,6 +83,7 @@ void ProtocolGameBase::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count)
 	}
 
 	// Quiver ammo count
+	const Container *container = item->getContainer();
 	if (container && item->getWeaponType() == WEAPON_QUIVER && player->getThing(CONST_SLOT_RIGHT) == item) {
 		uint16_t ammoTotal = 0;
 		for (Item* listItem : container->getItemList()) {
