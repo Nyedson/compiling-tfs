@@ -60,7 +60,7 @@ void ProtocolGameBase::onConnect()
 
 void ProtocolGameBase::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count)
 {
-	const ItemType& it = Item::items[id];
+	const ItemType &it = Item::items[item->getID()];
 
 	msg.add<uint16_t>(it.clientId);
 
