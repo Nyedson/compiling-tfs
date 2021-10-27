@@ -199,6 +199,12 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	bool removed = false;
 	ReturnValue ret = RETURNVALUE_NOERROR;
 
+	if (player->isMoveExhausted()) 
+	{
+		player->sendCancelMessage("You can't equip very fast.");
+		return;
+	}
+
 	if (itemType.weaponType == WEAPON_AMMO) {
 		Thing* quiverThing = player->getThing(CONST_SLOT_RIGHT);
 		Thing* backpackThing = player->getThing(CONST_SLOT_BACKPACK);
@@ -430,7 +436,8 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			}
 		}
 	}
-
+    
+    player->setMoveExhaust(600);
 	if (ret != RETURNVALUE_NOERROR) {
 	  player->sendCancelMessage(ret);
 	}
