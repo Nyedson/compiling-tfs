@@ -318,6 +318,8 @@ class Game
 		bool internalCreatureSay(Creature* creature, SpeakClasses type, const std::string& text,
 								 bool ghostMode, SpectatorHashSet* spectatorsPtr = nullptr, const Position* pos = nullptr);
 
+	  ObjectCategory_t getObjectCategory(const Item* item);
+
 		void loadPlayersRecord();
 		void checkPlayersRecord();
 
