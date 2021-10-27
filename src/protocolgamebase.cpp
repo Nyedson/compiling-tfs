@@ -991,7 +991,7 @@ void ProtocolGameBase::sendCreatureLight(const Creature* creature)
 
 void ProtocolGameBase::sendCreatureIcon(const Creature* creature)
 {
-	if (!creature)
+	if (!creature || version < 1200)
     	return;
   	CreatureIcon_t icon = creature->getIcon();
   	NetworkMessage msg;
