@@ -90,8 +90,9 @@ void ProtocolGameBase::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count)
       		msg.addByte(0x01);
       		msg.add<uint32_t>(ammoTotal);
     	}
-    	else
+    	else {
       		msg.addByte(0x00);
+  }
 }
 
 
