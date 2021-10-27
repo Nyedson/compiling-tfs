@@ -115,7 +115,7 @@ void ProtocolGameBase::AddItem(NetworkMessage& msg, const Item* item)
 			ammoTotal += listItem->getItemCount();
 		}
 
-		if (version >= 1150 && it.isContainer()) {
+		if (version >= 1150) {
 			msg.addByte(0x01);
 		}
 		msg.add<uint32_t>(ammoTotal);
