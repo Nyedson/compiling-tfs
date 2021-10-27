@@ -171,7 +171,6 @@ class Monster final : public Creature
 				return CREATUREICON_NONE;
 		}
 
-
 		void setNormalCreatureLight() override;
 		bool getCombatValues(int32_t& min, int32_t& max) override;
 

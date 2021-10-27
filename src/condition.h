@@ -58,7 +58,6 @@ enum ConditionAttr_t {
 	CONDITIONATTR_PERIODDAMAGE,
 	CONDITIONATTR_ISBUFF,
 	CONDITIONATTR_SUBID,
-	CONDITIONATTR_MANASHIELD,
 	CONDITIONATTR_STAMINAGAIN,
     CONDITIONATTR_STAMINATICKS,
 
@@ -215,31 +214,6 @@ class ConditionRegeneration final : public ConditionGeneric
 		uint32_t manaTicks = 1000;
 		uint32_t healthGain = 0;
 		uint32_t manaGain = 0;
-};
-
-class ConditionManaShield final : public Condition
-{
-public:
-  ConditionManaShield(ConditionId_t initId, ConditionType_t initType, int32_t iniTicks, bool initBuff = false, uint32_t initSubId = 0) :
-    Condition(initId, initType, iniTicks, initBuff, initSubId) {}
-
-  bool startCondition(Creature* creature) override;
-  void endCondition(Creature* creature) override;
-  void addCondition(Creature* creature, const Condition* addCondition) override;
-  uint32_t getIcons() const override;
-
-  bool setParam(ConditionParam_t param, int32_t value) override;
-
-  ConditionManaShield* clone() const override {
-    return new ConditionManaShield(*this);
-  }
-
-  //serialization
-  void serialize(PropWriteStream& propWriteStream) override;
-  bool unserializeProp(ConditionAttr_t attr, PropStream& propStream) override;
-
-private:
-  uint16_t manaShield = 0;
 };
 
 class ConditionSoul final : public ConditionGeneric

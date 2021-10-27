@@ -63,7 +63,6 @@ class AStarNodes
 		int_fast32_t getClosedNodes() const;
 		AStarNode* getNodeByPosition(uint32_t x, uint32_t y);
 
-		static int_fast32_t getMapWalkCost(AStarNode* node, const Position& neighborPos);
 		static int_fast32_t getMapWalkCost(AStarNode* node, const Position& neighborPos, bool preferDiagonal = false);
 		static int_fast32_t getTileWalkCost(const Creature& creature, const Tile* tile);
 
@@ -254,7 +253,8 @@ class Map
 
 		bool getPathMatching(const Creature& creature, std::forward_list<Direction>& dirList,
 						const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const;
-		bool getPathMatching(const Position& startPos, std::forward_list<Direction>& dirList,
+
+	  bool getPathMatching(const Position& startPos, std::forward_list<Direction>& dirList,
 			const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const;
 
 		std::map<std::string, Position> waypoints;

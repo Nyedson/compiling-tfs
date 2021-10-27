@@ -190,9 +190,6 @@ Condition* Condition::createCondition(ConditionId_t id, ConditionType_t type, in
 		case CONDITION_SPELLGROUPCOOLDOWN:
 			return new ConditionSpellGroupCooldown(id, type, ticks, buff, subId);
 
-		case CONDITION_MANASHIELD:
-      		return new ConditionManaShield(id, type, ticks, buff, subId);
-
 		case CONDITION_INFIGHT:
 		case CONDITION_DRUNK:
 		case CONDITION_EXHAUST:
@@ -202,6 +199,7 @@ Condition* Condition::createCondition(ConditionId_t id, ConditionType_t type, in
 		case CONDITION_CHANNELMUTEDTICKS:
 		case CONDITION_YELLTICKS:
 		case CONDITION_PACIFIED:
+		case CONDITION_MANASHIELD:
 			return new ConditionGeneric(id, type, ticks, buff, subId);
 
 		default:
@@ -330,6 +328,9 @@ uint32_t ConditionGeneric::getIcons() const
 	uint32_t icons = Condition::getIcons();
 
 	switch (conditionType) {
+		case CONDITION_MANASHIELD:
+			icons |= ICON_MANASHIELD;
+			break;
 
 		case CONDITION_INFIGHT:
 			icons |= ICON_SWORDS;
@@ -379,14 +380,14 @@ bool ConditionAttributes::unserializeProp(ConditionAttr_t attr, PropStream& prop
 {
 	if (attr == CONDITIONATTR_SKILLS) {
     return propStream.read<int32_t>(skills[currentSkill++]);
-  }
-  else if (attr == CONDITIONATTR_STATS) {
-    return propStream.read<int32_t>(stats[currentStat++]);
-  }
-  else if (attr == CONDITIONATTR_BUFFS) {
-    return propStream.read<int32_t>(buffs[currentBuff++]);
-  }
-  return Condition::unserializeProp(attr, propStream);
+    }
+    else if (attr == CONDITIONATTR_STATS) {
+    	return propStream.read<int32_t>(stats[currentStat++]);
+    }
+    else if (attr == CONDITIONATTR_BUFFS) {
+    	return propStream.read<int32_t>(buffs[currentBuff++]);
+    }
+    return Condition::unserializeProp(attr, propStream);
 }
 
 void ConditionAttributes::serialize(PropWriteStream& propWriteStream)
@@ -398,7 +399,7 @@ void ConditionAttributes::serialize(PropWriteStream& propWriteStream)
 		propWriteStream.write<int32_t>(skills[i]);
 	}
 
-	 for (int32_t i = STAT_FIRST; i <= STAT_LAST; ++i) {
+	for (int32_t i = STAT_FIRST; i <= STAT_LAST; ++i) {
     propWriteStream.write<uint8_t>(CONDITIONATTR_STATS);
     propWriteStream.write<int32_t>(stats[i]);
   }
@@ -514,28 +515,23 @@ void ConditionAttributes::updatePercentBuffs(Creature* creature)
 
 void ConditionAttributes::updateBuffs(Creature* creature)
 {
-	Player* player = creature->getPlayer();
-	if (player) {
-		bool needUpdate = false;
+	bool needUpdate = false;
+  for (int32_t i = BUFF_FIRST; i <= BUFF_LAST; ++i) {
+    if (buffs[i]) {
+      needUpdate = true;
+      creature->setBuff(static_cast<buffs_t>(i), buffs[i]);
+    }
+  }
+  if (creature->getMonster() && needUpdate) {
+    g_game.updateCreatureIcon(creature);
+  }
+}
 
-		for (int32_t i = SKILL_FIRST; i <= SKILL_LAST; ++i) {
-			if (skills[i] || skillsPercent[i]) {
-				needUpdate = true;
-				player->setVarSkill(static_cast<skills_t>(i), -skills[i]);
-			}
-		}
-
-		for (int32_t i = STAT_FIRST; i <= STAT_LAST; ++i) {
-			if (stats[i]) {
-				needUpdate = true;
-				player->setVarStats(static_cast<stats_t>(i), -stats[i]);
-			}
-		}
-
-bool ConditionAttributes::executeCondition(Creature* creature, int32_t interval)
+		bool ConditionAttributes::executeCondition(Creature* creature, int32_t interval)
 {
   return ConditionGeneric::executeCondition(creature, interval);
 }
+
 
 	void ConditionAttributes::endCondition(Creature* creature)
 {

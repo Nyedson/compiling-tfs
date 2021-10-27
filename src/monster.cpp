@@ -808,7 +808,6 @@ void Monster::onThink(uint32_t interval)
 		}
 	}
 
-
 	if (!mType->canSpawn(position)) {
 		g_game.removeCreature(this);
 	}
@@ -2091,6 +2090,7 @@ bool Monster::changeTargetDistance(int32_t distance)
 	}
 	return true;
 }
+
 
 void Monster::getPathSearchParams(const Creature* creature, FindPathParams& fpp) const
 {

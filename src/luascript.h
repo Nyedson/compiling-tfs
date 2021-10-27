@@ -1128,6 +1128,7 @@ class LuaScriptInterface
 		static int luaMonsterRemoveTarget(lua_State* L);
 		static int luaMonsterGetTargetList(lua_State* L);
 		static int luaMonsterGetTargetCount(lua_State* L);
+
 		static int luaMonsterChangeTargetDistance(lua_State* L);
 
 		static int luaMonsterSelectTarget(lua_State* L);

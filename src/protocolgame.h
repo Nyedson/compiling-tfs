@@ -379,9 +379,6 @@ class ProtocolGame final : public ProtocolGameBase
 		void sendUpdateImpactTracker(int32_t quantity, bool isHeal);
 		void sendUpdateLootTracker(Item* item);
 
-		// Hotkey equip/dequip item
-		void parseHotkeyEquip(NetworkMessage& msg);
-
 		//Help functions
 		void MoveUpCreature(NetworkMessage& msg, const Creature* creature, const Position& newPos, const Position& oldPos);
 		void MoveDownCreature(NetworkMessage& msg, const Creature* creature, const Position& newPos, const Position& oldPos);
