@@ -106,20 +106,6 @@ void ProtocolGameBase::AddItem(NetworkMessage& msg, const Item* item)
 	if (version >= 1150 && it.isContainer()) {
 		msg.addByte(0x00);
 	}
-
-	// Quiver ammo count
-	const Container *container = item->getContainer();
-	if (container && item->getWeaponType() == WEAPON_QUIVER && player->getThing(CONST_SLOT_RIGHT) == item) {
-		uint16_t ammoTotal = 0;
-		for (Item* listItem : container->getItemList()) {
-			ammoTotal += listItem->getItemCount();
-		}
-
-		if (version >= 1150) {
-			msg.addByte(0x01);
-		}
-		msg.add<uint32_t>(ammoTotal);
-	}
 }
 
 void ProtocolGameBase::AddOutfit(NetworkMessage& msg, const Outfit_t& outfit)
