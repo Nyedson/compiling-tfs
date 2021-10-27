@@ -22,7 +22,7 @@
 
 enum RuleViolationType_t : uint8_t {
 	REPORT_TYPE_NAME = 0,
-	REPORT_TYPE_
+	REPORT_TYPE_STATEMENT = 1,
 	REPORT_TYPE_BOT = 2
 };
 
