@@ -318,11 +318,6 @@ class Game
 		bool internalCreatureSay(Creature* creature, SpeakClasses type, const std::string& text,
 								 bool ghostMode, SpectatorHashSet* spectatorsPtr = nullptr, const Position* pos = nullptr);
 
-	  ReturnValue internalQuickLootItem(Player* player, Item* item,
-									ObjectCategory_t category = OBJECTCATEGORY_DEFAULT);
-
-	  ObjectCategory_t getObjectCategory(const Item* item);
-
 		void loadPlayersRecord();
 		void checkPlayersRecord();
 
