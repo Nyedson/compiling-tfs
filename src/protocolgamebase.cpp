@@ -989,7 +989,7 @@ void ProtocolGameBase::sendCreatureLight(const Creature* creature)
 	writeToOutputBuffer(msg);
 }
 
-void ProtocolGame::sendCreatureIcon(const Creature* creature)
+void ProtocolGameBase::sendCreatureIcon(const Creature* creature)
 {
 	if (!creature)
     	return;
