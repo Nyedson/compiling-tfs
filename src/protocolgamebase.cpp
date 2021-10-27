@@ -58,9 +58,9 @@ void ProtocolGameBase::onConnect()
 	send(std::move(output));
 }
 
-void ProtocolGameBase::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count)
+void ProtocolGameBase::AddItem(NetworkMessage& msg, uint16_t id, uint8_t count, const Item *item)
 {
-	const ItemType &it = Item::items[item->getID()];
+	const ItemType& it = Item::items[id];
 
 	msg.add<uint16_t>(it.clientId);
 
