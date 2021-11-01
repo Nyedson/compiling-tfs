@@ -21,7 +21,6 @@
 
 #include <fstream>
 
-#include "stats.h"
 #include "configmanager.h"
 #include "databasemanager.h"
 #include "databasetasks.h"
@@ -42,9 +41,7 @@
 
 DatabaseTasks g_databaseTasks;
 Dispatcher g_dispatcher;
-Dispatcher g_dispatcher2;
 Scheduler g_scheduler;
-Stats g_stats;
 
 Game g_game;
 ConfigManager g_config;
@@ -80,7 +77,6 @@ int main(int argc, char* argv[]) {
 
 	g_dispatcher.start();
 	g_scheduler.start();
-	g_stats.start();
 
 	g_dispatcher.addTask(createTask(std::bind(mainLoader, argc, argv,
 												&serviceManager)));
@@ -96,21 +92,17 @@ int main(int argc, char* argv[]) {
 		g_scheduler.shutdown();
 		g_databaseTasks.shutdown();
 		g_dispatcher.shutdown();
-		g_stats.shutdown();
 	}
 
 	g_scheduler.join();
 	g_databaseTasks.join();
 	g_dispatcher.join();
-	g_stats.join();
 	return 0;
 }
 
-#ifndef _WIN32
-	__attribute__ ((used)) void saveServer() {
-		g_game.saveGameState();
-	}
-#endif
+//__attribute__ ((used)) void saveServer() {
+//	g_game.saveGameState();
+//}
 
 void mainLoader(int, char*[], ServiceManager* services) {
 	// dispatcher thread

@@ -163,8 +163,6 @@ void Game::setGameState(GameState_t newState)
 			g_scheduler.stop();
 			g_databaseTasks.stop();
 			g_dispatcher.stop();
-			g_dispatcher2.stop();
-			g_stats.stop();
 			break;
 		}
 
@@ -3972,7 +3970,7 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 	}
 
 
-	if (!text.empty() && text.front() == '/' && player->isAccessPlayer()) {
+	if (text.front() == '/' && player->isAccessPlayer()) {
 		return;
 	}
 
@@ -4028,14 +4026,17 @@ bool Game::playerSaySpell(Player* player, SpeakClasses type, const std::string& 
 	}
 
 	std::string words = text;
+	const std::string& lowerWords = asLowerCaseString(words);
 
-	TalkActionResult_t result = g_talkActions->playerSaySpell(player, type, words);
-	if (result == TALKACTION_BREAK) {
-		player->cancelPush();
-		return true;
-	}
+	TalkActionResult_t result;
+	if (text.front() == '/' || text.front() == '!') {
+		result = g_talkActions->playerSaySpell(player, type, lowerWords);
+		if (result == TALKACTION_BREAK) {
+			player->cancelPush();
+			return true;
+		}
 
-	result = g_spells->playerSaySpell(player, words);
+	result = g_spells->playerSaySpell(player, words, lowerWords);
 	if (result == TALKACTION_BREAK) {
 		if (!g_config.getBoolean(ConfigManager::EMOTE_SPELLS)) {
 			return internalCreatureSay(player, TALKTYPE_SAY, words, false);
@@ -4280,7 +4281,6 @@ void Game::checkCreatures(size_t index)
 	}
 
 	cleanup();
-	g_stats.playersOnline = getPlayersOnline();
 }
 
 void Game::changeSpeed(Creature* creature, int32_t varSpeedDelta)
@@ -5394,8 +5394,6 @@ void Game::shutdown()
 	g_scheduler.shutdown();
 	g_databaseTasks.shutdown();
 	g_dispatcher.shutdown();
-	g_dispatcher2.shutdown();
-	g_stats.shutdown();
 	map.spawns.clear();
 	raids.clear();
 
