@@ -163,6 +163,8 @@ void Game::setGameState(GameState_t newState)
 			g_scheduler.stop();
 			g_databaseTasks.stop();
 			g_dispatcher.stop();
+			g_dispatcher2.stop();
+			g_stats.stop();
 			break;
 		}
 
@@ -198,12 +200,6 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 
 	bool removed = false;
 	ReturnValue ret = RETURNVALUE_NOERROR;
-
-	if (player->isMoveExhausted()) 
-	{
-		player->sendCancelMessage("You can't equip very fast.");
-		return;
-	}
 
 	if (itemType.weaponType == WEAPON_AMMO) {
 		Thing* quiverThing = player->getThing(CONST_SLOT_RIGHT);
@@ -359,12 +355,6 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 							if (item->getDuration() > 0 ||
 								ammoItem->getItemCount() == 100 ||
 								ammoItem->getItemCount() == player->getItemTypeCount(ammoItem->getID())) {
-								if (ret != RETURNVALUE_NOERROR) {
-									ret = internalMoveItem(ammoItem->getParent(), player, 0, ammoItem, ammoItem->getItemCount(), nullptr);
-								}
-								if (ret != RETURNVALUE_NOERROR) {
-									player->sendCancelMessage(ret);
-								}
 								return;
 							}
 						}
@@ -436,8 +426,7 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			}
 		}
 	}
-    
-    player->setMoveExhaust(600);
+
 	if (ret != RETURNVALUE_NOERROR) {
 	  player->sendCancelMessage(ret);
 	}
@@ -4291,6 +4280,7 @@ void Game::checkCreatures(size_t index)
 	}
 
 	cleanup();
+	g_stats.playersOnline = getPlayersOnline();
 }
 
 void Game::changeSpeed(Creature* creature, int32_t varSpeedDelta)
@@ -5404,6 +5394,8 @@ void Game::shutdown()
 	g_scheduler.shutdown();
 	g_databaseTasks.shutdown();
 	g_dispatcher.shutdown();
+	g_dispatcher2.shutdown();
+	g_stats.shutdown();
 	map.spawns.clear();
 	raids.clear();
 
