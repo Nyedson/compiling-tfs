@@ -41,7 +41,7 @@ static constexpr int32_t MAP_MAX_LAYERS = 16;
 struct FindPathParams;
 struct AStarNode {
 	AStarNode* parent;
-	int_fast32_t f, g, c;
+	int_fast32_t f;
 	uint16_t x, y;
 };
 
@@ -54,30 +54,24 @@ static constexpr int32_t MAP_DIAGONALWALKCOST = 25;
 class AStarNodes
 {
 	public:
-		AStarNodes(uint32_t x, uint32_t y, int_fast32_t extraCost);
+		AStarNodes(uint32_t x, uint32_t y);
 
-		bool createOpenNode(AStarNode* parent, uint32_t x, uint32_t y, int_fast32_t f, int_fast32_t heuristic, int_fast32_t extraCost);
+		AStarNode* createOpenNode(AStarNode* parent, uint32_t x, uint32_t y, int_fast32_t f);
 		AStarNode* getBestNode();
 		void closeNode(AStarNode* node);
 		void openNode(AStarNode* node);
-		int32_t getClosedNodes() const;
+		int_fast32_t getClosedNodes() const;
 		AStarNode* getNodeByPosition(uint32_t x, uint32_t y);
 
-		static inline int_fast32_t getMapWalkCost(AStarNode* node, const Position& neighborPos);
-		static inline int_fast32_t getTileWalkCost(const Creature& creature, const Tile* tile);
+		static int_fast32_t getMapWalkCost(AStarNode* node, const Position& neighborPos, bool preferDiagonal = false);
+		static int_fast32_t getTileWalkCost(const Creature& creature, const Tile* tile);
 
 	private:
-		#if defined(__SSE2__)
-		alignas(16) uint32_t nodesTable[MAX_NODES];
-		alignas(16) int32_t calculatedNodes[MAX_NODES];
 		AStarNode nodes[MAX_NODES];
-		#else
-		AStarNode nodes[MAX_NODES];
-		uint32_t nodesTable[MAX_NODES];
-		#endif
-		int32_t closedNodes;
-		int32_t curNode;
 		bool openNodes[MAX_NODES];
+		std::unordered_map<uint32_t, AStarNode*> nodeTable;
+		size_t curNode;
+		int_fast32_t closedNodes;
 };
 
 using SpectatorCache = std::map<Position, SpectatorHashSet>;
@@ -257,9 +251,10 @@ class Map
 
 		const Tile* canWalkTo(const Creature& creature, const Position& pos) const;
 
-		bool getPathMatching(const Creature& creature, const Position& targetPos, std::vector<Direction>& dirList,
-			const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const;
-		bool getPathMatchingCond(const Creature& creature, const Position& targetPos, std::vector<Direction>& dirList,
+		bool getPathMatching(const Creature& creature, std::forward_list<Direction>& dirList,
+						const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const;
+
+	  bool getPathMatching(const Position& startPos, std::forward_list<Direction>& dirList,
 			const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const;
 
 		std::map<std::string, Position> waypoints;
