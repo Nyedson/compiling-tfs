@@ -4035,6 +4035,7 @@ bool Game::playerSaySpell(Player* player, SpeakClasses type, const std::string& 
 			player->cancelPush();
 			return true;
 		}
+	}
 
 	result = g_spells->playerSaySpell(player, words, lowerWords);
 	if (result == TALKACTION_BREAK) {
