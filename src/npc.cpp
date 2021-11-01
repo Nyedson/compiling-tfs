@@ -488,7 +488,7 @@ bool Npc::getRandomStep(Direction& dir) const
 
 void Npc::doMoveTo(const Position& target)
 {
-	std::forward_list<Direction> listDir;
+	std::vector<Direction> listDir;
 	if (getPathTo(target, listDir, 1, 1, true, true)) {
 		startAutoWalk(listDir);
 	}

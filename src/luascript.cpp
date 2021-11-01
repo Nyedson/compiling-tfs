@@ -5234,14 +5234,13 @@ int LuaScriptInterface::luaPositionGetPathTo(lua_State* L)
 	fpp.clearSight = getBoolean(L, 6, fpp.clearSight);
 	fpp.maxSearchDist = getNumber<int32_t>(L, 7, fpp.maxSearchDist);
 
-	std::forward_list<Direction> dirList;
+	std::vector<Direction> dirList;
 	if (g_game.map.getPathMatching(pos, dirList, FrozenPathingConditionCall(position), fpp)) {
-		lua_newtable(L);
-
-		int index = 0;
+		size_t pathSize = dirList.size();
+		lua_createtable(L, pathSize, 0);
 		for (Direction dir : dirList) {
 			lua_pushnumber(L, dir);
-			lua_rawseti(L, -2, ++index);
+			lua_rawseti(L, -2, pathSize--);
 		}
 	}
 	else {
