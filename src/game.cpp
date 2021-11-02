@@ -163,8 +163,6 @@ void Game::setGameState(GameState_t newState)
 			g_scheduler.stop();
 			g_databaseTasks.stop();
 			g_dispatcher.stop();
-			g_dispatcher2.stop();
-			g_stats.stop();
 			break;
 		}
 
@@ -1448,7 +1446,6 @@ ReturnValue Game::internalMoveItem(Cylinder* fromCylinder, Cylinder* toCylinder,
 	}
 
 	Item* moveItem = item;
-	bool itemDecays = item->canDecay();
 	//check if we can remove this item
 	ret = fromCylinder->queryRemove(*item, m, flags);
 	if (ret != RETURNVALUE_NOERROR) {
@@ -1478,9 +1475,7 @@ ReturnValue Game::internalMoveItem(Cylinder* fromCylinder, Cylinder* toCylinder,
 	//update item(s)
 	if (item->isStackable()) {
 		uint32_t n;
-		uint32_t duration;
 		if (item->equals(toItem)) {
-			duration = std::min<uint32_t>(item->getDuration(), toItem->getDuration());
 			n = std::min<uint32_t>(100 - toItem->getItemCount(), m);
 			// Update same decay item count
 			if (item->getDuration() > 0) {
@@ -1491,9 +1486,6 @@ ReturnValue Game::internalMoveItem(Cylinder* fromCylinder, Cylinder* toCylinder,
 			} else {
 				toCylinder->updateThing(toItem, toItem->getID(), toItem->getItemCount() + n);
 				updateItem = toItem;
-			}
-			if (toItem->getDuration() > duration){ //punishing the duppers with the minimum time
-				toItem->setDuration(duration);
 			}
 			updateItem = toItem;
 		} else {
@@ -1516,10 +1508,6 @@ ReturnValue Game::internalMoveItem(Cylinder* fromCylinder, Cylinder* toCylinder,
 	//add item
 	if (moveItem /*m - n > 0*/) {
 		toCylinder->addThing(index, moveItem);
-		if (itemDecays) {
-			moveItem->setDecaying(DECAYING_PENDING);
-			moveItem->startDecaying();
-		}
 	}
 
 	if (itemIndex != -1) {
@@ -1562,6 +1550,14 @@ ReturnValue Game::internalMoveItem(Cylinder* fromCylinder, Cylinder* toCylinder,
 	//we could not move all, inform the player
 	if (item->isStackable() && maxQueryCount < count) {
 		return retMaxCount;
+	}
+
+	if (moveItem && moveItem->getDuration() > 0) {
+		if (moveItem->getDecaying() != DECAYING_TRUE) {
+			moveItem->incrementReferenceCounter();
+			moveItem->setDecaying(DECAYING_TRUE);
+			g_game.toDecayItems.push_front(moveItem);
+		}
 	}
 
 	// looting analyser from this point forward
@@ -1671,6 +1667,12 @@ ReturnValue Game::internalAddItem(Cylinder* toCylinder, Item* item, int32_t inde
 		}
 	}
 
+	if (item->getDuration() > 0) {
+		item->incrementReferenceCounter();
+		item->setDecaying(DECAYING_TRUE);
+		g_game.toDecayItems.push_front(item);
+	}
+
 	 Item* quiver = toCylinder->getItem();
 	 if (quiver && quiver->getWeaponType() == WEAPON_QUIVER && quiver->getHoldingPlayer() && quiver->getHoldingPlayer()->getThing(CONST_SLOT_RIGHT) == quiver) {
 	 	quiver->getHoldingPlayer()->sendInventoryItem(CONST_SLOT_RIGHT, quiver);
@@ -1711,6 +1713,9 @@ ReturnValue Game::internalRemoveItem(Item* item, int32_t count /*= -1*/, bool te
 		if (item->isRemoved()) {
 			item->onRemoved();
 			ReleaseItem(item);
+			if (item->canDecay()) {
+				decayItems->remove(item);
+			}
 		}
 
 		cylinder->postRemoveNotification(item, nullptr, index);
@@ -2067,6 +2072,14 @@ Item* Game::transformItem(Item* item, uint16_t newId, int32_t newCount /*= -1*/)
 	item->setParent(nullptr);
 	cylinder->postRemoveNotification(item, cylinder, itemIndex);
 	ReleaseItem(item);
+
+	if (newItem->getDuration() > 0) {
+		if (newItem->getDecaying() != DECAYING_TRUE) {
+			newItem->incrementReferenceCounter();
+			newItem->setDecaying(DECAYING_TRUE);
+			g_game.toDecayItems.push_front(newItem);
+		}
+	}
 
 	Item* quiver = cylinder->getItem();
 	if (quiver && quiver->getWeaponType() == WEAPON_QUIVER && quiver->getHoldingPlayer() && quiver->getHoldingPlayer()->getThing(CONST_SLOT_RIGHT) == quiver) {
@@ -4280,7 +4293,6 @@ void Game::checkCreatures(size_t index)
 	}
 
 	cleanup();
-	g_stats.playersOnline = getPlayersOnline();
 }
 
 void Game::changeSpeed(Creature* creature, int32_t varSpeedDelta)
@@ -5394,8 +5406,6 @@ void Game::shutdown()
 	g_scheduler.shutdown();
 	g_databaseTasks.shutdown();
 	g_dispatcher.shutdown();
-	g_dispatcher2.shutdown();
-	g_stats.shutdown();
 	map.spawns.clear();
 	raids.clear();
 

@@ -59,9 +59,6 @@ extern Imbuements* g_imbuements;
 ScriptEnvironment::DBResultMap ScriptEnvironment::tempResults;
 uint32_t ScriptEnvironment::lastResultId = 0;
 
-int32_t LuaScriptInterface::runningEventId = EVENT_ID_USER;
-std::map<int32_t, std::string> LuaScriptInterface::cacheFiles;
-
 std::multimap<ScriptEnvironment*, Item*> ScriptEnvironment::tempItems;
 
 LuaEnvironment g_luaEnvironment;
@@ -296,22 +293,12 @@ bool LuaScriptInterface::reInitState()
 /// Same as lua_pcall, but adds stack trace to error strings in called function.
 int LuaScriptInterface::protectedCall(lua_State* L, int nargs, int nresults)
 {
-	int32_t scriptId;
-	int32_t callbackId;
-	bool timerEvent;
-	LuaScriptInterface* scriptInterface;
-	getScriptEnv()->getEventInfo(scriptId, scriptInterface, callbackId, timerEvent);
-	std::chrono::high_resolution_clock::time_point time_point = std::chrono::high_resolution_clock::now();
 	int error_index = lua_gettop(L) - nargs;
 	lua_pushcfunction(L, luaErrorHandler);
 	lua_insert(L, error_index);
 
 	int ret = lua_pcall(L, nargs, nresults, error_index);
 	lua_remove(L, error_index);
-	uint64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - time_point).count();
-	auto it = cacheFiles.find(scriptId);
-	if(it != cacheFiles.end())
-		g_stats.addLuaStats(new Stat(ns, it->second, ""));
 	return ret;
 }
 
@@ -524,7 +511,7 @@ bool LuaScriptInterface::initState()
 
 	lua_newtable(luaState);
 	eventTableRef = luaL_ref(luaState, LUA_REGISTRYINDEX);
-	//runningEventId = EVENT_ID_USER;
+	runningEventId = EVENT_ID_USER;
 	return true;
 }
 
@@ -534,7 +521,7 @@ bool LuaScriptInterface::closeState()
 		return false;
 	}
 
-	// cacheFiles.clear();
+	cacheFiles.clear();
 	if (eventTableRef != -1) {
 		luaL_unref(luaState, LUA_REGISTRYINDEX, eventTableRef);
 		eventTableRef = -1;

@@ -23,7 +23,6 @@
 #include <condition_variable>
 #include "thread_holder_base.h"
 #include "enums.h"
-#include "stats.h"
 
 const int DISPATCHER_TASK_EXPIRATION = 2000;
 const auto SYSTEM_TIME_ZERO = std::chrono::system_clock::time_point(std::chrono::milliseconds(0));
@@ -32,10 +31,9 @@ class Task
 {
 	public:
 		// DO NOT allocate this class on the stack
-		explicit Task(std::function<void (void)>&& f, const std::string& _description, const std::string& _extraDescription) :
-			description(_description), extraDescription(_extraDescription), func(std::move(f)) {}
-		Task(uint32_t ms, std::function<void (void)>&& f, const std::string& _description, const std::string& _extraDescription) :
-			description(_description), extraDescription(_extraDescription), expiration(std::chrono::system_clock::now() + std::chrono::milliseconds(ms)), func(std::move(f)) {}
+		explicit Task(std::function<void (void)>&& f) : func(std::move(f)) {}
+		Task(uint32_t ms, std::function<void (void)>&& f) :
+			expiration(std::chrono::system_clock::now() + std::chrono::milliseconds(ms)), func(std::move(f)) {}
 
 		virtual ~Task() = default;
 		void operator()() {
@@ -53,10 +51,6 @@ class Task
 			return expiration < std::chrono::system_clock::now();
 		}
 
-	const std::string description;
-	const std::string extraDescription;
-	uint64_t executionTime = 0;
-
 	protected:
 		std::chrono::system_clock::time_point expiration = SYSTEM_TIME_ZERO;
 
@@ -67,16 +61,11 @@ class Task
 		std::function<void (void)> func;
 };
 
-Task* createNewTask(std::function<void (void)> f, const std::string& description, const std::string& extraDescription);
-Task* createNewTask(uint32_t expiration, std::function<void (void)> f, const std::string& description, const std::string& extraDescription);
+Task* createTask(std::function<void (void)> f);
+Task* createTask(uint32_t expiration, std::function<void (void)> f);
 
 class Dispatcher : public ThreadHolder<Dispatcher> {
 	public:
-		Dispatcher() : ThreadHolder() {
-			static int id = 0;
-			dispatcherId = id;
-			id += 1;
-		}
 		void addTask(Task* task, bool push_front = false);
 
 		void shutdown();
@@ -94,10 +83,8 @@ class Dispatcher : public ThreadHolder<Dispatcher> {
 
 		std::list<Task*> taskList;
 		uint64_t dispatcherCycle = 0;
-		int dispatcherId = 0;
 };
 
 extern Dispatcher g_dispatcher;
-extern Dispatcher g_dispatcher2;
 
 #endif
