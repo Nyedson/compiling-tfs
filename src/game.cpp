@@ -430,21 +430,30 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			}
 		}
 	}
+     
 
-	int32_t value1;
-	player->getStorageValue(34378, value1);
+    int32_t value1; // In entrosa
+	player->getStorageValue(34370, value1);
+
+	int32_t value2; // Exhaust
+	player->getStorageValue(34378, value2);
 
 	if (value1 > 0) {
-		player->setMoveExhaust(value1);
-	} else if <= 0 {
+		if (value2 > 0) {
+			player->setMoveExhaust(value2);
+		} else{
+			player->setMoveExhaust(600);
+		}
+	} else{
 		player->setMoveExhaust(600);
 	}
+
 	if (ret != RETURNVALUE_NOERROR) {
 	  player->sendCancelMessage(ret);
 	}
 	return;
 }
-
+player->setMoveExhaust(value1);
 void Game::saveGameState()
 {
 	if (gameState == GAME_STATE_NORMAL) {
