@@ -100,9 +100,11 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
-//__attribute__ ((used)) void saveServer() {
-//	g_game.saveGameState();
-//}
+#ifndef _WIN32
+	__attribute__ ((used)) void saveServer() {
+		g_game.saveGameState();
+	}
+#endif
 
 void mainLoader(int, char*[], ServiceManager* services) {
 	// dispatcher thread

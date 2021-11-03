@@ -199,12 +199,6 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	bool removed = false;
 	ReturnValue ret = RETURNVALUE_NOERROR;
 
-	if (player->isMoveExhausted()) 
-	{
-		player->sendCancelMessage("You can't equip very fast.");
-		return;
-	}
-
 	if (itemType.weaponType == WEAPON_AMMO) {
 		Thing* quiverThing = player->getThing(CONST_SLOT_RIGHT);
 		Thing* backpackThing = player->getThing(CONST_SLOT_BACKPACK);
@@ -300,11 +294,17 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			}
 		}
 		else if (hasBitSet(SLOTP_RING, slotP)) {
+			if (player->isMoveExhausted()) 
+			{
+				player->sendCancelMessage("You can't equip very fast.");
+				return;
+			}
 			Thing* ringthing = player->getThing(CONST_SLOT_RING);
 			if (ringthing) {
 				Item* slotRing_Item = ringthing->getItem();
 				if (slotRing_Item) {
 					ret = internalMoveItem(slotRing_Item->getParent(), player, 0, slotRing_Item, slotRing_Item->getItemCount(), nullptr);
+					player->setMoveExhaust(600);
 					if (slotRing_Item->getID() == item->getID()) {
 						removed = true;
 					}
@@ -429,16 +429,6 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 				}
 			}
 		}
-	}
-     
-
-    int32_t value1; // Private War Exhaust
-	player->getStorageValue(34378, value1);
-
-	if (value1 > 0) {
-		player->setMoveExhaust(value1);
-	} else {
-		player->setMoveExhaust(600);
 	}
 
 	if (ret != RETURNVALUE_NOERROR) {
