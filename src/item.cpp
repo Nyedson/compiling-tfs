@@ -825,11 +825,6 @@ void Item::serializeAttr(PropWriteStream& propWriteStream) const
 		propWriteStream.write<int32_t>(getIntAttr(ITEM_ATTRIBUTE_IMBUINGSLOTS));
 	}
 
-	if (hasAttribute(ITEM_ATTRIBUTE_OPENCONTAINER)) {
-		propWriteStream.write<uint8_t>(ATTR_OPENCONTAINER);
-		propWriteStream.write<int32_t>(getIntAttr(ITEM_ATTRIBUTE_OPENCONTAINER));
-	}
-
 	if (hasAttribute(ITEM_ATTRIBUTE_ARMOR)) {
 		propWriteStream.write<uint8_t>(ATTR_ARMOR);
 		propWriteStream.write<int32_t>(getIntAttr(ITEM_ATTRIBUTE_ARMOR));
