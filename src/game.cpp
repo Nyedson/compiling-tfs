@@ -199,10 +199,10 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	int32_t value;
 	int32_t valuedelay;
 
-    getStorageValue(69809, value); {
+    if (!getStorageValue(69809, value)) {
     	return true;
     }
-    getStorageValue(69810, valuedelay); {
+    if (!getStorageValue(69810, valuedelay)) {
     	return true;
     }
 
