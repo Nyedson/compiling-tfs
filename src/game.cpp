@@ -432,19 +432,12 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	}
      
 
-    int32_t value1; // In entrosa
-	player->getStorageValue(34370, value1);
-
-	int32_t value2; // Exhaust
-	player->getStorageValue(34378, value2);
+    int32_t value1; // Private War Exhaust
+	player->getStorageValue(34378, value1);
 
 	if (value1 > 0) {
-		if (value2 > 0) {
-			player->setMoveExhaust(value2);
-		} else{
-			player->setMoveExhaust(600);
-		}
-	} else{
+		player->setMoveExhaust(value1);
+	} else {
 		player->setMoveExhaust(600);
 	}
 
