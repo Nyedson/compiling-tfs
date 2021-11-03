@@ -14,7 +14,6 @@ set(otbr_SRC
 	${CMAKE_CURRENT_LIST_DIR}/creature.cpp
 	${CMAKE_CURRENT_LIST_DIR}/creatureevent.cpp
 	${CMAKE_CURRENT_LIST_DIR}/cylinder.cpp
-	${CMAKE_CURRENT_LIST_DIR}/decay.cpp
 	${CMAKE_CURRENT_LIST_DIR}/database.cpp
 	${CMAKE_CURRENT_LIST_DIR}/databasemanager.cpp
 	${CMAKE_CURRENT_LIST_DIR}/databasetasks.cpp

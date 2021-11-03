@@ -633,7 +633,7 @@ void Combat::combatTileEffects(const SpectatorHashSet& spectators, Creature* cas
 
 		ReturnValue ret = g_game.internalAddItem(tile, item);
 		if (ret == RETURNVALUE_NOERROR) {
-			item->startDecaying();
+			g_game.startDecay(item);
 		} else {
 			delete item;
 		}

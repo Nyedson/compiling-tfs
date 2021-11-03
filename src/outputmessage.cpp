@@ -26,7 +26,7 @@
 
 extern Scheduler g_scheduler;
 
-const uint16_t OUTPUTMESSAGE_FREE_LIST_CAPACITY = 35767;
+const uint16_t OUTPUTMESSAGE_FREE_LIST_CAPACITY = 2048;
 const std::chrono::milliseconds OUTPUTMESSAGE_AUTOSEND_DELAY {10};
 
 void OutputMessagePool::scheduleSendAll()
