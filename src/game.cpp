@@ -315,6 +315,7 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			}
 			if (!removed) {
 				ret = internalMoveItem(item->getParent(), player, CONST_SLOT_RING, item, item->getItemCount(), nullptr);
+				player->setMoveExhaust(600);
 			}
 		}
 		else if (slotP == CONST_SLOT_RIGHT) {
