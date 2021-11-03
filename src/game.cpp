@@ -304,7 +304,6 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 				Item* slotRing_Item = ringthing->getItem();
 				if (slotRing_Item) {
 					ret = internalMoveItem(slotRing_Item->getParent(), player, 0, slotRing_Item, slotRing_Item->getItemCount(), nullptr);
-					player->setMoveExhaust(600);
 					if (slotRing_Item->getID() == item->getID()) {
 						removed = true;
 					}
@@ -315,8 +314,8 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			}
 			if (!removed) {
 				ret = internalMoveItem(item->getParent(), player, CONST_SLOT_RING, item, item->getItemCount(), nullptr);
-				player->setMoveExhaust(600);
 			}
+			player->setMoveExhaust(600);
 		}
 		else if (slotP == CONST_SLOT_RIGHT) {
 			Thing* rightthing = player->getThing(CONST_SLOT_RIGHT);
