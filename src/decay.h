@@ -20,7 +20,7 @@
 #ifndef SRC_ITEMS_DECAY_DECAY_H_
 #define SRC_ITEMS_DECAY_DECAY_H_
 
-#include "items/item.h"
+#include "item.h"
 
 #include <map>
 
