@@ -431,16 +431,13 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 		}
 	}
 
-    
+	int32_t value1;
+	player->getStorageValue(34378, value1);
 
-    int32_t value;
-	if (getStorageValue(34378, value)) {
-		if (value > 0) {
-			player->setMoveExhaust(value);
-		} else {
-			player->setMoveExhaust(600);
-		}
-		return false;
+	if (value1 > 0) {
+		player->setMoveExhaust(value1);
+	} else if <= 0 {
+		player->setMoveExhaust(600);
 	}
 	if (ret != RETURNVALUE_NOERROR) {
 	  player->sendCancelMessage(ret);
