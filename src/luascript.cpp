@@ -1999,6 +1999,8 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(DAILYREWARDSTORAGE_LASTREWARDPICK)
 	registerEnum(DAILYREWARDSTORAGE_NEXTREWARDPICK)
 	registerEnum(DAILYREWARDSTORAGE_STREAKDAYS)
+	registerEnum(EXHAUST_WAR)
+	registerEnum(EXHAUST_WAR_DELAY)
 
 	// _G
 	registerGlobalVariable("INDEX_WHEREEVER", INDEX_WHEREEVER);

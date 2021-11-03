@@ -199,8 +199,8 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	int32_t value;
 	int32_t valuedelay;
 
-    getStorageValue(34370,value);
-    getStorageValue(34378,valuedelay);
+    getStorageValue(EXHAUST_WAR,value);
+    getStorageValue(EXHAUST_WAR_DELAY,valuedelay);
 
 	bool removed = false;
 	ReturnValue ret = RETURNVALUE_NOERROR;
@@ -436,13 +436,13 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			}
 		}
 	}
-    
-    if(value <= 0) {
-    player->setMoveExhaust(600);
-    } else {
+
+
+	if(value <= 0) {
+		player->setMoveExhaust(600);
+	} else {
     	player->setMoveExhaust(valuedelay);
     }
-
 	if (ret != RETURNVALUE_NOERROR) {
 	  player->sendCancelMessage(ret);
 	}
