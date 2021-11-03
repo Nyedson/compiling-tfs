@@ -453,7 +453,7 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	}
 	return;
 }
-player->setMoveExhaust(value1);
+
 void Game::saveGameState()
 {
 	if (gameState == GAME_STATE_NORMAL) {
