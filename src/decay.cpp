@@ -19,9 +19,9 @@
 
 #include "otpch.h"
 
-#include "items/decay/decay.h"
-#include "game/game.h"
-#include "game/scheduling/scheduler.h"
+#include "decay.h"
+#include "game.h"
+#include "scheduler.h"
 
 #include <algorithm>
 #include <utility>
