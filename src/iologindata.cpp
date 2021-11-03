@@ -600,7 +600,6 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 
 			if (pid >= 1 && pid <= 11) {
 				player->internalAddThing(pid, item);
-				item->startDecaying();
 			} else {
 				ItemMap::const_iterator it2 = itemMap.find(pid);
 				if (it2 == itemMap.end()) {
@@ -610,7 +609,6 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 				Container* container = it2->second.first->getContainer();
 				if (container) {
 					container->internalAddThing(item);
-					 item->startDecaying();
 				}
 			}
 		}
@@ -647,7 +645,6 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 				DepotChest* depotChest = player->getDepotChest(pid, true);
 				if (depotChest) {
 					depotChest->internalAddThing(item);
-					item->startDecaying();
 				}
 			} else {
 				ItemMap::const_iterator it2 = itemMap.find(pid);
@@ -658,7 +655,6 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 				Container* container = it2->second.first->getContainer();
 				if (container) {
 					container->internalAddThing(item);
-					item->startDecaying();
 				}
 			}
 		}
@@ -727,7 +723,6 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 
 			if (pid >= 0 && pid < 100) {
 				player->getInbox()->internalAddThing(item);
-				item->startDecaying();
 			} else {
 				ItemMap::const_iterator it2 = itemMap.find(pid);
 
@@ -738,7 +733,6 @@ bool IOLoginData::loadPlayer(Player* player, DBResult_ptr result)
 				Container* container = it2->second.first->getContainer();
 				if (container) {
 					container->internalAddThing(item);
-					item->startDecaying();
 				}
 			}
 		}

@@ -207,6 +207,11 @@ Item* Item::clone() const
 	Item* item = Item::CreateItem(id, count);
 	if (attributes) {
 		item->attributes.reset(new ItemAttributes(*attributes));
+		}
+
+	if (hasAttribute(ITEM_ATTRIBUTE_DECAYSTATE) && getDecaying()>DECAYING_FALSE){
+		item->setDuration(getDuration());
+		item->startDecaying();
 	}
 	return item;
 }
@@ -279,10 +284,7 @@ void Item::setID(uint16_t newid)
 	uint32_t newDuration = it.decayTime * 1000;
 
 	if (newDuration == 0 && !it.stopTime && it.decayTo < 0) {
-		//We'll get called startDecay anyway so let's schedule it - actually not in all casses
-		if (hasAttribute(ITEM_ATTRIBUTE_DECAYSTATE)) {
-			setDecaying(DECAYING_STOPPING);
-		}
+		removeAttribute(ITEM_ATTRIBUTE_DECAYSTATE);
 		removeAttribute(ITEM_ATTRIBUTE_DURATION);
 	}
 
@@ -291,7 +293,7 @@ void Item::setID(uint16_t newid)
 	}
 
 	if (newDuration > 0 && (!prevIt.stopTime || !hasAttribute(ITEM_ATTRIBUTE_DURATION))) {
-		setDecaying(DECAYING_PENDING);
+		setDecaying(DECAYING_FALSE);
 		setDuration(newDuration);
 	}
 }
@@ -484,7 +486,7 @@ Attr_ReadValue Item::readAttr(AttrTypes_t attr, PropStream& propStream)
 				return ATTR_READ_ERROR;
 			}
 
-			setDuration(duration);
+			setDuration(std::max<int32_t>(0, duration));
 			break;
 		}
 
@@ -776,7 +778,7 @@ void Item::serializeAttr(PropWriteStream& propWriteStream) const
 
 	if (hasAttribute(ITEM_ATTRIBUTE_DURATION)) {
 		propWriteStream.write<uint8_t>(ATTR_DURATION);
-		propWriteStream.write<int32_t>(getDuration());
+		propWriteStream.write<uint32_t>(getIntAttr(ITEM_ATTRIBUTE_DURATION));
 	}
 
 	ItemDecayState_t decayState = getDecaying();
@@ -823,6 +825,11 @@ void Item::serializeAttr(PropWriteStream& propWriteStream) const
 	if (hasAttribute(ITEM_ATTRIBUTE_IMBUINGSLOTS)) {
 		propWriteStream.write<uint8_t>(ATTR_IMBUINGSLOTS);
 		propWriteStream.write<int32_t>(getIntAttr(ITEM_ATTRIBUTE_IMBUINGSLOTS));
+	}
+
+	if (hasAttribute(ITEM_ATTRIBUTE_OPENCONTAINER)) {
+		propWriteStream.write<uint8_t>(ATTR_OPENCONTAINER);
+		propWriteStream.write<int32_t>(getIntAttr(ITEM_ATTRIBUTE_OPENCONTAINER));
 	}
 
 	if (hasAttribute(ITEM_ATTRIBUTE_ARMOR)) {
@@ -1930,11 +1937,6 @@ ItemAttributes::Attribute& ItemAttributes::getAttr(itemAttrTypes type)
 void Item::startDecaying()
 {
 	g_game.startDecay(this);
-}
-
-void Item::stopDecaying()
-{
-	g_game.stopDecay(this);
 }
 
 bool Item::hasMarketAttributes() const
