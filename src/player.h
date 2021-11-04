@@ -1101,8 +1101,7 @@ class Player final : public Creature, public Cylinder
 		void sendRestingAreaIcon(uint16_t currentIcons) const;
 		void sendIcons() const {
 			if (client) {
-				uint32_t icons = getClientIcons();
-				client->sendIcons(icons);
+				client->sendIcons(getClientIcons());
 				//Send resting area icon
 				sendRestingAreaIcon(icons);
 			}
