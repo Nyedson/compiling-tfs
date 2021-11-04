@@ -1409,12 +1409,12 @@ void ProtocolGame::sendIcons(uint32_t icons)
 {
 	NetworkMessage msg;
 	msg.addByte(0xA2);
-	if (version >= 1140) { // TODO: verify compatibility of the new icon range ( 16-31 )
+	if (version >= 1140) {	
 		msg.add<uint32_t>(icons);
-	} else {
-		msg.add<uint16_t>(icons);
 	}
-
+	else {
+		msg.add<uint16_t>(static_cast<uint16_t>(icons));
+	}
 	writeToOutputBuffer(msg);
 }
 
