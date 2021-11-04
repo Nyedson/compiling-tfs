@@ -1412,7 +1412,7 @@ void ProtocolGame::sendIcons(uint32_t icons)
 	if (version >= 1140) { // TODO: verify compatibility of the new icon range ( 16-31 )
 		msg.add<uint32_t>(icons);
 	} else {
-		msg.add<uint16_t>(static_cast<uint16_t>(icons));
+		msg.add<uint16_t>(icons);
 	}
 
 	writeToOutputBuffer(msg);
