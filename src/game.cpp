@@ -3972,6 +3972,7 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 	}
 
 	player->resetIdleTime();
+
 	if (playerSaySpell(player, type, text)) {
 		return;
 	}
@@ -3985,7 +3986,7 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 	}
 
 
-	if (text.front() == '/' && player->isAccessPlayer()) {
+	if (!text.empty() && text.front() == '/' && player->isAccessPlayer()) {
 		return;
 	}
 
@@ -4041,18 +4042,14 @@ bool Game::playerSaySpell(Player* player, SpeakClasses type, const std::string& 
 	}
 
 	std::string words = text;
-	const std::string& lowerWords = asLowerCaseString(words);
 
-	TalkActionResult_t result;
-	if (text.front() == '/' || text.front() == '!') {
-		result = g_talkActions->playerSaySpell(player, type, lowerWords);
-		if (result == TALKACTION_BREAK) {
-			player->cancelPush();
-			return true;
-		}
+	TalkActionResult_t result = g_talkActions->playerSaySpell(player, type, words);
+	if (result == TALKACTION_BREAK) {
+		player->cancelPush();
+		return true;
 	}
 
-	result = g_spells->playerSaySpell(player, words, lowerWords);
+	result = g_spells->playerSaySpell(player, words);
 	if (result == TALKACTION_BREAK) {
 		if (!g_config.getBoolean(ConfigManager::EMOTE_SPELLS)) {
 			return internalCreatureSay(player, TALKTYPE_SAY, words, false);

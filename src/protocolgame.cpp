@@ -828,9 +828,8 @@ void ProtocolGame::parseSay(NetworkMessage& msg)
 			break;
 	}
 
-	std::string text = msg.getString();
-	trimString(text);
-	if (text.empty() || text.length() > 255) {
+	const std::string text = msg.getString();
+	if (text.length() > 255) {
 		return;
 	}
 
