@@ -199,6 +199,12 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	bool removed = false;
 	ReturnValue ret = RETURNVALUE_NOERROR;
 
+	if (player->isMoveExhausted()) 
+	{
+		player->sendCancelMessage("You can't equip very fast.");
+		return;
+	}
+
 	if (itemType.weaponType == WEAPON_AMMO) {
 		Thing* quiverThing = player->getThing(CONST_SLOT_RIGHT);
 		Thing* backpackThing = player->getThing(CONST_SLOT_BACKPACK);
@@ -294,16 +300,11 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			}
 		}
 		else if (hasBitSet(SLOTP_RING, slotP)) {
-			if (player->isMoveExhausted()) 
-			{
-				player->sendCancelMessage("You can't equip very fast.");
-				return;
-			}
 			Thing* ringthing = player->getThing(CONST_SLOT_RING);
 			if (ringthing) {
 				Item* slotRing_Item = ringthing->getItem();
 				if (slotRing_Item) {
-					ret = internalMoveItem(slotRing_Item->getParent(), player, 0, slotRing_Item, slotRing_Item->getItemCount(), player->setMoveExhaust(600), nullptr);
+					ret = internalMoveItem(slotRing_Item->getParent(), player, 0, slotRing_Item, slotRing_Item->getItemCount(), nullptr);
 					if (slotRing_Item->getID() == item->getID()) {
 						removed = true;
 					}
@@ -313,7 +314,7 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 				}
 			}
 			if (!removed) {
-				ret = internalMoveItem(item->getParent(), player, CONST_SLOT_RING, item, item->getItemCount(), player->setMoveExhaust(600), nullptr);
+				ret = internalMoveItem(item->getParent(), player, CONST_SLOT_RING, item, item->getItemCount(), nullptr);
 			}
 		}
 		else if (slotP == CONST_SLOT_RIGHT) {
@@ -428,6 +429,16 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 				}
 			}
 		}
+	}
+     
+
+    int32_t value1; // Private War Exhaust
+	player->getStorageValue(34378, value1);
+
+	if (value1 > 0) {
+		player->setMoveExhaust(value1);
+	} else {
+		player->setMoveExhaust(600);
 	}
 
 	if (ret != RETURNVALUE_NOERROR) {
@@ -3961,7 +3972,6 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 	}
 
 	player->resetIdleTime();
-
 	if (playerSaySpell(player, type, text)) {
 		return;
 	}
@@ -3975,7 +3985,7 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 	}
 
 
-	if (!text.empty() && text.front() == '/' && player->isAccessPlayer()) {
+	if (text.front() == '/' && player->isAccessPlayer()) {
 		return;
 	}
 
@@ -4031,14 +4041,18 @@ bool Game::playerSaySpell(Player* player, SpeakClasses type, const std::string& 
 	}
 
 	std::string words = text;
+	const std::string& lowerWords = asLowerCaseString(words);
 
-	TalkActionResult_t result = g_talkActions->playerSaySpell(player, type, words);
-	if (result == TALKACTION_BREAK) {
-		player->cancelPush();
-		return true;
+	TalkActionResult_t result;
+	if (text.front() == '/' || text.front() == '!') {
+		result = g_talkActions->playerSaySpell(player, type, lowerWords);
+		if (result == TALKACTION_BREAK) {
+			player->cancelPush();
+			return true;
+		}
 	}
 
-	result = g_spells->playerSaySpell(player, words);
+	result = g_spells->playerSaySpell(player, words, lowerWords);
 	if (result == TALKACTION_BREAK) {
 		if (!g_config.getBoolean(ConfigManager::EMOTE_SPELLS)) {
 			return internalCreatureSay(player, TALKTYPE_SAY, words, false);
