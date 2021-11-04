@@ -562,7 +562,7 @@ const Tile* Map::canWalkTo(const Creature& creature, const Position& pos) const
 	return tile;
 }
 
-bool Map::getPathMatching(const Creature& creature, const Position& targetPos, std::forward_list<Direction>& dirList, const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const
+bool Map::getPathMatching(const Creature& creature, std::forward_list<Direction>& dirList, const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const
 {
 	Position pos = creature.getPosition();
 	Position endPos;
@@ -589,7 +589,7 @@ bool Map::getPathMatching(const Creature& creature, const Position& targetPos, s
 
 	AStarNode* found = nullptr;
 	while (fpp.maxSearchDist != 0 || nodes.getClosedNodes() < 100) {
-		AStarNode* n = nodes.getBestNode(targetPos);
+		AStarNode* n = nodes.getBestNode();
 		if (!n) {
 			if (found) {
 				break;
@@ -764,7 +764,7 @@ bool Map::getPathMatching(const Position& start, std::forward_list<Direction>& d
 
 	AStarNode* found = nullptr;
 	while (fpp.maxSearchDist != 0 || nodes.getClosedNodes() < 100) {
-		AStarNode* n = nodes.getBestNode(targetPos);
+		AStarNode* n = nodes.getBestNode();
 		if (!n) {
 			if (found) {
 				break;
@@ -964,37 +964,25 @@ AStarNode* AStarNodes::createOpenNode(AStarNode* parent, uint32_t x, uint32_t y,
 	return node;
 }
 
-AStarNode* AStarNodes::getBestNode(const Position& targetPos)
+AStarNode* AStarNodes::getBestNode()
 {
-   if (curNode == 0) {
-       return nullptr;
-   }
-  
-   int32_t diffNode = 0; //Difference between nodes
+	if (curNode == 0) {
+		return nullptr;
+	}
 
-   int32_t best_node_f = std::numeric_limits<int32_t>::max();
-   int32_t best_node = -1;
-   for (size_t i = 0; i < curNode; i++) {
-       //I am not familiar with 1.X so there is probably a better way to get all these variables, also the below is the untested in TFS 1.X, hope it works
-       const int_fast32_t Sx = nodes[0].x; //Starting X Position
-       const int_fast32_t Sy = nodes[0].y; //Starting Y Position
-       const int_fast32_t Cx = nodes[i].x; //node[i] X Position
-       const int_fast32_t Cy = nodes[i].y; //node[i] Y Position
-       int32_t SdiffX = std::abs(targetPos.x - Sx); //X distance from the starting location
-       int32_t SdiffY = std::abs(targetPos.y - Sy); //Y distance from the starting location
-       int32_t NdiffX = std::abs(targetPos.x - Cx); //X distance from node[i] position
-       int32_t NdiffY = std::abs(targetPos.y - Cy); //X distance from node[i] position
-       diffNode = ((nodes[i].f+(((NdiffX-SdiffX)*5)+((NdiffY-SdiffY)*5)))+(std::max(NdiffX, NdiffY)*5)); //I messed around with this formula a lot to try to get the best performance, for me this works the best
-       if (openNodes[i] && diffNode < best_node_f) { //Compares the formula above with the current Best Node
-           best_node_f = diffNode; //Sets the Best Nodes new value to beat
-           best_node = i;
-       }
-   }
+	int32_t best_node_f = std::numeric_limits<int32_t>::max();
+	int32_t best_node = -1;
+	for (size_t i = 0; i < curNode; i++) {
+		if (openNodes[i] && nodes[i].f < best_node_f) {
+			best_node_f = nodes[i].f;
+			best_node = i;
+		}
+	}
 
-   if (best_node >= 0) {
-       return nodes + best_node;
-   }
-   return nullptr;
+	if (best_node >= 0) {
+		return nodes + best_node;
+	}
+	return nullptr;
 }
 
 void AStarNodes::closeNode(AStarNode* node)
