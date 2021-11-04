@@ -764,7 +764,7 @@ bool Map::getPathMatching(const Position& start, std::forward_list<Direction>& d
 
 	AStarNode* found = nullptr;
 	while (fpp.maxSearchDist != 0 || nodes.getClosedNodes() < 100) {
-		AStarNode* n = nodes.getBestNode();
+		AStarNode* n = nodes.getBestNode(targetPos);
 		if (!n) {
 			if (found) {
 				break;
