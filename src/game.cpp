@@ -5180,7 +5180,7 @@ void Game::startDecay(Item* item)
 	if (item->getDuration() > 0) {
 		item->incrementReferenceCounter();
 		item->setDecaying(DECAYING_TRUE);
-		toDecayItems.push_front(item);
+		toDecayItems.push_back(item);
 	} else {
 		internalDecayItem(item);
 	}
