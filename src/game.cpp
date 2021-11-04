@@ -294,17 +294,16 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			}
 		}
 		else if (hasBitSet(SLOTP_RING, slotP)) {
+			if (player->isMoveExhausted()) 
+			{
+				player->sendCancelMessage("You can't equip very fast.");
+				return;
+			}
 			Thing* ringthing = player->getThing(CONST_SLOT_RING);
 			if (ringthing) {
 				Item* slotRing_Item = ringthing->getItem();
 				if (slotRing_Item) {
-					if (player->isMoveExhausted()) 
-					{
-						player->sendCancelMessage("You can't equip very fast.");
-						return;
-					}
-					player->setMoveExhaust(600);
-					ret = internalMoveItem(slotRing_Item->getParent(), player, 0, slotRing_Item, slotRing_Item->getItemCount(), nullptr);
+					ret = internalMoveItem(slotRing_Item->getParent(), player, 0, slotRing_Item, slotRing_Item->getItemCount(), player->setMoveExhaust(600), nullptr);
 					if (slotRing_Item->getID() == item->getID()) {
 						removed = true;
 					}
@@ -314,7 +313,7 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 				}
 			}
 			if (!removed) {
-				ret = internalMoveItem(item->getParent(), player, CONST_SLOT_RING, item, item->getItemCount(), nullptr);
+				ret = internalMoveItem(item->getParent(), player, CONST_SLOT_RING, item, item->getItemCount(), player->setMoveExhaust(600), nullptr);
 			}
 		}
 		else if (slotP == CONST_SLOT_RIGHT) {
