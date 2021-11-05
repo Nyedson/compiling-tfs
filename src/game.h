@@ -553,12 +553,12 @@ class Game
 		std::unordered_map<uint16_t, Item*> uniqueItems;
 		std::map<uint32_t, uint32_t> stages;
 
-		std::vector<Item*> decayItems[EVENT_DECAY_BUCKETS];
-		std::vector<Creature*> checkCreatureLists[EVENT_CREATURECOUNT];
-
-		std::vector<Item*> toDecayItems;
+		std::list<Item*> decayItems[EVENT_DECAY_BUCKETS];
+		std::list<Creature*> checkCreatureLists[EVENT_CREATURECOUNT];
 
 		std::list<Item*> imbuedItems[EVENT_IMBUEMENT_BUCKETS];
+        
+        std::forward_list<Item*> toDecayItems;
         
 		std::vector<Creature*> ToReleaseCreatures;
 		std::vector<Item*> ToReleaseItems;
