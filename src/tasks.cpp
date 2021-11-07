@@ -21,25 +21,23 @@
 
 #include "tasks.h"
 #include "game.h"
-#include "stats.h"
 
 extern Game g_game;
 
-Task* createNewTask(std::function<void (void)> f, const std::string& description, const std::string& extraDescription)
+Task* createTask(std::function<void (void)> f)
 {
-	return new Task(std::move(f), description, extraDescription);
+	return new Task(std::move(f));
 }
 
-Task* createNewTask(uint32_t expiration, std::function<void (void)> f, const std::string& description, const std::string& extraDescription)
+Task* createTask(uint32_t expiration, std::function<void (void)> f)
 {
-	return new Task(expiration, std::move(f), description, extraDescription);
+	return new Task(expiration, std::move(f));
 }
 
 void Dispatcher::threadMain()
 {
 	// NOTE: second argument defer_lock is to prevent from immediate locking
 	std::unique_lock<std::mutex> taskLockUnique(taskLock, std::defer_lock);
-	std::chrono::high_resolution_clock::time_point time_point;
 
 	while (getState() != THREAD_STATE_TERMINATED) {
 		// check if there are tasks waiting
@@ -48,19 +46,9 @@ void Dispatcher::threadMain()
 		if (taskList.empty()) {
 			//if the list is empty wait for signal
 			taskSignal.wait(taskLockUnique);
-			#ifdef STATS_ENABLED
-				time_point = std::chrono::high_resolution_clock::now();
-				taskSignal.wait(taskLockUnique);
-				g_stats.dispatcherWaitTime(dispatcherId) += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - time_point).count();
-			#else
-				taskSignal.wait(taskLockUnique);
-			#endif
 		}
 
 		if (!taskList.empty()) {
-			#ifdef STATS_ENABLED
-				time_point = std::chrono::high_resolution_clock::now();
-			#endif
 			// take the first task
 			Task* task = taskList.front();
 			taskList.pop_front();
@@ -71,12 +59,7 @@ void Dispatcher::threadMain()
 				// execute it
 				(*task)();
 			}
-			#ifdef STATS_ENABLED
-				task->executionTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - time_point).count();
-				g_stats.addDispatcherTask(dispatcherId, task);
-			#else
-				delete task;
-			#endif
+			delete task;
 		} else {
 			taskLockUnique.unlock();
 		}
