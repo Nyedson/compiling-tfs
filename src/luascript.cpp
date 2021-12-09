@@ -2437,7 +2437,6 @@ void LuaScriptInterface::registerFunctions()
 	registerMetaMethod("Player", "__eq", LuaScriptInterface::luaUserdataCompare);
 
 	registerMethod("Player", "isPlayer", LuaScriptInterface::luaPlayerIsPlayer);
-	registerMethod("Player", "sendCreatureSquare", LuaScriptInterface::luaSendCreatureSquare);
 
 	registerMethod("Player", "getGuid", LuaScriptInterface::luaPlayerGetGuid);
 	registerMethod("Player", "getIp", LuaScriptInterface::luaPlayerGetIp);
@@ -2731,7 +2730,8 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Npc", "isNpc", LuaScriptInterface::luaNpcIsNpc);
 
 	registerMethod("Npc", "setMasterPos", LuaScriptInterface::luaNpcSetMasterPos);
-
+    
+    registerMethod("Npc", "getCurrency", LuaScriptInterface::luaNpcGetCurrency);
 	registerMethod("Npc", "getSpeechBubble", LuaScriptInterface::luaNpcGetSpeechBubble);
 	registerMethod("Npc", "setSpeechBubble", LuaScriptInterface::luaNpcSetSpeechBubble);
 
@@ -8461,28 +8461,6 @@ int LuaScriptInterface::luaCreatureGetZone(lua_State* L)
 }
 
 // Player
-int LuaScriptInterface::luaSendCreatureSquare(lua_State* L)
-{
-	// player:sendCreatureSquare(creature, color)
-	Player* player = getUserdata<Player>(L, 1);
-	if (!player) {
-    	lua_pushnil(L);
-    return 1;
-	}
-
-	Creature* creature = getUserdata<Creature>(L, 2);
-	if (!creature) {
-    	lua_pushnil(L);
-    return 1;
-	}
-
-	uint32_t color = getNumber<uint32_t>(L, 3, 0);
-
-	player->sendCreatureSquare(creature, static_cast <SquareColor_t>(color));
-	lua_pushboolean(L, true);
-	return 1;
-}
-
 int LuaScriptInterface::luaPlayerCreate(lua_State* L)
 {
 	// Player(id or guid or name or userdata)
@@ -12138,6 +12116,18 @@ int LuaScriptInterface::luaNpcSetMasterPos(lua_State* L)
 	int32_t radius = getNumber<int32_t>(L, 3, 1);
 	npc->setMasterPos(pos, radius);
 	pushBoolean(L, true);
+	return 1;
+}
+
+int LuaScriptInterface::luaNpcGetCurrency(lua_State* L)
+{
+	// npc:getCurrency()
+	Npc* npc = getUserdata<Npc>(L, 1);
+	if (npc) {
+		lua_pushnumber(L, npc->getCurrency());
+	} else {
+		lua_pushnil(L);
+	}
 	return 1;
 }
 

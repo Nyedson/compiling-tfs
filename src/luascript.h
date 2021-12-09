@@ -852,8 +852,7 @@ class LuaScriptInterface
 
 		// Player
 		static int luaPlayerCreate(lua_State* L);
-    
-    static int luaSendCreatureSquare(lua_State* L);
+
 		static int luaPlayerIsPlayer(lua_State* L);
 
 		static int luaPlayerGetGuid(lua_State* L);
@@ -1144,7 +1143,8 @@ class LuaScriptInterface
 		static int luaNpcIsNpc(lua_State* L);
 
 		static int luaNpcSetMasterPos(lua_State* L);
-
+    
+    static int luaNpcGetCurrency(lua_State* L);
 		static int luaNpcGetSpeechBubble(lua_State* L);
 		static int luaNpcSetSpeechBubble(lua_State* L);
 
