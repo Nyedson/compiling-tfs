@@ -518,6 +518,7 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0x1D: addGameTask(&Game::playerReceivePingBack, player->getID()); break;
 		case 0x1E: addGameTask(&Game::playerReceivePing, player->getID()); break;
 		case 0x32: parseExtendedOpcode(msg); break; //otclient extended opcode
+		case 0x40: parseNewPing(msg); break;
 		case 0x64: parseAutoWalk(msg); break;
 		case 0x65: addGameTask(&Game::playerMove, player->getID(), DIRECTION_NORTH); break;
 		case 0x66: addGameTask(&Game::playerMove, player->getID(), DIRECTION_EAST); break;
@@ -3099,5 +3100,26 @@ void ProtocolGame::sendItemsPrice()
 		}
 	}
 
+	writeToOutputBuffer(msg);
+}
+
+void ProtocolGame::parseNewPing(NetworkMessage& msg)
+{
+	uint32_t pingId = msg.get<uint32_t>();
+	uint16_t localPing = msg.get<uint16_t>();
+	uint16_t fps = msg.get<uint16_t>();
+
+	addGameTask(&Game::playerReceiveNewPing, player->getID(), localPing, fps);
+	g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::sendNewPing, getThis(), pingId)));
+}
+
+void ProtocolGame::sendNewPing(uint32_t pingId)
+{
+	if (!otclientV8)
+		return;
+
+	NetworkMessage msg;
+	msg.addByte(0x40);
+	msg.add<uint32_t>(pingId);
 	writeToOutputBuffer(msg);
 }
