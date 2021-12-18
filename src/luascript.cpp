@@ -11054,7 +11054,6 @@ int LuaScriptInterface::luaPlayerGetClient(lua_State* L)
 		lua_createtable(L, 0, 5);
 		setField(L, "version", player->getProtocolVersion());
 		setField(L, "os", player->getOperatingSystem());
-		setField(L, "otcv8", player->getOTCv8Version());
 		setField(L, "ping", player->getLocalPing());
 		setField(L, "fps", player->getFPS());
 	} else {

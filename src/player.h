@@ -1327,12 +1327,6 @@ class Player final : public Creature, public Cylinder
 		{
 			return localPing;
 		}
-		uint16_t getOTCv8Version() const
-		{
-			if (client)
-				return client->otclientV8;
-			return 0;
-		}
 
 		void onThink(uint32_t interval) override;
 
