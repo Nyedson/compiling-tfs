@@ -3115,9 +3115,6 @@ void ProtocolGame::parseNewPing(NetworkMessage& msg)
 
 void ProtocolGame::sendNewPing(uint32_t pingId)
 {
-	if (!otclientV8)
-		return;
-
 	NetworkMessage msg;
 	msg.addByte(0x40);
 	msg.add<uint32_t>(pingId);
