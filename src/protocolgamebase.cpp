@@ -237,12 +237,18 @@ void ProtocolGameBase::AddCreature(NetworkMessage& msg, const Creature* creature
 		}
 	}
 
-	msg.addByte(creature->getSpeechBubble());
+	uint8_t speechbubble = creature->getSpeechBubble();
+	if (version < 1200 && speechbubble == 7) {
+		speechbubble = 2;
+	}
+	else if (version < 1200 && speechbubble > 5) {
+		speechbubble = 1;
+	}
+	msg.addByte(speechbubble);
 	msg.addByte(0xFF); // MARK_UNMARKED
-	if (version >= 1110) {
+	if (version >= 1200) {
 		msg.addByte(0x00); // inspection type
 	}
-
 	if (version < 1185) {
 		if (otherPlayer) {
 			msg.add<uint16_t>(otherPlayer->getHelpers());

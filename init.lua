@@ -1,8 +1,8 @@
 GameStore = {
 	ModuleName = "GameStore",
 	Developers = { "Cjaker", "metabob", "Rick" },
-	Version = "1.2",
-	LastUpdated = "10-04-2021 09:05PM"
+	Version = "1.1",
+	LastUpdated = "25-07-2020 11:52AM"
 }
 
 --== Enums ==--
@@ -26,11 +26,12 @@ GameStore.OfferTypes = {
 	OFFER_TYPE_POUNCH = 16,
 	OFFER_TYPE_ALLBLESSINGS = 17,
 	OFFER_TYPE_INSTANT_REWARD_ACCESS = 18,
-	OFFER_TYPE_HIRELING = 19,
-	OFFER_TYPE_HIRELING_NAMECHANGE = 20,
-	OFFER_TYPE_HIRELING_SEXCHANGE = 21,
-	OFFER_TYPE_HIRELING_SKILL = 22,
-	OFFER_TYPE_HIRELING_OUTFIT = 23
+	OFFER_TYPE_CHARMS = 19,
+	OFFER_TYPE_HIRELING = 20,
+	OFFER_TYPE_HIRELING_NAMECHANGE = 21,
+	OFFER_TYPE_HIRELING_SEXCHANGE = 22,
+	OFFER_TYPE_HIRELING_SKILL = 23,
+	OFFER_TYPE_HIRELING_OUTFIT = 24
 }
 
 GameStore.ActionType = {
@@ -55,7 +56,8 @@ GameStore.ConverType = {
 	SHOW_NONE = 0,
 	SHOW_MOUNT = 1,
 	SHOW_OUTFIT = 2,
-	SHOW_ITEM = 3
+	SHOW_ITEM = 3,
+	SHOW_HIRELING = 4
 }
 
 GameStore.ConfigureOffers = {
@@ -72,6 +74,7 @@ function convertType(type)
 		[GameStore.OfferTypes.OFFER_TYPE_STACKABLE] = GameStore.ConverType.SHOW_ITEM,
 		[GameStore.OfferTypes.OFFER_TYPE_HOUSE] = GameStore.ConverType.SHOW_ITEM,
 		[GameStore.OfferTypes.OFFER_TYPE_CHARGES] = GameStore.ConverType.SHOW_ITEM,
+		[GameStore.OfferTypes.OFFER_TYPE_HIRELING] = GameStore.ConverType.SHOW_HIRELING,
 	}
 
 	if not types[type] then
@@ -83,7 +86,9 @@ end
 
 function useOfferConfigure(type)
 	local types = {
-		[GameStore.OfferTypes.OFFER_TYPE_NAMECHANGE] = GameStore.ConfigureOffers.SHOW_CONFIGURE
+		[GameStore.OfferTypes.OFFER_TYPE_NAMECHANGE] = GameStore.ConfigureOffers.SHOW_CONFIGURE,
+		[GameStore.OfferTypes.OFFER_TYPE_HIRELING] = GameStore.ConfigureOffers.SHOW_CONFIGURE,
+		[GameStore.OfferTypes.OFFER_TYPE_HIRELING_NAMECHANGE] = GameStore.ConfigureOffers.SHOW_CONFIGURE
 	}
 
 	if not types[type] then
@@ -96,6 +101,7 @@ end
 GameStore.ClientOfferTypes = {
 	CLIENT_STORE_OFFER_OTHER = 0,
 	CLIENT_STORE_OFFER_NAMECHANGE = 1,
+	CLIENT_STORE_OFFER_HIRELING = 3,
 }
 
 GameStore.HistoryTypes = {
@@ -140,6 +146,7 @@ GameStore.SendingPackets = {
 GameStore.RecivedPackets = {
 	C_StoreEvent = 0xE9, -- 233
 	C_TransferCoins = 0xEF, -- 239
+	C_ParseHirelingName = 0xEC, -- 236
 	C_OpenStore = 0xFA, -- 250
 	C_RequestStoreOffers = 0xFB, -- 251
 	C_BuyStoreOffer = 0xFC, -- 252
@@ -171,8 +178,7 @@ GameStore.DefaultDescriptions = {
  	EXPBOOST    = { "Are you tired of leveling slow? try it!" },
  	PREYSLOT    = { "It's hunting season! Activate a prey to gain a bonus when hunting a certain monster. Every character can purchase one Permanent Prey Slot, which enables the activation of an additional prey. \nIf you activate a prey, you can select one monster out of nine. The bonus for your prey will be selected randomly from one of the following: damage boost, damage reduction, bonus XP, improved loot. The bonus value may range from 5% to 50%. Your prey will be active for 2 hours hunting time: the duration of an active prey will only be reduced while you are hunting." },
  	PREYBONUS   = { "You activated a prey but do not like the randomly selected bonus? Roll for a new one! Here you can purchase five Prey Bonus Rerolls! \nA Bonus Reroll allows you to get a bonus with a higher value (max. 50%). The bonus for your prey will be selected randomly from one of the following: damage boost, damage reduction, bonus XP, improved loot. The 2 hours hunting time will start anew once you have rolled for a new bonus. Your prey monster will stay the same." },
- 	TEMPLE      = { "Need a quick way home? Buy this transportation service to get instantly teleported to your home temple. \n\nNote, you cannot use this service while having a battle sign or a protection zone block. Further, the service will not work in no-logout zones or close to your home temple." },
- 	INSTANTREWARDACCESS = {"No time to travel to a Daily Reward Shrine? Purchase %dx Instant Reward Access!\nNo matter where you are in Tibia, an Instant Reward Access allow you to claim your daily reward on the spot.\nNote that the Instant Reward Access can only be used by the character that purchased it in the Store."}
+ 	TEMPLE      = { "Need a quick way home? Buy this transportation service to get instantly teleported to your home temple. \n\nNote, you cannot use this service while having a battle sign or a protection zone block. Further, the service will not work in no-logout zones or close to your home temple." }
 }
 
 --==Parsing==--
@@ -203,7 +209,14 @@ function onRecvbyte(player, msg, byte)
 	elseif byte == GameStore.RecivedPackets.C_TransferCoins then
 		parseTransferCoins(player:getId(), msg)
 	elseif byte == GameStore.RecivedPackets.C_OpenStore then
-    parseOpenStore(player:getId(), msg)
+		if exaust > currentTime then
+			player:sendCancelMessage("You are exhausted")
+			return false
+		end
+		local num = currentTime + 1
+		player:setStorageValue(Storage.StoreExaust, num)
+
+		parseOpenStore(player:getId(), msg)
 	elseif byte == GameStore.RecivedPackets.C_RequestStoreOffers then
 		parseRequestStoreOffers(player:getId(), msg)
 	elseif byte == GameStore.RecivedPackets.C_BuyStoreOffer then
@@ -223,7 +236,7 @@ function parseTransferCoins(playerId, msg)
 	end
 
 	local reciver = msg:getString()
-	local amount = msg:getU16()
+	local amount = msg:getU32()
 
 	if (player:getCoinsBalance() < amount) then
 		return addPlayerEvent(sendStoreError, 350, playerId, GameStore.StoreErrors.STORE_ERROR_TRANSFER, "You don't have this amount of coins.")
@@ -342,8 +355,8 @@ function parseBuyStoreOffer(playerId, msg)
 			offer.type ~= GameStore.OfferTypes.OFFER_TYPE_PREYSLOT and
 			offer.type ~= GameStore.OfferTypes.OFFER_TYPE_TEMPLE and
 			offer.type ~= GameStore.OfferTypes.OFFER_TYPE_SEXCHANGE and
-			offer.type ~= GameStore.OfferTypes.OFFER_TYPE_POUNCH and
 			offer.type ~= GameStore.OfferTypes.OFFER_TYPE_INSTANT_REWARD_ACCESS and
+			offer.type ~= GameStore.OfferTypes.OFFER_TYPE_POUNCH and
 			offer.type ~= GameStore.OfferTypes.OFFER_TYPE_HIRELING and
 			offer.type ~= GameStore.OfferTypes.OFFER_TYPE_HIRELING_NAMECHANGE and
 			offer.type ~= GameStore.OfferTypes.OFFER_TYPE_HIRELING_SEXCHANGE and
@@ -366,6 +379,8 @@ function parseBuyStoreOffer(playerId, msg)
 	local pcallOk, pcallError = pcall(function()
 		if offer.type == GameStore.OfferTypes.OFFER_TYPE_ITEM               then GameStore.processItemPurchase(player, offer.itemtype, offer.count)
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_POUNCH         then GameStore.processItemPurchase(player, offer.itemtype, offer.count)
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_INSTANT_REWARD_ACCESS then GameStore.processInstantRewardAccess(player, offer.count)
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_CHARMS         then GameStore.processCharmsPurchase(player)
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_BLESSINGS      then GameStore.processSignleBlessingPurchase(player, offer.blessid, offer.count)
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_ALLBLESSINGS   then GameStore.processAllBlessingsPurchase(player, offer.count)
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_PREMIUM        then GameStore.processPremiumPurchase(player, offer.id)
@@ -382,12 +397,10 @@ function parseBuyStoreOffer(playerId, msg)
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_PREYBONUS      then GameStore.processPreyBonusReroll(player, offer.count)
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_TEMPLE         then GameStore.processTempleTeleportPurchase(player)
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_CHARGES        then GameStore.processChargesPurchase(player, offer.itemtype, offer.name, offer.charges)
-		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_INSTANT_REWARD_ACCESS        then player:addRewardTokens(offer.count or 1)
-		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_PROMOTION then GameStore.processPromotionPurchase(player, offer.id)
-		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING       then local hirelingName = msg:getString(); GameStore.processHirelingPurchase(player, offer, productType, hirelingName)
-		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_NAMECHANGE      then local hirelingName = msg:getString(); GameStore.processHirelingChangeNamePurchase(player, offer, productType, hirelingName)
-		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_SEXCHANGE      then GameStore.processHirelingChangeSexPurchase(player, offer)
-		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_SKILL      then GameStore.processHirelingSkillPurchase(player, offer)
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING       then local hirelingName = msg:getString(); local sex = msg:getByte(); GameStore.processHirelingPurchase(player, offer, productType, hirelingName, sex)
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_NAMECHANGE  then local hirelingName = msg:getString(); GameStore.processHirelingChangeNamePurchase(player, offer, productType, hirelingName)
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_SEXCHANGE   then GameStore.processHirelingChangeSexPurchase(player, offer)
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_SKILL       then GameStore.processHirelingSkillPurchase(player, offer)
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_OUTFIT      then GameStore.processHirelingOutfitPurchase(player, offer)
 		else
 			-- This should never happen by our convention, but just in case the guarding condition is messed up...
@@ -400,7 +413,7 @@ function parseBuyStoreOffer(playerId, msg)
 
 	if not pcallError.code then -- unhandled error
 		-- log some debugging info
-		print(string.format("Gamestore: Purchase failed due to an unhandled script error. \n\tStacktrace: %s\n", pcallError))
+		Spdlog.warn("[parseBuyStoreOffer] - Purchase failed due to an unhandled script error. Stacktrace: ".. pcallError)
 	end
 
 		return queueSendStoreAlertToUser(alertMessage, 500, playerId)
@@ -512,7 +525,6 @@ function Player.canBuyOffer(self, offer)
 	offer.type ~= GameStore.OfferTypes.OFFER_TYPE_TEMPLE and
 	offer.type ~= GameStore.OfferTypes.OFFER_TYPE_SEXCHANGE and
 	offer.type ~= GameStore.OfferTypes.OFFER_TYPE_POUNCH and
-	offer.type ~= GameStore.OfferTypes.OFFER_TYPE_INSTANT_REWARD_ACCESS and
 	offer.type ~= GameStore.OfferTypes.OFFER_TYPE_HIRELING_SKILL and
 	offer.type ~= GameStore.OfferTypes.OFFER_TYPE_HIRELING_OUTFIT and
 	not offer.id then
@@ -577,13 +589,23 @@ function Player.canBuyOffer(self, offer)
 				disabled = 1
 				disabledReason = "You already have this mount."
 			end
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_INSTANT_REWARD_ACCESS then
+			if self:getCollectionTokens() >= 90 then
+				disabled = 1
+				disabledReason = "You already have maximum of reward tokens."
+			end
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_PREYBONUS then
 			if self:getPreyBonusRerolls() >= 50 then
 				disabled = 1
 				disabledReason = "You already have maximum of prey wildcards."
 			end
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_CHARMS then
+			if self:charmExpansion() then
+				disabled = 1
+				disabledReason = "You already have charm expansion."
+			end
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_PREYSLOT then
-			if self:getStorageValue(STORE_SLOT_STORAGE) == 1 then
+			if self:getStorageValue(Prey.Config.StoreSlotStorage) == 1 then
 				disabled = 1
 				disabledReason = "You already have 3 slots released."
 			end
@@ -597,17 +619,40 @@ function Player.canBuyOffer(self, offer)
 				disabled = 1
 				disabledReason = "You already have an active XP boost."
 			end
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING then
+			if self:getHirelingsCount() >= 10 then
+				disabled = 1
+				disabledReason = "You already have bought the maximum number of allowed hirelings."
+			end
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_SKILL then
-			local skill = offer.id - HIRELING_STORAGE.SKILL
-			if player:hasHirelingSkill(skill) then
+			local skill = (HIRELING_STORAGE.SKILL + offer.id)
+			if self:hasHirelingSkill(skill) then
 				disabled = 1
 				disabledReason = "This skill is already unlocked."
 			end
+			if self:getHirelingsCount() <= 0 then
+				disabled = 1
+				disabledReason = "You need to have a hireling."
+			end
 		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_OUTFIT then
 			local outfit = offer.id - HIRELING_STORAGE.OUTFIT
-			if player:hasHirelingOutfit(outfit) then
+			if self:hasHirelingOutfit(outfit) then
 				disabled = 1
 				disabledReason = "This hireling outfit is already unlocked."
+			end
+			if self:getHirelingsCount() <= 0 then
+				disabled = 1
+				disabledReason = "You need to have a hireling."
+			end
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_NAMECHANGE then
+			if self:getHirelingsCount() <= 0 then
+				disabled = 1
+				disabledReason = "You need to have a hireling."
+			end
+		elseif offer.type == GameStore.OfferTypes.OFFER_TYPE_HIRELING_SEXCHANGE then
+			if self:getHirelingsCount() <= 0 then
+				disabled = 1
+				disabledReason = "You need to have a hireling."
 			end
 		end
 	end
@@ -644,28 +689,39 @@ function sendShowStoreOffers(playerId, category, redirectId)
 	local count = 0
 	for k, offer in ipairs(category.offers) do
 		local name = offer.name or "Something Special"
-		if not offer.client or table.contains(offer.client, math.floor(player:getClient().version / 100)) then
-			if not offers[name] then
-				offers[name] = {}
-				count = count + 1
-				offers[name].offers = {}
-				offers[name].state = offer.state
-				offers[name].id = offer.id
-				offers[name].type = offer.type
-				offers[name].icons = offer.icons
-				offers[name].basePrice = offer.basePrice
-				offers[name].description = offer.description
-				if offer.sexId then
-					offers[name].sexId = offer.sexId
-				end
-				if offer.itemtype then
-					offers[name].itemtype = offer.itemtype
-				end
+		if not offers[name] then
+			offers[name] = {}
+			count = count + 1
+			offers[name].offers = {}
+			offers[name].state = offer.state
+			offers[name].id = offer.id
+			offers[name].type = offer.type
+			offers[name].icons = offer.icons
+			offers[name].basePrice = offer.basePrice
+			offers[name].description = offer.description
+			if offer.sexId then
+				offers[name].sexId = offer.sexId
+			end
+			if offer.itemtype then
+				offers[name].itemtype = offer.itemtype
 			end
 		end
 		table.insert(offers[name].offers, offer)
 	end
-
+	
+	-- If player doesn't have hireling
+	if category.name == "Hirelings" then
+		if player:getHirelingsCount() < 1 then
+			offers["Hireling Name Change"] = nil
+			offers["Hireling Sex Change"] = nil
+			offers["Hireling Trader"] = nil
+			offers["Hireling Steward"] = nil
+			offers["Hireling Banker"] = nil
+			offers["Hireling Cook"] = nil
+			count = count - 6
+		end
+	end
+	
 	msg:addU16(count)
 
 	if count > 0 then
@@ -786,6 +842,19 @@ function sendShowStoreOffers(playerId, category, redirectId)
 					msg:addByte(outfit.lookFeet)
 				
 					tryOnType = 1
+				elseif type == GameStore.ConverType.SHOW_HIRELING then
+					if player:getSex() == PLAYERSEX_MALE then
+					msg:addByte(1)
+					else
+						msg:addByte(2)
+					end
+					msg:addU16(offer.sexId.male)
+					msg:addU16(offer.sexId.female)
+					local outfit = player:getOutfit()
+					msg:addByte(outfit.lookHead)
+					msg:addByte(outfit.lookBody)
+					msg:addByte(outfit.lookLegs)
+					msg:addByte(outfit.lookFeet)
 				end
 
 				msg:addByte(tryOnType) -- TryOn Type
@@ -1099,8 +1168,6 @@ GameStore.getDefaultDescription = function(offerType, count)
 		descList = GameStore.DefaultDescriptions.PREYBONUS
 	elseif offerType == t.OFFER_TYPE_TEMPLE then
 		descList = GameStore.DefaultDescriptions.TEMPLE
-	elseif offerType == t.OFFER_TYPE_INSTANT_REWARD_ACCESS then
-    return string.format(GameStore.DefaultDescriptions.INSTANTREWARDACCESS[1], count or 30)
 	end
 
 	return descList[math.floor(math.random(1, #descList))] or ""
@@ -1166,8 +1233,8 @@ GameStore.canChangeToName = function(name)
 	local result = {
 		ability = false
 	}
-	if name:len() < 3 or name:len() > 15 then
-		result.reason = "The length of your new name must be between 3 and 15 characters."
+	if name:len() < 3 or name:len() > 14 then
+		result.reason = "The length of your new name must be between 3 and 14 characters."
 		return result
 	end
 
@@ -1251,6 +1318,7 @@ function GameStore.processItemPurchase(player, offerId, offerCount)
 		return error({ code = 0, message = "Please make sure you have free slots in your store inbox."})
 	end
 end
+
 function GameStore.processChargesPurchase(player, itemtype, name, charges)
 	if player:getFreeCapacity() < ItemType(itemtype):getWeight(1) then
 		return error({ code = 0, message = "Please make sure you have free capacity to hold this item."})
@@ -1279,7 +1347,19 @@ function GameStore.processAllBlessingsPurchase(player, count)
 	player:addBlessing(8, count)
 end
 
+function GameStore.processInstantRewardAccess(player, offerCount)
+	if player:getCollectionTokens() + offerCount >= 91 then
+		return error({code = 1, message = "You cannot own more than 90 reward tokens."})
+	end
+	player:setCollectionTokens(player:getCollectionTokens() + offerCount)
+end
+
+function GameStore.processCharmsPurchase(player)
+	player:charmExpansion(true)
+end
+
 function GameStore.processPremiumPurchase(player, offerId)
+	db.query("UPDATE `accounts` SET `lastday` = ".. os.time() .." WHERE `id` = " .. player:getAccountId())
 	player:addPremiumDays(offerId - 3000)
 end
 
@@ -1476,13 +1556,15 @@ function GameStore.processExpBoostPuchase(player)
 end
 
 function GameStore.processPreySlotPurchase(player)
-	player:setStorageValue(STORE_SLOT_STORAGE, 1)
-	player:setPreyUnlocked(CONST_PREY_SLOT_THIRD, 2)
-	player:setPreyState(CONST_PREY_SLOT_THIRD, 1)
+	if player:getStorageValue(Prey.Config.StoreSlotStorage) < 1 then
+		player:setStorageValue(Prey.Config.StoreSlotStorage, 1)
+		player:setPreyUnlocked(CONST_PREY_SLOT_THIRD, 2)
+		player:setPreyState(CONST_PREY_SLOT_THIRD, 1)
 
-	-- Update Prey Dataon
-	for slot = CONST_PREY_SLOT_FIRST, CONST_PREY_SLOT_THIRD do
-		player:sendPreyData(slot)
+		-- Update Prey Data
+		for slot = CONST_PREY_SLOT_FIRST, CONST_PREY_SLOT_THIRD do
+			player:sendPreyData(slot)
+		end
 	end
 end
 
@@ -1512,17 +1594,15 @@ function GameStore.processTempleTeleportPurchase(player)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, 'You have been teleported to your hometown.')
 end
 
-function GameStore.processPromotionPurchase(player, offerId)
-	if not GameStore.addPromotionToPlayer(player.id, offerId) then
-		return error({code = 0})
-	end
-end
-
-function GameStore.processHirelingPurchase(player, offer, productType, hirelingName)
+function GameStore.processHirelingPurchase(player, offer, productType, hirelingName, chosenSex)
 	local playerId = player:getId()
 	local offerId = offer.id
+	
+	if player:getClient().version < 1200 then
+		return error({code = 1, message = "Use client 12 to make this purchase."})
+	end
 
-	if productType == GameStore.ClientOfferTypes.CLIENT_STORE_OFFER_NAMECHANGE then
+	if productType == GameStore.ClientOfferTypes.CLIENT_STORE_OFFER_HIRELING then
 
 		local result = GameStore.canUseHirelingName(hirelingName)
 		if not result.ability then
@@ -1531,7 +1611,7 @@ function GameStore.processHirelingPurchase(player, offer, productType, hirelingN
 
 		hirelingName = hirelingName:lower():gsub("(%l)(%w*)", function(a, b) return string.upper(a) .. b end)
 
-		local hireling = player:addNewHireling(hirelingName, offer.sexId)
+		local hireling = player:addNewHireling(hirelingName, chosenSex)
 		if not hireling then
 			return error({code = 1, message = "Error delivering your hireling lamp, try again later."})
 		end
@@ -1547,11 +1627,14 @@ function GameStore.processHirelingPurchase(player, offer, productType, hirelingN
 		end
 		-- TODO: Use the correct dialog (byte 0xDB) on client 1205+
 		-- for compatibility, request name using the change name dialog
-		return addPlayerEvent(sendRequestPurchaseData, 250, playerId, offerId, GameStore.ClientOfferTypes.CLIENT_STORE_OFFER_NAMECHANGE)
+		return addPlayerEvent(sendRequestPurchaseData, 250, playerId, offerId, GameStore.ClientOfferTypes.CLIENT_STORE_OFFER_HIRELING)
 	end
 end
 
 function GameStore.processHirelingChangeNamePurchase(player, offer, productType, newHirelingName)
+	if player:getClient().version < 1200 then
+		return error({code = 1, message = "Use client 12 to make this purchase."})
+	end
 	local playerId = player:getId()
 	local offerId = offer.id
 	if productType == GameStore.ClientOfferTypes.CLIENT_STORE_OFFER_NAMECHANGE then
@@ -1573,6 +1656,9 @@ function GameStore.processHirelingChangeNamePurchase(player, offer, productType,
 end
 
 function GameStore.processHirelingChangeSexPurchase(player, offer)
+	if player:getClient().version < 1200 then
+		return error({code = 1, message = "Use client 12 to make this purchase."})
+	end
 	local playerId = player:getId()
 
 	local message = 'Close the store window to select which hireling should have the sex changed.'
@@ -1582,6 +1668,9 @@ function GameStore.processHirelingChangeSexPurchase(player, offer)
 end
 
 function GameStore.processHirelingSkillPurchase(player, offer)
+	if player:getClient().version < 1200 then
+		return error({code = 1, message = "Use client 12 to make this purchase."})
+	end
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
 	local skill = offer.id - HIRELING_STORAGE.SKILL
 	player:enableHirelingSkill(skill)
@@ -1589,83 +1678,14 @@ function GameStore.processHirelingSkillPurchase(player, offer)
 end
 
 function GameStore.processHirelingOutfitPurchase(player, offer)
+	if player:getClient().version < 1200 then
+		return error({code = 1, message = "Use client 12 to make this purchase."})
+	end
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)
 	local outfit = offer.id - HIRELING_STORAGE.OUTFIT
 	player:enableHirelingOutfit(outfit)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, 'A new hireling outfit has been added to all your hirelings')
 end
-
--- Hireling Helpers
-function HandleHirelingNameChange(playerId, offer, newHirelingName)
-	local player = Player(playerId);
-
-	local cb = function(playerId, data, hireling)
-		local offer = data.offer
-		local newHirelingName = data.newHirelingName
-		local player = Player(playerId);
-		if not hireling then
-			return player:showInfoModal("Error","Your must select a hireling.")
-		end
-
-		if hireling.active > 0 then
-			return player:showInfoModal("Error", "Your hireling must be inside his/her lamp.")
-		end
-
-		if not player:removeCoinsBalance(offer.price) then
-			return player:showInfoModal("Error", "Transaction error")
-		end
-		local oldName = hireling.name
-		hireling.name = newHirelingName
-		local lamp = player:findHirelingLamp(hireling:getId())
-		if lamp then
-			lamp:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "This mysterious lamp summons your very own personal hireling.\nThis item cannot be traded.\nThis magic lamp is the home of " .. hireling:getName() .. ".")
-		end
-		GameStore.insertHistory(player:getAccountId(), GameStore.HistoryTypes.HISTORY_TYPE_NONE, offer.name .. ' ('.. oldName .. '->' .. newHirelingName ..')', (offer.price) * -1)
-
-		player:showInfoModal('Info',string.format('%s has been renamed to %s', oldName, newHirelingName))
-	end
-
-	player:sendHirelingSelectionModal('Choose a Hireling', 'Select a hireling below', cb, {offer=offer, newHirelingName=newHirelingName})
-end
-
-function HandleHirelingSexChange(playerId, offer)
-	local player = Player(playerId);
-
-	local cb = function(playerId, data, hireling)
-		local player = Player(playerId);
-		if not hireling then
-			return player:showInfoModal("Error","Your must select a hireling.")
-		end
-
-		if hireling.active > 0 then
-			return player:showInfoModal("Error", "Your hireling must be inside his/her lamp.")
-		end
-
-		if not player:removeCoinsBalance(data.offer.price) then
-			return player:showInfoModal("Error", "Transaction error")
-		end
-
-		local changeTo,sexString,lookType
-		if hireling.sex == HIRELING_SEX.FEMALE then
-			changeTo = HIRELING_SEX.MALE
-			sexString = 'male'
-			lookType = HIRELING_OUTFIT_DEFAULT.male
-		else
-			changeTo = HIRELING_SEX.FEMALE
-			sexString = 'female'
-			lookType = HIRELING_OUTFIT_DEFAULT.female
-		end
-
-		hireling.sex = changeTo
-		hireling.looktype = lookType
-
-		GameStore.insertHistory(player:getAccountId(), GameStore.HistoryTypes.HISTORY_TYPE_NONE, offer.name .. ' ('.. hireling:getName() ..')', (offer.price) * -1)
-
-		player:showInfoModal('Info',string.format('%s sex was changed to %s', hireling:getName(), sexString))
-	end
-
-	player:sendHirelingSelectionModal('Choose a Hireling', 'Select a hireling below', cb, {offer=offer})
-end 
 
 --==Player==--
 function Player.getCoinsBalance(self)
@@ -1711,113 +1731,12 @@ end
 function Player.toggleSex(self)
 	local currentSex = self:getSex()
 	local playerOutfit = self:getOutfit()
-	local outfits = {
-    -- Add all outfits here --
-    [1] = {male = 128, female = 136},
-    [2] = {male = 129, female = 137},
-    [3] = {male = 131, female = 139},
-    [4] = {male = 132, female = 140},
-    [5] = {male = 134, female = 142},
-    [6] = {male = 143, female = 147},
-    [7] = {male = 144, female = 148},
-    [8] = {male = 145, female = 149},
-    [9] = {male = 146, female = 150},
-    [10] = {male = 151, female = 155},
-    [11] = {male = 152, female = 156},
-    [12] = {male = 153, female = 157},
-    [13] = {male = 154, female = 158},
-    [14] = {male = 251, female = 252},
-    [15] = {male = 268, female = 269},
-    [16] = {male = 273, female = 270},
-    [17] = {male = 278, female = 279},
-    [18] = {male = 289, female = 288},
-    [19] = {male = 325, female = 324},
-    [20] = {male = 335, female = 336},
-    [21] = {male = 367, female = 366},
-    [22] = {male = 430, female = 431},
-    [23] = {male = 432, female = 433},
-    [24] = {male = 463, female = 464},
-    [25] = {male = 465, female = 466},
-    [26] = {male = 472, female = 471},
-    [27] = {male = 512, female = 513},
-    [28] = {male = 516, female = 514},
-    [29] = {male = 541, female = 542},
-    [30] = {male = 574, female = 575},
-    [31] = {male = 577, female = 578},
-    [32] = {male = 610, female = 618},
-    [33] = {male = 633, female = 632},
-    [34] = {male = 634, female = 635},
-    [35] = {male = 637, female = 636},
-    [36] = {male = 665, female = 664},
-    [37] = {male = 667, female = 666},
-    [38] = {male = 684, female = 683},
-    [39] = {male = 695, female = 694},
-    [40] = {male = 697, female = 696},
-    [41] = {male = 699, female = 698},     
-    [42] = {male = 725, female = 724},
-    [43] = {male = 733, female = 732},
-    [44] = {male = 746, female = 745},
-    [45] = {male = 750, female = 749},
-    [46] = {male = 760, female = 759},
-    [47] = {male = 846, female = 845},
-    [48] = {male = 853, female = 852},
-    [49] = {male = 873, female = 874},
-    [50] = {male = 884, female = 885},
-    [51] = {male = 899, female = 900},
-    [52] = {male = 908, female = 909},  
-    [53] = {male = 931, female = 929},
-    [54] = {male = 955, female = 956},
-    [55] = {male = 957, female = 958},
-    [56] = {male = 1021, female = 1020},
-    [57] = {male = 1023, female = 1024},
-    [58] = {male = 1042, female = 1043},
-    [59] = {male = 1051, female = 1050},
-    [60] = {male = 1069, female = 1070},
-    [61] = {male = 1094, female = 1095},
-    [62] = {male = 1102, female = 1103},
-    [63] = {male = 1146, female = 1147},
-    [64] = {male = 1173, female = 1174},
-    [65] = {male = 1186, female = 1187},
-    [66] = {male = 1210, female = 1211},
-    [67] = {male = 1127, female = 1128},
-    [68] = {male = 1056, female = 1057},
-    [69] = {male = 1243, female = 1244},
-    [70] = {male = 1245, female = 1246},
-    [71] = {male = 1270, female = 1271},
-    [72] = {male = 1279, female = 1280},
-    [73] = {male = 1282, female = 1283},
-    [74] = {male = 1292, female = 1293},
-    [75] = {male = 1322, female = 1323},
-    [76] = {male = 1331, female = 1332},
-    [77] = {male = 1338, female = 1339},
-    [78] = {male = 1371, female = 1372},
-    [79] = {male = 1384, female = 1385},
-    [80] = {male = 133, female = 138},
-    [81] = {male = 130, female = 141},
-    [82] = {male = 962, female = 963},
-    [83] = {male = 964, female = 965},
-    [84] = {male = 966, female = 967},
-    [85] = {male = 968, female = 969},
-    [86] = {male = 970, female = 971},
-    [87] = {male = 972, female = 973},
-    [88] = {male = 974, female = 975}
-}
 
 	playerOutfit.lookAddons = 0
 	if currentSex == PLAYERSEX_FEMALE then
-		for i = 1, #outfits do
-            if self:hasOutfit(outfits[i].female, 3) then
-                self:addOutfitAddon(outfits[i].male, 3)
-            end
-        end
 		self:setSex(PLAYERSEX_MALE)
 		playerOutfit.lookType = 128
 	else
-		for i = 1, #outfits do
-            if self:hasOutfit(outfits[i].male, 3) then
-                self:addOutfitAddon(outfits[i].female, 3)
-            end
-        end
 		self:setSex(PLAYERSEX_FEMALE)
 		playerOutfit.lookType = 136
 	end
@@ -1943,3 +1862,74 @@ function Player:openStore(serviceName) --exporting the method so other scripts c
 	end
 end
 
+-- Hireling Helpers
+function HandleHirelingNameChange(playerId, offer, newHirelingName)
+	local player = Player(playerId);
+
+	local cb = function(playerId, data, hireling)
+		local offer = data.offer
+		local newHirelingName = data.newHirelingName
+		local player = Player(playerId);
+		if not hireling then
+			return player:showInfoModal("Error","Your must select a hireling.")
+		end
+
+		if hireling.active > 0 then
+			return player:showInfoModal("Error", "Your hireling must be inside his/her lamp.")
+		end
+
+		if not player:removeCoinsBalance(offer.price) then
+			return player:showInfoModal("Error", "Transaction error")
+		end
+		local oldName = hireling.name
+		hireling.name = newHirelingName
+		local lamp = player:findHirelingLamp(hireling:getId())
+		if lamp then
+			lamp:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "This mysterious lamp summons your very own personal hireling.\nThis item cannot be traded.\nThis magic lamp is the home of " .. hireling:getName() .. ".")
+		end
+		GameStore.insertHistory(player:getAccountId(), GameStore.HistoryTypes.HISTORY_TYPE_NONE, offer.name .. ' ('.. oldName .. '->' .. newHirelingName ..')', (offer.price) * -1)
+
+		player:showInfoModal('Info',string.format('%s has been renamed to %s', oldName, newHirelingName))
+	end
+
+	player:sendHirelingSelectionModal('Choose a Hireling', 'Select a hireling below', cb, {offer=offer, newHirelingName=newHirelingName})
+end
+
+function HandleHirelingSexChange(playerId, offer)
+	local player = Player(playerId);
+
+	local cb = function(playerId, data, hireling)
+		local player = Player(playerId);
+		if not hireling then
+			return player:showInfoModal("Error","Your must select a hireling.")
+		end
+
+		if hireling.active > 0 then
+			return player:showInfoModal("Error", "Your hireling must be inside his/her lamp.")
+		end
+
+		if not player:removeCoinsBalance(data.offer.price) then
+			return player:showInfoModal("Error", "Transaction error")
+		end
+
+		local changeTo,sexString,lookType
+		if hireling.sex == HIRELING_SEX.FEMALE then
+			changeTo = HIRELING_SEX.MALE
+			sexString = 'male'
+			lookType = HIRELING_OUTFIT_DEFAULT.male
+		else
+			changeTo = HIRELING_SEX.FEMALE
+			sexString = 'female'
+			lookType = HIRELING_OUTFIT_DEFAULT.female
+		end
+
+		hireling.sex = changeTo
+		hireling.looktype = lookType
+
+		GameStore.insertHistory(player:getAccountId(), GameStore.HistoryTypes.HISTORY_TYPE_NONE, offer.name .. ' ('.. hireling:getName() ..')', (offer.price) * -1)
+
+		player:showInfoModal('Info',string.format('%s sex was changed to %s', hireling:getName(), sexString))
+	end
+
+	player:sendHirelingSelectionModal('Choose a Hireling', 'Select a hireling below', cb, {offer=offer})
+end
