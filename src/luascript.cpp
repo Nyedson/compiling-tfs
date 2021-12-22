@@ -2138,6 +2138,7 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Game", "createContainer", LuaScriptInterface::luaGameCreateContainer);
 	registerMethod("Game", "createMonster", LuaScriptInterface::luaGameCreateMonster);
 	registerMethod("Game", "createNpc", LuaScriptInterface::luaGameCreateNpc);
+	registerMethod("Game", "generateNpc", LuaScriptInterface::luaGameGenerateNpc);
 	registerMethod("Game", "createTile", LuaScriptInterface::luaGameCreateTile);
 	registerMethod("Game", "createMonsterType", LuaScriptInterface::luaGameCreateMonsterType);
 
@@ -2152,6 +2153,7 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Game", "itemidHasMoveevent", LuaScriptInterface::luaGameItemidHasMoveevent);
 	registerMethod("Game", "hasDistanceEffect", LuaScriptInterface::luaGameHasDistanceEffect);
 	registerMethod("Game", "hasEffect", LuaScriptInterface::luaGameHasEffect);
+    registerMethod("Game", "getOfflinePlayer", LuaScriptInterface::luaGameGetOfflinePlayer);
 
 	// Variant
 	registerClass("Variant", "", LuaScriptInterface::luaVariantCreate);
@@ -2689,6 +2691,8 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Player", "sendStats", LuaScriptInterface::luaPlayerSendStats);
 	registerMethod("Player", "getFreeBackpackSlots", LuaScriptInterface::luaPlayerGetFreeBackpackSlots);
 
+	registerMethod("Player", "isOffline", LuaScriptInterface::luaPlayerIsOffline);
+
 	// Monster
 	registerClass("Monster", "Creature", LuaScriptInterface::luaMonsterCreate);
 	registerMetaMethod("Monster", "__eq", LuaScriptInterface::luaUserdataCompare);
@@ -2733,6 +2737,8 @@ void LuaScriptInterface::registerFunctions()
 
 	registerMethod("Npc", "getSpeechBubble", LuaScriptInterface::luaNpcGetSpeechBubble);
 	registerMethod("Npc", "setSpeechBubble", LuaScriptInterface::luaNpcSetSpeechBubble);
+	registerMethod("Npc", "setName", LuaScriptInterface::luaNpcSetName);
+	registerMethod("Npc", "place", LuaScriptInterface::luaNpcPlace);
 
 	// Guild
 	registerClass("Guild", "", LuaScriptInterface::luaGuildCreate);
@@ -2830,6 +2836,7 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("House", "setAccessList", LuaScriptInterface::luaHouseSetAccessList);
 
 	registerMethod("House", "kickPlayer", LuaScriptInterface::luaHouseKickPlayer);
+	registerMethod("House", "isInvited", LuaScriptInterface::luaHouseIsInvited);
 
 	// ItemType
 	registerClass("ItemType", "", LuaScriptInterface::luaItemTypeCreate);
@@ -2888,6 +2895,7 @@ void LuaScriptInterface::registerFunctions()
 
 	registerMethod("ItemType", "getDecayTime", LuaScriptInterface::luaItemTypeGetDecayTime);
 	registerMethod("ItemType", "getShowDuration", LuaScriptInterface::luaItemTypeGetShowDuration);
+	registerMethod("ItemType", "getWrapableTo", LuaScriptInterface::luaItemTypeGetWrapableTo);
 	registerMethod("ItemType", "getSpeed", LuaScriptInterface::luaItemTypeGetSpeed);
 	registerMethod("ItemType", "getBaseSpeed", LuaScriptInterface::luaItemTypeGetBaseSpeed);
 
@@ -4905,6 +4913,20 @@ int LuaScriptInterface::luaGameCreateMonster(lua_State* L)
 	return 1;
 }
 
+int LuaScriptInterface::luaGameGenerateNpc(lua_State* L)
+{
+	// Game.generateNpc(npcName)
+	Npc* npc = Npc::createNpc(getString(L, 1));
+	if (!npc) {
+		lua_pushnil(L);
+		return 1;
+	} else {
+		pushUserdata<Npc>(L, npc);
+		setMetatable(L, -1, "Npc");
+	}
+	return 1;
+}
+
 int LuaScriptInterface::luaGameCreateNpc(lua_State* L)
 {
 	// Game.createNpc(npcName, position[, extended = false[, force = false]])
@@ -5076,6 +5098,22 @@ int LuaScriptInterface::luaGameGetItemByClientId(lua_State* L)
 	const ItemType& itemType = Item::items.getItemIdByClientId(clientId);
 	pushUserdata<const ItemType>(L, &itemType);
 	setMetatable(L, -1, "ItemType");
+	return 1;
+}
+
+int LuaScriptInterface::luaGameGetOfflinePlayer(lua_State* L)
+{
+	uint32_t playerId = getNumber<uint32_t>(L,1);
+
+	Player* offlinePlayer = new Player(nullptr);
+	if (!IOLoginData::loadPlayerById(offlinePlayer, playerId)) {
+		delete offlinePlayer;
+		lua_pushnil(L);
+	} else {
+		pushUserdata<Player>(L, offlinePlayer);
+		setMetatable(L, -1, "Player");
+	}
+
 	return 1;
 }
 
@@ -10692,6 +10730,9 @@ int LuaScriptInterface::luaPlayerSave(lua_State* L)
 	if (player) {
 		player->loginPosition = player->getPosition();
 		pushBoolean(L, IOLoginData::savePlayer(player));
+		if (player->isOffline()) {
+			delete player; //avoiding memory leak
+		}
 	} else {
 		lua_pushnil(L);
 	}
@@ -11051,11 +11092,9 @@ int LuaScriptInterface::luaPlayerGetClient(lua_State* L)
 	// player:getClient()
 	Player* player = getUserdata<Player>(L, 1);
 	if (player) {
-		lua_createtable(L, 0, 5);
+		lua_createtable(L, 0, 2);
 		setField(L, "version", player->getProtocolVersion());
 		setField(L, "os", player->getOperatingSystem());
-		setField(L, "ping", player->getLocalPing());
-		setField(L, "fps", player->getFPS());
 	} else {
 		lua_pushnil(L);
 	}
@@ -11732,6 +11771,18 @@ int LuaScriptInterface::luaPlayerGetFreeBackpackSlots(lua_State* L)
 	return 1;
 }
 
+int LuaScriptInterface::luaPlayerIsOffline(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		pushBoolean(L, player->isOffline());
+	} else {
+		pushBoolean(L, true);
+	}
+
+	return 1;
+}
+
 // Monster
 int LuaScriptInterface::luaMonsterCreate(lua_State* L)
 {
@@ -12140,6 +12191,40 @@ int LuaScriptInterface::luaNpcSetSpeechBubble(lua_State* L)
 		npc->setSpeechBubble(getNumber<uint8_t>(L, 2));
 	}
 	return 0;
+}
+
+int LuaScriptInterface::luaNpcSetName(lua_State* L)
+{
+	// npc:setName(name)
+	Npc* npc = getUserdata<Npc>(L, 1);
+	const std::string& name = getString(L, 2);
+	if (npc) {
+		npc->setName(name);
+		pushBoolean(L, true);
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+int LuaScriptInterface::luaNpcPlace(lua_State* L)
+{
+	// npc:place(position[, extended = false[, force = true]])
+	Npc* npc = getUserdata<Npc>(L, 1);
+	if (!npc) {
+		lua_pushnil(L);
+		return 1;
+	} 
+
+	const Position& position = getPosition(L, 2);
+	bool extended = getBoolean(L, 3, false);
+	bool force = getBoolean(L, 4, true);
+	if (g_game.placeCreature(npc, position, extended, force)) {
+		pushUserdata<Npc>(L, npc);
+		setMetatable(L, -1, "Npc");
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
 }
 
 // Guild
@@ -13089,6 +13174,25 @@ int LuaScriptInterface::luaHouseKickPlayer(lua_State* L)
 	return 1;
 }
 
+int LuaScriptInterface::luaHouseIsInvited(lua_State* L)
+{
+	// house:isInvited(player)
+	House* house = getUserdata<House>(L, 1);
+	if (!house) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	Player* player = getPlayer(L, 2);
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	pushBoolean(L, house->isInvited(player));
+	return 1;
+}
+
 // ItemType
 int LuaScriptInterface::luaItemTypeCreate(lua_State* L)
 {
@@ -13698,6 +13802,18 @@ int LuaScriptInterface::luaItemTypeGetShowDuration(lua_State* L)
 	const ItemType* itemType = getUserdata<const ItemType>(L, 1);
 	if (itemType) {
 		lua_pushboolean(L, itemType->showDuration);
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaItemTypeGetWrapableTo(lua_State* L)
+{
+	// itemType:getWrapableTo()
+	const ItemType* itemType = getUserdata<const ItemType>(L, 1);
+	if (itemType) {
+		lua_pushnumber(L, itemType->wrapableTo);
 	} else {
 		lua_pushnil(L);
 	}

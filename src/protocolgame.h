@@ -391,8 +391,6 @@ class ProtocolGame final : public ProtocolGameBase
 
 		//otclient
 		void parseExtendedOpcode(NetworkMessage& msg);
-		void parseNewPing(NetworkMessage& msg);
-		void sendNewPing(uint32_t pingId);
 
 		friend class Player;
 

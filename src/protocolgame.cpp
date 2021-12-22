@@ -511,14 +511,16 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		}
 	}
 
-	g_dispatcher.addTask(createTask(std::bind(&Modules::executeOnRecvbyte, g_modules, player, msg, recvbyte)));
+	//TODO: JLCVP - Refactor this terrible validation
+	if(recvbyte != 0xD3){
+		g_dispatcher.addTask(createTask(std::bind(&Modules::executeOnRecvbyte, g_modules, player, msg, recvbyte)));
+	}
 
 	switch (recvbyte) {
 		case 0x14: g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::logout, getThis(), true, false))); break;
 		case 0x1D: addGameTask(&Game::playerReceivePingBack, player->getID()); break;
 		case 0x1E: addGameTask(&Game::playerReceivePing, player->getID()); break;
 		case 0x32: parseExtendedOpcode(msg); break; //otclient extended opcode
-		case 0x40: parseNewPing(msg); break;
 		case 0x64: parseAutoWalk(msg); break;
 		case 0x65: addGameTask(&Game::playerMove, player->getID(), DIRECTION_NORTH); break;
 		case 0x66: addGameTask(&Game::playerMove, player->getID(), DIRECTION_EAST); break;
@@ -579,7 +581,8 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0xCB: parseBrowseField(msg); break;
 		case 0xCC: parseSeekInContainer(msg); break;
 		case 0xD2: addGameTask(&Game::playerRequestOutfit, player->getID()); break;
-		case 0xD3: parseSetOutfit(msg); break;
+		//g_dispatcher.addTask(createTask(std::bind(&Modules::executeOnRecvbyte, g_modules, player, msg, recvbyte)));
+		case 0xD3: g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::parseSetOutfit, this, msg))); break;
 		case 0xD4: parseToggleMount(msg); break;
 		case 0xD5: parseApplyImbuement(msg); break;
 		case 0xD6: parseClearingImbuement(msg); break;
@@ -696,15 +699,23 @@ void ProtocolGame::parseAutoWalk(NetworkMessage& msg)
 
 void ProtocolGame::parseSetOutfit(NetworkMessage& msg)
 {
-	Outfit_t newOutfit;
-	newOutfit.lookType = msg.get<uint16_t>();
-	newOutfit.lookHead = msg.getByte();
-	newOutfit.lookBody = msg.getByte();
-	newOutfit.lookLegs = msg.getByte();
-	newOutfit.lookFeet = msg.getByte();
-	newOutfit.lookAddons = msg.getByte();
-	newOutfit.lookMount = msg.get<uint16_t>();
-	addGameTask(&Game::playerChangeOutfit, player->getID(), newOutfit);
+	uint16_t startBufferPosition = msg.getBufferPosition();
+	Module* outfitModule = g_modules->getEventByRecvbyte(0xD3, false);
+	if(outfitModule) {
+		outfitModule->executeOnRecvbyte(player, msg);
+ 	}
+
+	if(msg.getBufferPosition() == startBufferPosition) {
+		Outfit_t newOutfit;
+		newOutfit.lookType = msg.get<uint16_t>();
+		newOutfit.lookHead = msg.getByte();
+		newOutfit.lookBody = msg.getByte();
+		newOutfit.lookLegs = msg.getByte();
+		newOutfit.lookFeet = msg.getByte();
+		newOutfit.lookAddons = msg.getByte();
+		newOutfit.lookMount = msg.get<uint16_t>();
+		addGameTask(&Game::playerChangeOutfit, player->getID(), newOutfit);
+	}
 }
 
 void ProtocolGame::parseToggleMount(NetworkMessage& msg)
@@ -3100,23 +3111,5 @@ void ProtocolGame::sendItemsPrice()
 		}
 	}
 
-	writeToOutputBuffer(msg);
-}
-
-void ProtocolGame::parseNewPing(NetworkMessage& msg)
-{
-	uint32_t pingId = msg.get<uint32_t>();
-	uint16_t localPing = msg.get<uint16_t>();
-	uint16_t fps = msg.get<uint16_t>();
-
-	addGameTask(&Game::playerReceiveNewPing, player->getID(), localPing, fps);
-	g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::sendNewPing, getThis(), pingId)));
-}
-
-void ProtocolGame::sendNewPing(uint32_t pingId)
-{
-	NetworkMessage msg;
-	msg.addByte(0x40);
-	msg.add<uint32_t>(pingId);
 	writeToOutputBuffer(msg);
 }

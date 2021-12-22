@@ -1311,23 +1311,6 @@ class Player final : public Creature, public Cylinder
 			lastPong = OTSYS_TIME();
 		}
 
-		void setFPS(uint16_t value)
-		{
-			fps = value;
-		}
-		void setLocalPing(uint16_t value)
-		{
-			localPing = value;
-		}
-		uint16_t getFPS() const
-		{
-			return fps;
-		}
-		uint16_t getLocalPing() const
-		{
-			return localPing;
-		}
-
 		void onThink(uint32_t interval) override;
 
 		void postAddNotification(Thing* thing, const Cylinder* oldParent, int32_t index, cylinderlink_t link = LINK_OWNER) override;
@@ -1686,8 +1669,6 @@ class Player final : public Creature, public Cylinder
 		std::vector<std::string> preyBonusName = {"", "", ""};
 		std::vector<uint8_t> blessings = { 0, 0, 0, 0, 0, 0, 0, 0 };
 		uint16_t maxWriteLen = 0;
-		uint16_t localPing = 0;
-		uint16_t fps = 0;
 		uint16_t baseXpGain = 100;
 		uint16_t voucherXpBoost = 0;
 		uint16_t grindingXpBoost = 0;
