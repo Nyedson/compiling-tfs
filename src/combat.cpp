@@ -628,7 +628,7 @@ void Combat::combatTileEffects(const SpectatorHashSet& spectators, Creature* cas
 		Item* item = Item::CreateItem(itemId);
         if (caster) {
             item->setOwner(caster->getID());
-            //item->setSpecialDescription("Casted by " + caster->getName());
+            item->setSpecialDescription("Casted by " + caster->getName());
         }
 
 		ReturnValue ret = g_game.internalAddItem(tile, item);
