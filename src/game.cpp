@@ -438,7 +438,7 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 	if (value1 > 0) {
 		player->setMoveExhaust(value1);
 	} else {
-		player->setMoveExhaust(600);
+		player->setMoveExhaust(900);
 	}
 
 	if (ret != RETURNVALUE_NOERROR) {
