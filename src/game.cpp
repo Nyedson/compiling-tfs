@@ -252,7 +252,7 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 				return;
 			}
 			slotP = CONST_SLOT_RING;
-			player->setRingExhaust(1500);
+			player->setRingExhaust(1000);
 		}
 		else if (hasBitSet(SLOTP_NECKLACE, slotP)) {
 			if (player->isAmuletExhausted()) 
@@ -261,7 +261,7 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 				return;
 			}
 			slotP = CONST_SLOT_NECKLACE;
-			player->setAmuletExhaust(1500);
+			player->setAmuletExhaust(1000);
 		}
 		else if (hasBitSet(SLOTP_ARMOR, slotP)) {
 			slotP = CONST_SLOT_ARMOR;
