@@ -853,8 +853,7 @@ class LuaScriptInterface
 
 		// Player
 		static int luaPlayerCreate(lua_State* L);
-    
-    static int luaSendCreatureSquare(lua_State* L);
+
 		static int luaPlayerIsPlayer(lua_State* L);
 
 		static int luaPlayerGetGuid(lua_State* L);

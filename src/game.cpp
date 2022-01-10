@@ -246,22 +246,22 @@ void Game::onPressHotkeyEquip(Player* player, uint16_t spriteid)
 			slotP = CONST_SLOT_HEAD;
 		}
 		else if (hasBitSet(SLOTP_RING, slotP)) {
-			if (player->isMoveExhausted()) 
+			if (player->isRingExhausted()) 
 			{
 				player->sendCancelMessage("You can't equip very fast.");
 				return;
 			}
 			slotP = CONST_SLOT_RING;
-			player->setMoveExhaust(1500);
+			player->setRingExhaust(1500);
 		}
 		else if (hasBitSet(SLOTP_NECKLACE, slotP)) {
-			if (player->isMoveExhausted()) 
+			if (player->isAmuletExhausted()) 
 			{
 				player->sendCancelMessage("You can't equip very fast.");
 				return;
 			}
 			slotP = CONST_SLOT_NECKLACE;
-			player->setMoveExhaust(1500);
+			player->setAmuletExhaust(1500);
 		}
 		else if (hasBitSet(SLOTP_ARMOR, slotP)) {
 			slotP = CONST_SLOT_ARMOR;
