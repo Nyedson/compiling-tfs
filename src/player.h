@@ -1612,7 +1612,8 @@ class Player final : public Creature, public Cylinder
 		uint64_t instantRewardTokens = 0;
 		int64_t nextPotionAction = 0;
 		int64_t lastWalking = 0;
-		int64_t exhaustItems = 0;
+		int64_t exhaustRing = 0;
+		int64_t exhaustAmulet = 0;
 
 		std::vector<Kill> unjustifiedKills;
 
