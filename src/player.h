@@ -1459,12 +1459,20 @@ class Player final : public Creature, public Cylinder
 			lastMarketInteraction = OTSYS_TIME();
 		}
 
-		bool isMoveExhausted() {
-			return exhaustItems > OTSYS_TIME();
+		bool isRingExhausted() {
+			return exhaustRing > OTSYS_TIME();
 		}
 
-		void setMoveExhaust(int64_t value) {
-			exhaustItems = OTSYS_TIME() + value;
+		void setRingExhaust(int64_t value) {
+			exhaustRing = OTSYS_TIME() + value;
+		}
+
+		bool isAmuletExhausted() {
+			return exhaustAmulet > OTSYS_TIME();
+		}
+
+		void setAmuletExhaust(int64_t value) {
+			exhaustAmulet = OTSYS_TIME() + value;
 		}
 
    		bool updateKillTracker(Container* corpse, const std::string& playerName, const Outfit_t creatureOutfit) const
