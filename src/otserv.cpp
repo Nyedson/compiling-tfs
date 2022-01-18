@@ -100,12 +100,6 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
-#ifndef _WIN32
-	__attribute__ ((used)) void saveServer() {
-		g_game.saveGameState();
-	}
-#endif
-
 void mainLoader(int, char*[], ServiceManager* services) {
 	// dispatcher thread
 	g_game.setGameState(GAME_STATE_STARTUP);
