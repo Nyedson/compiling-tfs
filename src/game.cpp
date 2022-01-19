@@ -4825,7 +4825,7 @@ bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage
 				int affected = damage.affected;
 				tmpDamage.origin = ORIGIN_SPELL;
 				tmpDamage.primary.type = COMBAT_MANADRAIN;
-				tmpDamage.primary.value = std::round(realDamage * (manaSkill / 100.) * (0.1 * affected + 0.9)) / affected;
+				tmpDamage.primary.value = std::round(realDamage * (manaSkill / 100.) * (0.2 * affected + 0.9)) / affected;
 
 				Combat::doCombatMana(nullptr, attackerPlayer, tmpDamage, tmpParams);
 			}
