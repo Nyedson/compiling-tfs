@@ -169,8 +169,9 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	if (!Protocol::RSA_decrypt(msg)) {
-		std::cout << "[ProtocolLogin::onRecvFirstMessage] RSA Decrypt Failed" << std::endl;
-		disconnectClient("Your client version is outdated. Download a new version on our website.", version);
+		std::ostringstream ss;
+		ss << "Update your client.";
+		disconnectClient(ss.str(), version);
 		return;
 	}
 
