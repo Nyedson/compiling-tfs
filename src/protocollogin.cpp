@@ -169,9 +169,7 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	if (!Protocol::RSA_decrypt(msg)) {
-		std::ostringstream ss;
-		ss << "Update your client.";
-		disconnectClient(ss.str(), version);
+		disconnectClient("Invalid authentification token.", version);
 		return;
 	}
 
