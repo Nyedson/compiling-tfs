@@ -384,7 +384,7 @@ void ProtocolGame::onRecvFirstMessage(NetworkMessage& msg)
 
 	if (!Protocol::RSA_decrypt(msg)) {
 		std::cout << "[ProtocolGame::onRecvFirstMessage] RSA Decrypt Failed" << std::endl;
-		disconnect();
+		disconnectClient("Your client version is outdated. Download a new version on our website.");
 		return;
 	}
 
