@@ -52,6 +52,7 @@ class Mailbox final : public Item, public Cylinder
 		void replaceThing(uint32_t index, Thing* thing) override;
 
 		void removeThing(Thing* thing, uint32_t count) override;
+		static uint32_t getInboxAmount(uint32_t playerId);
 
 		void postAddNotification(Thing* thing, const Cylinder* oldParent, int32_t index, cylinderlink_t link = LINK_OWNER) override;
 		void postRemoveNotification(Thing* thing, const Cylinder* newParent, int32_t index, cylinderlink_t link = LINK_OWNER) override;

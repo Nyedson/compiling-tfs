@@ -20,8 +20,8 @@
 #ifndef FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 #define FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 
-static constexpr auto STATUS_SERVER_NAME = "Thornia Engine - Optimized";
-static constexpr auto STATUS_SERVER_VERSION = "2.0";
+static constexpr auto STATUS_SERVER_NAME = "Thornia Engine";
+static constexpr auto STATUS_SERVER_VERSION = "2.2";
 static constexpr auto STATUS_SERVER_DEVELOPERS = "Thornia Team, Mark Samman and The Forgotten Server Developers";
 
 static constexpr auto CLIENT_VERSION_MIN = 1200;

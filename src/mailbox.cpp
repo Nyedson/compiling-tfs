@@ -20,10 +20,12 @@
 #include "otpch.h"
 
 #include "mailbox.h"
+#include "configmanager.h"
 #include "game.h"
 #include "iologindata.h"
 
 extern Game g_game;
+extern ConfigManager g_config;
 
 ReturnValue Mailbox::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t, Creature*) const
 {
@@ -88,12 +90,30 @@ void Mailbox::postRemoveNotification(Thing* thing, const Cylinder* newParent, in
 	getParent()->postRemoveNotification(thing, newParent, index, LINK_PARENT);
 }
 
+uint32_t Mailbox::getInboxAmount(uint32_t playerId)
+{
+	std::ostringstream query;
+	query << "SELECT COUNT(*) AS `count` FROM `player_inboxitems` WHERE `player_id` = " <<playerId << ";";
+
+	DBResult_ptr result = Database::getInstance().storeQuery(query.str());
+	if (!result) {
+		return false;
+	}
+
+	return result->getNumber<uint32_t>("count");
+}
+
 bool Mailbox::sendItem(Item* item) const
 {
 	std::string receiver;
 	if (!getReceiver(item, receiver)) {
 		return false;
 	}
+
+	Container* container = item->getContainer();
+    if (container && container->getItemHoldingCount() + 1 > 2500) {
+        return false;
+    }
 
 	/**No need to continue if its still empty**/
 	if (receiver.empty()) {
@@ -102,15 +122,42 @@ bool Mailbox::sendItem(Item* item) const
 
 	Player* player = g_game.getPlayerByName(receiver);
 	if (player) {
+		uint32_t playerId = player->getGUID();
+		uint32_t inboxMaxItems = g_config.getNumber(ConfigManager::INBOX_MAX_ITEMS);
+		uint32_t inboxMaxWeight = g_config.getNumber(ConfigManager::INBOX_MAX_WEIGHT);
+		uint32_t itemCount = getInboxAmount(playerId);
+		
+		if ((item->getWeight() / 100) > inboxMaxWeight) {
+			return false;
+		}
+		
+		if ((itemCount + item->getItemCount()) > inboxMaxItems) {
+			return false;
+		}
+		
 		if (g_game.internalMoveItem(item->getParent(), player->getInbox(), INDEX_WHEREEVER,
 		                            item, item->getItemCount(), nullptr, FLAG_NOLIMIT) == RETURNVALUE_NOERROR) {
 			g_game.transformItem(item, item->getID() + 1);
 			player->onReceiveMail();
+			IOLoginData::savePlayer(player);
 			return true;
 		}
 	} else {
 		Player tmpPlayer(nullptr);
 		if (!IOLoginData::loadPlayerByName(&tmpPlayer, receiver)) {
+			return false;
+		}
+
+		uint32_t playerId = tmpPlayer.getGUID();
+		uint32_t inboxMaxItems = g_config.getNumber(ConfigManager::INBOX_MAX_ITEMS);
+		uint32_t inboxMaxWeight = g_config.getNumber(ConfigManager::INBOX_MAX_WEIGHT);
+		uint32_t itemCount = getInboxAmount(playerId);
+		
+		if ((item->getWeight() / 100) > inboxMaxWeight) {
+			return false;
+		}
+		
+		if ((itemCount + item->getItemCount()) > inboxMaxItems) {
 			return false;
 		}
 
