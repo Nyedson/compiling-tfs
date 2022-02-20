@@ -1066,7 +1066,7 @@ void Monster::onThinkDefense(uint32_t interval)
 
 			Monster* summon = Monster::createMonster(summonBlock.name);
 			if (summon) {
-				if (g_game.placeCreature(summon, getPosition(), true, summonBlock.force)) {
+				if (g_game.placeCreature(summon, getPosition(), false, summonBlock.force)) {
 					summon->setDropLoot(false);
 					summon->setSkillLoss(false);
 					summon->setMaster(this);
