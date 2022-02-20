@@ -11836,11 +11836,8 @@ int LuaScriptInterface::luaMonsterSetType(lua_State* L) {
 	Monster* monster = getUserdata<Monster>(L, 1);
 	if (monster) {
 		MonsterType* monsterType = nullptr;
-		if (isNumber(L, 2)) {
-			monsterType = g_monsters.getMonsterTypeByRaceId(getNumber<uint16_t>(L, 2));
-		} else {
-			monsterType = g_monsters.getMonsterType(getString(L, 2));
-		}
+		monsterType = g_monsters.getMonsterType(getString(L, 2));
+		
 		// Unregister creature events (current MonsterType)
 		for (const std::string& scriptName : monster->mType->info.scripts) {
 			if (!monster->unregisterCreatureEvent(scriptName)) {
