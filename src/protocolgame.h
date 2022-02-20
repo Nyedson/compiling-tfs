@@ -392,6 +392,9 @@ class ProtocolGame final : public ProtocolGameBase
 		//otclient
 		void parseExtendedOpcode(NetworkMessage& msg);
 
+		//reloadCreature
+		void reloadCreature(const Creature *creature);
+
 		friend class Player;
 
 		// Helpers so we don't need to bind every time
