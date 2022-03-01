@@ -1128,7 +1128,7 @@ ReturnValue Game::internalMoveCreature(Creature* creature, Direction direction, 
 ReturnValue Game::internalMoveCreature(Creature& creature, Tile& toTile, uint32_t flags /*= 0*/)
 {
 	if (creature.hasCondition(CONDITION_ROOTED)) {
-		return RETURNVALUE_NOTPOSSIBLE;
+		stopEventWalk();
 	}
 	
 	//check if we can move the creature to the destination
