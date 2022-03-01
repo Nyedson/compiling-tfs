@@ -341,10 +341,6 @@ uint32_t ConditionGeneric::getIcons() const
 			icons |= ICON_DRUNK;
 			break;
 
-		case CONDITION_ROOTED:
-      icons |= ICON_ROOTED;
-			break;
-
 		default:
 			break;
 	}
