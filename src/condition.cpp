@@ -189,7 +189,8 @@ Condition* Condition::createCondition(ConditionId_t id, ConditionType_t type, in
 
 		case CONDITION_SPELLGROUPCOOLDOWN:
 			return new ConditionSpellGroupCooldown(id, type, ticks, buff, subId);
-
+    
+    case CONDITION_ROOTED:
 		case CONDITION_INFIGHT:
 		case CONDITION_DRUNK:
 		case CONDITION_EXHAUST:
@@ -338,6 +339,10 @@ uint32_t ConditionGeneric::getIcons() const
 
 		case CONDITION_DRUNK:
 			icons |= ICON_DRUNK;
+			break;
+
+		case CONDITION_ROOTED:
+      icons |= ICON_ROOTED;
 			break;
 
 		default:
