@@ -4269,9 +4269,9 @@ void Game::checkCreatures(size_t index)
 	g_scheduler.addEvent(createSchedulerTask(EVENT_CHECK_CREATURE_INTERVAL, std::bind(&Game::checkCreatures, this, (index + 1) % EVENT_CREATURECOUNT)));
 
 	auto& checkCreatureList = checkCreatureLists[index];
-	auto it = checkCreatureList.begin(), end = checkCreatureList.end();
-	while (it != end) {
-		Creature* creature = *it;
+	size_t it = 0, end = checkCreatureList.size();
+	while (it < end) {
+		Creature* creature = checkCreatureList[it];
 		if (creature->creatureCheck) {
 			if (creature->getHealth() > 0) {
 				creature->onThink(EVENT_CREATURE_THINK_INTERVAL);
@@ -4281,8 +4281,11 @@ void Game::checkCreatures(size_t index)
 			++it;
 		} else {
 			creature->inCheckCreaturesVector = false;
-			it = checkCreatureList.erase(it);
 			ReleaseCreature(creature);
+
+			std::swap(checkCreatureList[it], checkCreatureList.back());
+			checkCreatureList.pop_back();
+			--end;
 		}
 	}
 
