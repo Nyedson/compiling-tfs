@@ -189,8 +189,7 @@ Condition* Condition::createCondition(ConditionId_t id, ConditionType_t type, in
 
 		case CONDITION_SPELLGROUPCOOLDOWN:
 			return new ConditionSpellGroupCooldown(id, type, ticks, buff, subId);
-    
-    case CONDITION_ROOTED:
+
 		case CONDITION_INFIGHT:
 		case CONDITION_DRUNK:
 		case CONDITION_EXHAUST:
