@@ -458,6 +458,14 @@ void Player::updateInventoryWeight()
 	}
 }
 
+void Player::setTraining(bool value) {
+	for (const auto& it : g_game.getPlayers()) {
+		if (!this->isInGhostMode() || it.second->isAccessPlayer()) {
+			it.second->notifyStatusChange(this, VIPSTATUS_ONLINE);
+		}
+	}
+}
+
 void Player::addSkillAdvance(skills_t skill, uint64_t count)
 {
 	uint64_t currReqTries = vocation->getReqSkillTries(skill, skills[skill].level);
