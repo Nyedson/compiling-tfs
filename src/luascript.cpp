@@ -2100,6 +2100,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::BLACK_SKULL_DURATION)
 	registerEnumIn("configKeys", ConfigManager::ORANGE_SKULL_DURATION)
 	registerEnumIn("configKeys", ConfigManager::AUTOLOOT_MODE)
+	registerEnumIn("configKeys", ConfigManager::MAX_ALLOWED_ON_A_DUMMY)
 
 	registerEnumIn("configKeys", ConfigManager::RATE_MONSTER_HEALTH)
 	registerEnumIn("configKeys", ConfigManager::RATE_MONSTER_ATTACK)
@@ -2451,6 +2452,9 @@ void LuaScriptInterface::registerFunctions()
 
 	registerMethod("Player", "getCapacity", LuaScriptInterface::luaPlayerGetCapacity);
 	registerMethod("Player", "setCapacity", LuaScriptInterface::luaPlayerSetCapacity);
+
+	registerMethod("Player", "isTraining", LuaScriptInterface::luaPlayerGetIsTraining);
+	registerMethod("Player", "setTraining", LuaScriptInterface::luaPlayerSetTraining);
 
 	registerMethod("Player", "getFreeCapacity", LuaScriptInterface::luaPlayerGetFreeCapacity);
 
@@ -8649,6 +8653,31 @@ int LuaScriptInterface::luaPlayerSetCapacity(lua_State* L)
 		player->capacity = getNumber<uint32_t>(L, 2);
 		player->sendStats();
 		pushBoolean(L, true);
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerSetTraining(lua_State* L) {
+	// player:setTraining(value)
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		bool value = getBoolean(L, 2, false);
+		player->setTraining(value);
+		pushBoolean(L, true);
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerGetIsTraining(lua_State* L)
+{
+	// player:isTraining()
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		lua_pushnumber(L, player->isExerciseTraining());
 	} else {
 		lua_pushnil(L);
 	}
