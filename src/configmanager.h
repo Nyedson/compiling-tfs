@@ -131,7 +131,6 @@ class ConfigManager
 			SERVER_SAVE_NOTIFY_DURATION,
 			PUSH_DELAY,
 			PUSH_DISTANCE_DELAY,
-			MAX_ALLOWED_ON_A_DUMMY,
 
 			LAST_INTEGER_CONFIG /* this must be the last one */
 		};

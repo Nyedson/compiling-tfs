@@ -484,12 +484,6 @@ void Creature::onCreatureMove(Creature* creature, const Tile* newTile, const Pos
 			}
 		}
 
-		if (Player* player = creature->getPlayer()) {
-			if (player->isExerciseTraining()){
-				player->setTraining(false);
-			}
-		}
-
 		if (newTile->getZone() != oldTile->getZone()) {
 			onChangeZone(getZone());
 		}
