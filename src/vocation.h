@@ -86,6 +86,10 @@ class Vocation
 			return fromVocation;
 		}
 
+    bool getMagicShield() const {
+      return magicShield;
+    }
+
 		float meleeDamageMultiplier = 1.0f;
 		float distDamageMultiplier = 1.0f;
 		float defenseMultiplier = 1.0f;
@@ -115,6 +119,8 @@ class Vocation
 		uint32_t baseSpeed = 220;
 		uint16_t id;
 
+    bool magicShield = false;
+
 		uint16_t gainSoulTicks = 120;
 
 		uint8_t soulMax = 100;
@@ -129,6 +135,7 @@ class Vocations
 		bool loadFromXml();
 
 		Vocation* getVocation(uint16_t id);
+    const std::map<uint16_t, Vocation>& getVocations() const {return vocationsMap;}
 		int32_t getVocationId(const std::string& name) const;
 		uint16_t getPromotedVocation(uint16_t vocationId) const;
 

@@ -23,6 +23,7 @@
 
 #include "modules.h"
 #include "player.h"
+#include "game.h"
 
 Modules::Modules() :
 	scriptInterface("Modules Interface")
@@ -95,8 +96,13 @@ Module* Modules::getEventByRecvbyte(uint8_t recvbyte, bool force)
 	return nullptr;
 }
 
-void Modules::executeOnRecvbyte(Player* player, NetworkMessage& msg, uint8_t byte) const
+void Modules::executeOnRecvbyte(uint32_t playerId, NetworkMessage& msg, uint8_t byte) const
 {
+	Player* player = g_game.getPlayerByID(playerId);
+	if (!player) {
+		return;
+	}
+	
 	for (auto& it : recvbyteList) {
 		Module module = it.second;
 		if (module.getEventType() == MODULE_TYPE_RECVBYTE && module.getRecvbyte() == byte && player->canRunModule(module.getRecvbyte())) {
@@ -175,7 +181,10 @@ void Module::executeOnRecvbyte(Player* player, NetworkMessage& msg)
 {
 	//onAdvance(player, skill, oldLevel, newLevel)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - CreatureEvent::executeAdvance] Call stack overflow" << std::endl;
+		std::cout << "[Error - CreatureEvent::executeAdvance"
+				<< " Player "
+				<< player->getName()
+				<< "] Call stack overflow. Too many lua script calls being nested." << std::endl;
 		return;
 	}
 

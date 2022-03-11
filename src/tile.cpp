@@ -403,7 +403,8 @@ void Tile::onAddTileItem(Item* item)
 		spectator->onAddTileItem(this, cylinderMapPos);
 	}
 
-	if ((!hasFlag(TILESTATE_PROTECTIONZONE) || (g_config.getBoolean(ConfigManager::CLEAN_PROTECTION_ZONES) && hasFlag(TILESTATE_PROTECTIONZONE))) && item->isCleanable()) {
+  if ((!hasFlag(TILESTATE_PROTECTIONZONE) || g_config.getBoolean(ConfigManager::CLEAN_PROTECTION_ZONES))
+																							&& item->isCleanable()) {
 		if (!dynamic_cast<HouseTile*>(this)) {
 			g_game.addTileToClean(this);
 		}
@@ -475,15 +476,15 @@ void Tile::onRemoveTileItem(const SpectatorHashSet& spectators, const std::vecto
 		spectator->onRemoveTileItem(this, cylinderMapPos, iType, item);
 	}
 
-	if (!hasFlag(TILESTATE_PROTECTIONZONE) || (g_config.getBoolean(ConfigManager::CLEAN_PROTECTION_ZONES) && hasFlag(TILESTATE_PROTECTIONZONE))) {
-		auto it = getItemList();
-		if (it->empty()) {
+  if (!hasFlag(TILESTATE_PROTECTIONZONE) || g_config.getBoolean(ConfigManager::CLEAN_PROTECTION_ZONES)) {
+		auto items = getItemList();
+		if (!items || items->empty()) {
 			g_game.removeTileToClean(this);
 			return;
 		}
 
 		bool ret = false;
-		for (auto toCheck : *it) {
+		for (auto toCheck : *items) {
 			if (toCheck->isCleanable()) {
 				ret = true;
 				break;
@@ -522,7 +523,8 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 		}
 
 		if (const Monster* monster = creature->getMonster()) {
-			if (hasFlag(TILESTATE_PROTECTIONZONE | TILESTATE_FLOORCHANGE | TILESTATE_TELEPORT) && !monster->isPet()) {
+			if (hasFlag(TILESTATE_PROTECTIONZONE | TILESTATE_FLOORCHANGE | TILESTATE_TELEPORT) &&
+						(!monster->isPet() || (monster->isPet() && monster->getMaster() && monster->getMaster()->getAttackedCreature()))) {
 				return RETURNVALUE_NOTPOSSIBLE;
 			}
 
@@ -579,7 +581,7 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 					//1) Monster is able to walk over field type
 					//2) Being attacked while random stepping will make it ignore field damages
 					if (hasBitSet(FLAG_IGNOREFIELDDAMAGE, tileFlags)) {
-						if (!(monster->canWalkOnFieldType(combatType) || monster->getIgnoreFieldDamage())) {
+						if (!(monster->getIgnoreFieldDamage() || monster->canWalkOnFieldType(combatType))) {
 							return RETURNVALUE_NOTPOSSIBLE;
 						}
 					} else {
@@ -635,6 +637,19 @@ ReturnValue Tile::queryAdd(int32_t, const Thing& thing, uint32_t, uint32_t tileF
 		if (!hasBitSet(FLAG_IGNOREBLOCKITEM, tileFlags)) {
 			//If the FLAG_IGNOREBLOCKITEM bit isn't set we dont have to iterate every single item
 			if (hasFlag(TILESTATE_BLOCKSOLID)) {
+				// NO PVP magic wall or wild growth field check
+				if (creature && creature->getPlayer()) {
+					if (const auto fieldList = getItemList()) {
+						for (Item* findfield : *fieldList) {
+							if (findfield && (findfield->getID() == ITEM_WILDGROWTH_SAFE || findfield->getID() == ITEM_MAGICWALL_SAFE)) {
+								if (!creature->isInGhostMode()) {
+									g_game.internalRemoveItem(findfield, 1);
+								}
+								return RETURNVALUE_NOERROR;
+							}
+						}
+					}
+				}
 				return RETURNVALUE_NOTENOUGHROOM;
 			}
 		} else {
@@ -734,7 +749,7 @@ ReturnValue Tile::queryMaxCount(int32_t, const Thing&, uint32_t count, uint32_t&
 	return RETURNVALUE_NOERROR;
 }
 
-ReturnValue Tile::queryRemove(const Thing& thing, uint32_t count, uint32_t tileFlags) const
+ReturnValue Tile::queryRemove(const Thing& thing, uint32_t count, uint32_t tileFlags, Creature* /*= nullptr */) const
 {
 	int32_t index = getThingIndex(&thing);
 	if (index == -1) {
@@ -1669,6 +1684,25 @@ Item* Tile::getUseItem(int32_t index) const
 
 	if (Thing* thing = getThing(index)) {
 		return thing->getItem();
+	}
+
+	return nullptr;
+}
+
+Item* Tile::getDoorItem() const
+{
+	const TileItemVector* items = getItemList();
+	if (!items || items->size() == 0) {
+		return ground;
+	}
+
+	if (items) {
+		for (Item* item : *items) {
+			const ItemType& it = Item::items[item->getID()];
+			if (it.isDoor()) {
+				return item;
+			}
+		}
 	}
 
 	return nullptr;

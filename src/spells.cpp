@@ -385,7 +385,11 @@ bool CombatSpell::executeCastSpell(Creature* creature, const LuaVariant& var)
 {
 	//onCastSpell(creature, var)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - CombatSpell::executeCastSpell] Call stack overflow" << std::endl;
+		std::cout << "[Error - CombatSpell::executeCastSpell"
+				<< " Creature "
+				<< creature->getName()
+				<< "] Call stack overflow. Too many lua script calls being nested."
+				<< std::endl;
 		return false;
 	}
 
@@ -508,6 +512,10 @@ bool Spell::configureSpell(const pugi::xml_node& node)
 
 	if ((attr = node.attribute("cooldown")) || (attr = node.attribute("exhaustion"))) {
 		cooldown = pugi::cast<uint32_t>(attr.value());
+	}
+
+	if ((attr = node.attribute("setPzLocked"))) {
+		pzLocked = attr.as_bool();
 	}
 
 	if ((attr = node.attribute("premium")) || (attr = node.attribute("prem"))) {
@@ -1087,7 +1095,13 @@ bool InstantSpell::executeCastSpell(Creature* creature, const LuaVariant& var)
 {
 	//onCastSpell(creature, var)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - InstantSpell::executeCastSpell] Call stack overflow" << std::endl;
+		std::cout << "[Error - InstantSpell::executeCastSpell"
+				<< " Creature "
+				<< creature->getName()
+				<< " words "
+				<< getWords()
+				<< "] Call stack overflow. Too many lua script calls being nested."
+				<< std::endl;
 		return false;
 	}
 
@@ -1193,19 +1207,6 @@ ReturnValue RuneSpell::canExecuteAction(const Player* player, const Position& to
 	return RETURNVALUE_NOERROR;
 }
 
-bool RuneSpell::canUseRune(const Player* player, bool ignoreLevel /* =false*/) {
-    if (player->hasFlag(PlayerFlag_CannotUseSpells)) {
-        return false;
-    }
-    if (player->hasFlag(PlayerFlag_IgnoreSpellCheck)) {
-        return true;
-    }
-
-    return (player->getLevel() >= getLevel() || ignoreLevel) &&
-           player->getBaseMagicLevel() >= getMagicLevel() &&
-           (vocSpellMap.empty() || vocSpellMap.find(player->getVocationId()) != vocSpellMap.end());
-}
-
 bool RuneSpell::executeUse(Player* player, Item* item, const Position&, Thing* target, const Position& toPosition, bool isHotkey)
 {
 	if (!playerRuneSpellCheck(player, toPosition)) {
@@ -1247,6 +1248,11 @@ bool RuneSpell::executeUse(Player* player, Item* item, const Position&, Thing* t
 		g_game.transformItem(item, item->getID(), newCount);
 		player->updateSupplyTracker(item);
 	}
+
+	if (getPzOnUse() && g_game.getWorldType() == WORLD_TYPE_PVP) {
+		player->addInFightTicks(true);
+	}
+
 	return true;
 }
 
@@ -1281,7 +1287,13 @@ bool RuneSpell::executeCastSpell(Creature* creature, const LuaVariant& var, bool
 {
 	//onCastSpell(creature, var, isHotkey)
 	if (!scriptInterface->reserveScriptEnv()) {
-		std::cout << "[Error - RuneSpell::executeCastSpell] Call stack overflow" << std::endl;
+		std::cout << "[Error - RuneSpell::executeCastSpell"
+				<< " Creature "
+				<< creature->getName() 
+				<< " runeId "
+				<< getRuneItemId()
+				<< "] Call stack overflow. Too many lua script calls being nested."
+				<< std::endl;
 		return false;
 	}
 
