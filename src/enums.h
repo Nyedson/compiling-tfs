@@ -1006,8 +1006,16 @@ enum Webhook_Colors_t : uint32_t {
 	WEBHOOK_COLOR_RAID = 0x0000FF
 };
 
+enum SessionEndInformations : uint8_t {
+	// I'm guessing unknown types are ban/protocol error or something
+	// but since there aren't any difference from logout should we care?
+	SESSION_END_LOGOUT, // work only with standard logout
+	SESSION_END_UNK2,
+	SESSION_END_FORCECLOSE,
+	SESSION_END_LOGOUT2, // work with standard logout and offline training logout
+};
+
 /**
-  * [OTServer BR]
   * Team assemble finder.
   * This class is responsible control and manage the team finder feature.
 **/
