@@ -526,9 +526,9 @@ public:
       owner->sendShop(npc, itemList);
     }
   }
-  void sendSaleItemList(const std::vector<ShopInfo>& shop, const std::map<uint32_t, uint32_t>& inventoryMap) const {
+  void sendSaleItemList() const {
     if (owner) {
-      owner->sendSaleItemList(shop, inventoryMap);
+      owner->sendSaleItemList(shopItemList);
     }
   }
   void sendCloseShop() const {
