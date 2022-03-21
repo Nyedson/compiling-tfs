@@ -652,9 +652,16 @@ public:
     }
   }
 
-  void sendUpdateImpactTracker(CombatType_t type, int32_t amount) {
+  void sendUpdateImpactTracker(int32_t quantity, bool isHeal) {
     if (owner) {
-      owner->sendUpdateImpactTracker(type, amount);
+      owner->sendUpdateImpactTracker(quantity, isHeal);
+    }
+  }
+
+  void sendUpdateLootTracker(Item* item)
+  {
+    if (owner) {
+      owner->sendUpdateLootTracker(item);
     }
   }
 
