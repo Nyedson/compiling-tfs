@@ -459,6 +459,12 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		}
 	}
 
+	//TODO: JLCVP - Refactor this terrible validation
+	if(recvbyte != 0xD3)
+	{
+		g_dispatcher.addTask(createTask(std::bind(&Modules::executeOnRecvbyte, g_modules, player->getID(), msg, recvbyte)));
+	}
+
 	if (m_spectator) {
 		switch (recvbyte) {
 		case 0x14: g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::logout, getThis(), true, false))); break;
@@ -479,16 +485,10 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		default: g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::sendCancelWalk, getThis()))); break;
 		}
 	} else {
-		//TODO: JLCVP - Refactor this terrible validation
-		if(recvbyte != 0xD3){
-			g_dispatcher.addTask(createTask(std::bind(&Modules::executeOnRecvbyte, g_modules, player->getID(), msg, recvbyte)));
-		}
-	}
-
-	switch (recvbyte) {
-		case 0x14: g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::logout, getThis(), true, false))); break;
-		case 0x1D: addGameTask(&Game::playerReceivePingBack, player->getID()); break;
-		case 0x1E: addGameTask(&Game::playerReceivePing, player->getID()); break;
+		switch (recvbyte) {
+			case 0x14: g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::logout, getThis(), true, false))); break;
+		    case 0x1D: addGameTask(&Game::playerReceivePingBack, player->getID()); break;
+		    case 0x1E: addGameTask(&Game::playerReceivePing, player->getID()); break;
 		case 0x32: parseExtendedOpcode(msg); break; //otclient extended opcode
 		case 0x64: parseAutoWalk(msg); break;
 		case 0x65: addGameTask(&Game::playerMove, player->getID(), DIRECTION_NORTH); break;
@@ -550,7 +550,6 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0xCB: parseBrowseField(msg); break;
 		case 0xCC: parseSeekInContainer(msg); break;
 		case 0xD2: addGameTask(&Game::playerRequestOutfit, player->getID()); break;
-		//g_dispatcher.addTask(createTask(std::bind(&Modules::executeOnRecvbyte, g_modules, player, msg, recvbyte)));
 		case 0xD3: g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::parseSetOutfit, this, msg))); break;
 		case 0xD4: parseToggleMount(msg); break;
 		case 0xD5: parseApplyImbuement(msg); break;
@@ -581,7 +580,7 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 			break;
 	}
 }
-
+}
 void ProtocolGame::GetTileDescription(const Tile* tile, NetworkMessage& msg)
 {
 	if (version < 1200) {

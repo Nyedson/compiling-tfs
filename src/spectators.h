@@ -861,7 +861,11 @@ public:
     }
   }
 
-  void sendRestingAreaIcon(uint16_t currentIcons) const;
+  void sendRestingAreaIcon(bool activate/*=false*/, bool activeResting/*=false*/) const {
+    if (owner) {
+      owner->sendRestingAreaIcon(activate);
+    }
+  }
 		
 	private:
 		friend class Player;
