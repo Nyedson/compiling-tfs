@@ -4186,7 +4186,7 @@ void ProtocolGame::sendSpectatorAppear(Player* foundPlayer)
 	if (player->client->isBroadcasting()) {
 		std::stringstream WelcomeMSG;
 		WelcomeMSG << player->getName() << " is broadcasting for " << player->client->list().size() << " people.\nLivestream time: " << player->client->getBroadCastTimeString();
-		sendTextMessage(TextMessage(MESSAGE_LOOK, WelcomeMSG.str().c_str()));
+		sendTextMessage(TextMessage(MESSAGE_INFO_DESCR, WelcomeMSG.str().c_str()));
 
 		const std::string& description = player->client->getDescription();
 		if (!description.empty())
@@ -4345,7 +4345,7 @@ void ProtocolGame::spectatorLookAt(const Position& pos, uint8_t stackPos)
 		lookDistance = -1;
 	}
 
-	sendTextMessage(TextMessage(MESSAGE_LOOK, thing->getDescription(lookDistance)));
+	sendTextMessage(TextMessage(MESSAGE_INFO_DESCR, thing->getDescription(lookDistance)));
 }
 
 void ProtocolGame::telescopeGo(uint16_t guid, bool adminSpy)
@@ -4385,7 +4385,7 @@ void ProtocolGame::telescopeBack(bool lostConnection)
 {
 	Player* foundPlayer = g_game.getPlayerByName(twatchername);
 	if (foundPlayer) {
-		sendTextMessage(TextMessage(MESSAGE_LOOK, "Your character is already logged in."));
+		sendTextMessage(TextMessage(MESSAGE_INFO_DESCR, "Your character is already logged in."));
 		return;
 	}
 
@@ -4428,7 +4428,7 @@ void ProtocolGame::telescopeBack(bool lostConnection)
 	}
 
 	sendMagicEffect(player->getLoginPosition(), CONST_ME_TELEPORT);
-	sendTextMessage(TextMessage(MESSAGE_LOOK, !lostConnection ? "You are back again." : ownerName + "'s livestream ended."));
+	sendTextMessage(TextMessage(MESSAGE_INFO_DESCR, !lostConnection ? "You are back again." : ownerName + "'s livestream ended."));
 	m_spectator = false;
 	spy = false;
 }
