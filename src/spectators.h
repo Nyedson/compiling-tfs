@@ -636,24 +636,25 @@ public:
   }
 
   // Tracker
-  void updateSupplyTracker(const Item* item)
+  bool sendKillTrackerUpdate(Container* corpse, const std::string& playerName, const Outfit_t creatureOutfit) const
   {
-    if (owner && getProtocolVersion() > 1140) {
+    if (owner) {
+      owner->sendKillTrackerUpdate(corpse, playerName, creatureOutfit);
+      return true;
+    }
+
+    return false;
+  }
+
+  void sendUpdateSupplyTracker(const Item* item) {
+    if (owner) {
       owner->sendUpdateSupplyTracker(item);
     }
   }
 
-  void updateImpactTracker(int32_t quantity, bool isHeal)
-  {
-    if (owner && getProtocolVersion() > 1140) {
-      owner->sendUpdateImpactTracker(quantity, isHeal);
-    }
-  }
-
-  void updateLootTracker(Item* item)
-  {
-    if (owner && getProtocolVersion() > 1140) {
-      owner->sendUpdateLootTracker(item);
+  void sendUpdateImpactTracker(CombatType_t type, int32_t amount) {
+    if (owner) {
+      owner->sendUpdateImpactTracker(type, amount);
     }
   }
 
