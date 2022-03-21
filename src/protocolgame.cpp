@@ -372,32 +372,21 @@ void ProtocolGame::onRecvFirstMessage(NetworkMessage& msg)
 		return;
 	}
 
-	if (accountName.empty()) {
-		accountName = "cast";
-	}
-
-	if (accountName == "cast") {
-		g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::spectatorLogin, getThis(), characterName, password)));
-	} else {
-		BanInfo banInfo;
-		if (IOBan::isIpBanned(getIP(), banInfo)) 
-		{
-			if (banInfo.reason.empty())
-			{
-				banInfo.reason = "(none)";
-			}
-
-			uint32_t accountId = IOLoginData::gameworldAuthentication(accountName, password, characterName, version < 1200);
-			if (accountId == 0)
-			{
-				disconnectClient("Account name or password is not correct.");
-				return;
-			}
+	BanInfo banInfo;
+	if (IOBan::isIpBanned(getIP(), banInfo)) {
+		if (banInfo.reason.empty()) {
+			banInfo.reason = "(none)";
 		}
 
 		std::ostringstream ss;
 		ss << "Your IP has been banned until " << formatDateShort(banInfo.expiresAt) << " by " << banInfo.bannedBy << ".\n\nReason specified:\n" << banInfo.reason;
 		disconnectClient(ss.str());
+		return;
+	}
+
+	uint32_t accountId = IOLoginData::gameworldAuthentication(accountName, password, characterName);
+	if (accountId == 0) {
+		disconnectClient("Account name or password is not correct.");
 		return;
 	}
 

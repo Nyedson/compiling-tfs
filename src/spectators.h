@@ -861,6 +861,7 @@ public:
     }
   }
 
+  void sendRestingAreaIcon(uint16_t currentIcons) const;
 		
 	private:
 		friend class Player;
