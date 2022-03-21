@@ -263,6 +263,7 @@ class ProtocolGame final : public Protocol
 		void sendFightModes();
 
 		void sendCreatureLight(const Creature* creature);
+		void sendCreatureIcon(const Creature* creature);
 		void sendWorldLight(const LightInfo& lightInfo);
 		void sendCreatureSquare(const Creature* creature, SquareColor_t color);
 

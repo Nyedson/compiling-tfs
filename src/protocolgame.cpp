@@ -1336,6 +1336,24 @@ void ProtocolGame::sendCreatureLight(const Creature* creature)
 	writeToOutputBuffer(msg);
 }
 
+void ProtocolGame::sendCreatureIcon(const Creature* creature)
+{
+	if (!creature || version < 1200)
+    	return;
+  	CreatureIcon_t icon = creature->getIcon();
+  	NetworkMessage msg;
+ 	msg.addByte(0x8B);
+  	msg.add<uint32_t>(creature->getID());
+  	msg.addByte(14); // type 14 for this
+  	msg.addByte(icon != CREATUREICON_NONE); // 0 = no icon, 1 = we'll send an icon
+  	if (icon != CREATUREICON_NONE) {
+    	msg.addByte(icon);
+    	msg.addByte(1); // ???
+    	msg.add<uint16_t>(0); // used for the life in the new quest
+  	}
+	writeToOutputBuffer(msg);
+}
+
 void ProtocolGame::sendWorldLight(const LightInfo& lightInfo)
 {
 	NetworkMessage msg;
@@ -1527,7 +1545,7 @@ void ProtocolGame::sendBlessStatus()
 
 		msg.add<uint16_t>(flag);
 		msg.addByte((blessCount >= 7) ? 3 : ((blessCount >= 5) ? 2 : 1)); // 1 = Disabled | 2 = normal | 3 = green
-	}else if (blessCount >= 5) {
+	}else if (blessCount == 6) {
 		msg.add<uint16_t>(0x01);
 	} else {
 		msg.add<uint16_t>(0x00);
@@ -3544,9 +3562,16 @@ void ProtocolGame::AddCreature(NetworkMessage& msg, const Creature* creature, bo
 		}
 	}
 
-	msg.addByte(creature->getSpeechBubble());
+	uint8_t speechbubble = creature->getSpeechBubble();
+	if (version < 1200 && speechbubble == 7) {
+		speechbubble = 2;
+	}
+	else if (version < 1200 && speechbubble > 5) {
+		speechbubble = 1;
+	}
+	msg.addByte(speechbubble);
 	msg.addByte(0xFF); // MARK_UNMARKED
-	if (version >= 1110) {
+	if (version >= 1200) {
 		msg.addByte(0x00); // inspection type
 	}
 
