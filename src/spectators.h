@@ -526,11 +526,11 @@ public:
       owner->sendShop(npc, itemList);
     }
   }
-  void sendSaleItemList(const std::vector<ShopInfo>& shop) const {
-    if (owner) {
-      owner->sendSaleItemList(shop);
-    }
-  }
+  //void sendSaleItemList(const std::vector<ShopInfo>& shop) const {
+    //if (owner) {
+      //owner->sendSaleItemList(shop);
+    //}
+  ///}
   void sendCloseShop() const {
     if (owner) {
       owner->sendCloseShop();
