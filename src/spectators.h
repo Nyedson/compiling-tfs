@@ -635,6 +635,28 @@ public:
     }
   }
 
+  // Tracker
+  void updateSupplyTracker(const Item* item)
+  {
+    if (owner && getProtocolVersion() > 1140) {
+      owner->sendUpdateSupplyTracker(item);
+    }
+  }
+
+  void updateImpactTracker(int32_t quantity, bool isHeal)
+  {
+    if (owner && getProtocolVersion() > 1140) {
+      owner->sendUpdateImpactTracker(quantity, isHeal);
+    }
+  }
+
+  void updateLootTracker(Item* item)
+  {
+    if (owner && getProtocolVersion() > 1140) {
+      owner->sendUpdateLootTracker(item);
+    }
+  }
+
   // MISSING
   void sendImbuementWindow(Item* item) {
     if (owner) {
