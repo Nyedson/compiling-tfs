@@ -143,9 +143,11 @@ class Npc final : public Creature
 		const std::string& getNameDescription() const override {
 			return name;
 		}
+
 		void setName(std::string newName) {
 			name = newName;
 		}
+		
 		CreatureType_t getType() const override {
 			return CREATURETYPE_NPC;
 		}
@@ -155,14 +157,6 @@ class Npc final : public Creature
 		}
 		void setSpeechBubble(const uint8_t bubble) {
 			speechBubble = bubble;
-		}
-
-		uint16_t getCurrencyTrading() const {
-			return currencyClientId;
-		}
-
-		uint16_t getCurrency() const {
-			return currencyServerId;
 		}
 
 		void doSay(const std::string& text);
@@ -248,9 +242,6 @@ class Npc final : public Creature
 		int32_t masterRadius;
 
 		uint8_t speechBubble;
-
-		uint16_t currencyServerId;
-		uint16_t currencyClientId;
 
 		bool floorChange;
 		bool attackable;

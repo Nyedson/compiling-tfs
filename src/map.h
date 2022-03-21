@@ -184,7 +184,7 @@ class Map
 		  * Load a map.
 		  * \returns true if the map was loaded successfully
 		  */
-		bool loadMap(const std::string& identifier, bool loadHouses, bool loadSpawns);
+		bool loadMap(const std::string& identifier, bool loadHouses);
 
 		/**
 		  * Save a map.
@@ -254,7 +254,7 @@ class Map
 		bool getPathMatching(const Creature& creature, std::forward_list<Direction>& dirList,
 						const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const;
 
-		bool getPathMatching(const Position& startPos, std::forward_list<Direction>& dirList,
+	  bool getPathMatching(const Position& startPos, std::forward_list<Direction>& dirList,
 			const FrozenPathingConditionCall& pathCondition, const FindPathParams& fpp) const;
 
 		std::map<std::string, Position> waypoints;

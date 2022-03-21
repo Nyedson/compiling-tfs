@@ -92,7 +92,7 @@ class Container : public Item, public Cylinder
 
 		Attr_ReadValue readAttr(AttrTypes_t attr, PropStream& propStream) override;
 		bool unserializeItemNode(OTB::Loader& loader, const OTB::Node& node, PropStream& propStream) override;
-		std::string getContentDescription(bool oldClient = false) const;
+		std::string getContentDescription() const;
 
 		size_t size() const {
 			return itemlist.size();
@@ -119,7 +119,6 @@ class Container : public Item, public Cylinder
 
 		bool hasParent() const;
 		void addItem(Item* item);
-		StashContainerList getStowableItems() const;
 		Item* getItemByIndex(size_t index) const;
 		bool isHoldingItem(const Item* item) const;
 
@@ -129,7 +128,7 @@ class Container : public Item, public Cylinder
 		uint32_t getWeight() const override final;
 
 		bool isUnlocked() const {
-			return !this->isCorpse() && unlocked;
+			return unlocked;
 		}
 		bool hasPagination() const {
 			return pagination;
@@ -140,7 +139,7 @@ class Container : public Item, public Cylinder
 				uint32_t flags, Creature* actor = nullptr) const override;
 		ReturnValue queryMaxCount(int32_t index, const Thing& thing, uint32_t count, uint32_t& maxQueryCount,
 				uint32_t flags) const override final;
-		ReturnValue queryRemove(const Thing& thing, uint32_t count, uint32_t flags, Creature* actor = nullptr) const override final;
+		ReturnValue queryRemove(const Thing& thing, uint32_t count, uint32_t flags) const override final;
 		Cylinder* queryDestination(int32_t& index, const Thing& thing, Item** destItem,
 				uint32_t& flags) override final;
 
@@ -168,7 +167,7 @@ class Container : public Item, public Cylinder
 		void startDecaying() override final;
 
 	protected:
-		std::ostringstream& getContentDescription(std::ostringstream& os, bool oldClient) const;
+		std::ostringstream& getContentDescription(std::ostringstream& os) const;
 
 		uint32_t maxSize;
 		uint32_t totalWeight = 0;

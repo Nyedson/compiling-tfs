@@ -120,24 +120,6 @@ void Container::addItem(Item* item)
 	item->setParent(this);
 }
 
-StashContainerList Container::getStowableItems() const
-{
-	StashContainerList toReturnList;
-	for (auto item : itemlist) {
-		if (item->getContainer() != NULL) {
-			auto subContainer = item->getContainer()->getStowableItems();
-			for (auto subContItem : subContainer) {
-				Item* containerItem = subContItem.first;
-				toReturnList.push_back(std::pair<Item*, uint32_t>(containerItem, static_cast<uint32_t>(containerItem->getItemCount())));
-			}
-		} else if (item->isItemStorable()) {
-			toReturnList.push_back(std::pair<Item*, uint32_t>(item, static_cast<uint32_t>(item->getItemCount())));
-		}
-	}
-
-	return toReturnList;
-}
-
 Attr_ReadValue Container::readAttr(AttrTypes_t attr, PropStream& propStream)
 {
 	if (attr == ATTR_CONTAINER_ITEMS) {
@@ -197,13 +179,13 @@ uint32_t Container::getWeight() const
 	return Item::getWeight() + totalWeight;
 }
 
-std::string Container::getContentDescription(bool oldClient) const
+std::string Container::getContentDescription() const
 {
 	std::ostringstream os;
-	return getContentDescription(os, oldClient).str();
+	return getContentDescription(os).str();
 }
 
-std::ostringstream& Container::getContentDescription(std::ostringstream& os, bool oldClient) const
+std::ostringstream& Container::getContentDescription(std::ostringstream& os) const
 {
 	bool firstitem = true;
 	for (ContainerIterator it = iterator(); it.hasNext(); it.advance()) {
@@ -220,10 +202,7 @@ std::ostringstream& Container::getContentDescription(std::ostringstream& os, boo
 			os << ", ";
 		}
 
-		if (!oldClient)
-			os << "{" << item->getClientID() << "|" << item->getNameDescription() << "}";
-		else
-			os << item->getNameDescription();
+		os << item->getNameDescription();
 	}
 
 	if (firstitem) {
@@ -391,7 +370,8 @@ ReturnValue Container::queryAdd(int32_t addIndex, const Thing& addThing, uint32_
 			return RETURNVALUE_NOTPOSSIBLE;
 		}
 	}
-  if (getWeaponType() == WEAPON_QUIVER && item->getWeaponType() != WEAPON_AMMO)
+
+	if (getWeaponType() == WEAPON_QUIVER && item->getWeaponType() != WEAPON_AMMO)
     return RETURNVALUE_ONLYAMMOINQUIVER;
 
 	const Cylinder* topParent = getTopParent();
@@ -435,11 +415,13 @@ ReturnValue Container::queryMaxCount(int32_t index, const Thing& thing, uint32_t
 		} else {
 			const Item* destItem = getItemByIndex(index);
 			if (item->equals(destItem) && destItem->getItemCount() < 100) {
-				n = 100 - destItem->getItemCount();
+				uint32_t remainder = 100 - destItem->getItemCount();
+				if (queryAdd(index, *item, remainder, flags) == RETURNVALUE_NOERROR) {
+					n = remainder;
+				}
 			}
 		}
 
-		// maxQueryCount is the limit of items I can add
 		maxQueryCount = freeSlots * 100 + n;
 		if (maxQueryCount < count) {
 			return RETURNVALUE_CONTAINERNOTENOUGHROOM;
@@ -453,8 +435,7 @@ ReturnValue Container::queryMaxCount(int32_t index, const Thing& thing, uint32_t
 	return RETURNVALUE_NOERROR;
 }
 
-ReturnValue Container::queryRemove(const Thing& thing, uint32_t count, uint32_t flags,
-                                   Creature* actor /*= nullptr */) const
+ReturnValue Container::queryRemove(const Thing& thing, uint32_t count, uint32_t flags) const
 {
 	int32_t index = getThingIndex(&thing);
 	if (index == -1) {
@@ -472,10 +453,6 @@ ReturnValue Container::queryRemove(const Thing& thing, uint32_t count, uint32_t 
 
 	if (!item->isMoveable() && !hasBitSet(FLAG_IGNORENOTMOVEABLE, flags)) {
 		return RETURNVALUE_NOTMOVEABLE;
-	}
-  const HouseTile* houseTile = dynamic_cast<const HouseTile*>(getTopParent());
-	if (houseTile) {
-		return houseTile->queryRemove(thing, count, flags, actor);
 	}
 	return RETURNVALUE_NOERROR;
 }

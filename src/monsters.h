@@ -29,7 +29,6 @@ const uint32_t MAX_STATICWALK = 100;
 struct LootBlock {
 	uint16_t id;
 	uint32_t countmax;
-	uint32_t countmin;
 	uint32_t chance;
 
 	//optional
@@ -50,7 +49,6 @@ struct LootBlock {
 	LootBlock() {
 		id = 0;
 		countmax = 1;
-		countmin = 1;
 		chance = 0;
 
 		subType = -1;
@@ -123,8 +121,6 @@ class MonsterType
 		LuaScriptInterface* scriptInterface;
 
 		std::map<CombatType_t, int32_t> elementMap;
-		std::map<CombatType_t, int32_t> reflectMap;
-		std::map<CombatType_t, int32_t> healingMap;
 
 		std::vector<voiceBlock_t> voiceVector;
 
@@ -137,7 +133,6 @@ class MonsterType
 		Skulls_t skull = SKULL_NONE;
 		Outfit_t outfit = {};
 		RaceType_t race = RACE_BLOOD;
-		RespawnType respawnType = {};
 
 		LightInfo light = {};
 		uint16_t lookcorpse = 0;
@@ -153,18 +148,7 @@ class MonsterType
 		uint32_t conditionImmunities = 0;
 		uint32_t damageImmunities = 0;
 		uint32_t baseSpeed = 200;
-
-		// Bestiary
-		uint8_t bestiaryOccurrence = 0;
-		uint8_t bestiaryStars = 0;
-		uint16_t bestiaryToUnlock = 0;
-		uint16_t bestiaryFirstUnlock = 0;
-		uint16_t bestiarySecondUnlock = 0;
-		uint16_t bestiaryCharmsPoints = 0;
-		uint16_t raceid = 0;
-		std::string bestiaryLocations;
-		std::string bestiaryClass; // String (addString)
-		BestiaryType_t bestiaryRace = BESTY_RACE_NONE; // Number (addByte)
+		uint32_t respawnType = RESPAWN_IN_ALL;
 
 		int32_t creatureAppearEvent = -1;
 		int32_t creatureDisappearEvent = -1;
@@ -182,11 +166,6 @@ class MonsterType
 		int32_t targetStrategiesLowerHPPercent = 0;
 		int32_t targetStrategiesMostDamagePercent = 0;
 		int32_t targetStrategiesRandom = 0;
-		bool targetPreferPlayer = false;
-		bool targetPreferMaster = false;
-
-		Faction_t faction = FACTION_DEFAULT;
-		std::unordered_set<Faction_t> enemyFactions;
 
 		bool canPushItems = false;
 		bool canPushCreatures = false;
@@ -199,6 +178,9 @@ class MonsterType
 		bool hiddenHealth = false;
 		bool isBlockable = false;
 		bool isPet = false;
+		bool isPassive = false;
+		bool isMonsterAttacker = false;
+		bool cantAttackPlayers = false;
 		bool isRewardBoss = false;
 		bool canWalkOnEnergy = true;
 		bool canWalkOnFire = true;
@@ -263,9 +245,6 @@ class MonsterSpell
 		bool isMelee = false;
 
 		Outfit_t outfit = {};
-		std::string outfitMonster = "";
-		uint16_t outfitItem = 0;
-
 		ShootType_t shoot = CONST_ANI_NONE;
 		MagicEffectClasses effect = CONST_ME_NONE;
 		ConditionType_t conditionType = CONDITION_NONE;
@@ -287,7 +266,6 @@ class Monsters
 		bool reload();
 
 		MonsterType* getMonsterType(const std::string& name);
-		MonsterType* getMonsterTypeByRaceId(uint16_t thisrace);
 		void addMonsterType(const std::string& name, MonsterType* mType);
 		bool deserializeSpell(MonsterSpell* spell, spellBlock_t& sb, const std::string& description = "");
 
