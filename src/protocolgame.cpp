@@ -1784,7 +1784,7 @@ void ProtocolGame::sendContainer(uint8_t cid, const Container* container, bool h
 	if (container->hasPagination() && firstIndex > 0) {
 		maxItemsToSend = std::min<uint32_t>(container->capacity(), containerSize - firstIndex);
 	} else {
-		maxItemsToSend = container->capacity()
+		maxItemsToSend = container->capacity();
 	}
 
     if (firstIndex >= containerSize) {
