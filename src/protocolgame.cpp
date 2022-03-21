@@ -601,6 +601,7 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		}
 	*/
 }
+}
 
 void ProtocolGame::GetTileDescription(const Tile* tile, NetworkMessage& msg)
 {
