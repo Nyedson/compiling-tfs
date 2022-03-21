@@ -1480,6 +1480,37 @@ class Player final : public Creature, public Cylinder
 			exhaustItems = OTSYS_TIME() + value;
 		}
 
+		bool updateKillTracker(Container* corpse, const std::string& playerName, const Outfit_t creatureOutfit) const
+ 		{
+  			if (client && getProtocolVersion() > 1140) {
+				client->sendKillTrackerUpdate(corpse, playerName, creatureOutfit);
+				return true;
+ 			}
+
+			return false;
+ 		}
+ 
+   		void updateSupplyTracker(const Item* item)
+ 		{
+  			if (client && getProtocolVersion() > 1140) {
+ 				client->sendUpdateSupplyTracker(item);
+ 			}
+ 		}
+
+   		void updateImpactTracker(int32_t quantity, bool isHeal)
+ 		{
+  			if (client && getProtocolVersion() > 1140) {
+ 				client->sendUpdateImpactTracker(quantity, isHeal);
+ 			}
+ 		}
+
+   		void updateLootTracker(Item* item)
+ 		{
+  			if (client && getProtocolVersion() > 1140) {
+ 				client->sendUpdateLootTracker(item);
+ 			}
+ 		}
+
 		uint16_t getFreeBackpackSlots() const;
 
 	private:

@@ -526,11 +526,11 @@ public:
       owner->sendShop(npc, itemList);
     }
   }
-  //void sendSaleItemList(const std::vector<ShopInfo>& shop) const {
-    //if (owner) {
-      //owner->sendSaleItemList(shop);
-    //}
-  ///}
+  void sendSaleItemList(const std::vector<ShopInfo>& shop, const std::map<uint32_t, uint32_t>& inventoryMap) const {
+    if (owner) {
+      owner->sendSaleItemList(shop, inventoryMap);
+    }
+  }
   void sendCloseShop() const {
     if (owner) {
       owner->sendCloseShop();
@@ -811,6 +811,13 @@ public:
   void sendMarketAcceptOffer(const MarketOfferEx& offer) const {
     if (owner) {
       owner->sendMarketAcceptOffer(offer);
+    }
+  }
+  void sendEnterWorld() {
+    if (owner) {
+      owner->sendEnterWorld();
+      for (const auto& it : spectators)
+        it.first->sendEnterWorld();
     }
   }
   void sendMarketCancelOffer(const MarketOfferEx& offer) const {
