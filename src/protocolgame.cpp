@@ -490,9 +490,11 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		default: g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::sendCancelWalk, getThis()))); break;
 		}
 	} else {
+		//TODO: JLCVP - Refactor this terrible validation
 		if(recvbyte != 0xD3){
 			g_dispatcher.addTask(createTask(std::bind(&Modules::executeOnRecvbyte, g_modules, player->getID(), msg, recvbyte)));
 		}
+	}
 
 	switch (recvbyte) {
 		case 0x14: g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::logout, getThis(), true, false))); break;
@@ -585,22 +587,10 @@ void ProtocolGame::parsePacket(NetworkMessage& msg)
 		case 0xFA: if (!g_config.getBoolean(ConfigManager::STOREMODULES)) { parseStoreOpen(msg); } break;
 		case 0xFB: if (!g_config.getBoolean(ConfigManager::STOREMODULES)) { parseStoreRequestOffers(msg); } break;
 		case 0xFC: if (!g_config.getBoolean(ConfigManager::STOREMODULES)) { parseStoreBuyOffer(msg); } break;
-//		case 0xFD: parseStoreOpenTransactionHistory(msg); break;
-//		case 0xFE: parseStoreRequestTransactionHistory(msg); break;
-
-		//case 0x77 Equip Hotkey.
-		//case 0xDF, 0xE0, 0xE1, 0xFB, 0xFC, 0xFD, 0xFE Premium Shop.
 
 		default:
-			// std::cout << "Player: " << player->getName() << " sent an unknown packet header: 0x" << std::hex << static_cast<uint16_t>(recvbyte) << std::dec << "!" << std::endl;
 			break;
 	}
-	/* temporary solution to disconnections while opening store
-		if (msg.isOverrun()) {
-			disconnect();
-		}
-	*/
-}
 }
 
 void ProtocolGame::GetTileDescription(const Tile* tile, NetworkMessage& msg)
@@ -4358,7 +4348,7 @@ void ProtocolGame::telescopeGo(uint16_t guid, bool adminSpy)
 
 	Player* foundPlayer = g_game.getPlayerByGUID(guid);
 	if (!canWatch(foundPlayer)) {
-		sendTextMessage(TextMessage(MESSAGE_GAME_HIGHLIGHT, "Unable to connect to livestream."));
+		sendTextMessage(TextMessage(MESSAGE_STATUS_CONSOLE_ORANGE, "Unable to connect to livestream."));
 		return;
 	}
 
