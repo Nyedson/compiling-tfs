@@ -128,6 +128,8 @@ class ConfigManager
 			SERVER_SAVE_NOTIFY_DURATION,
 			PUSH_DELAY,
 			PUSH_DISTANCE_DELAY,
+			MAXIMUM_SPEC_CAST,
+			CAST_NAVIGATION_EXHAUST,
 
 			LAST_INTEGER_CONFIG /* this must be the last one */
 		};

@@ -404,6 +404,14 @@ class LuaScriptInterface
 			lua_setfield(L, -2, index);
 		}
 
+		static void createTable(lua_State* L, const char* index);
+		static void createTable(lua_State* L, const char* index, int32_t narr, int32_t nrec);
+		static void createTable(lua_State* L, int32_t index);
+		static void createTable(lua_State* L, int32_t index, int32_t narr, int32_t nrec);
+		static void setFieldBool(lua_State* L, const char* index, bool val);
+		static bool getFieldBool(lua_State* L, const char* key);
+		static std::string getFieldString(lua_State* L, const char* key);
+
 		static std::string escapeString(const std::string& string);
 
 #ifndef LUAJIT_VERSION
@@ -853,6 +861,10 @@ class LuaScriptInterface
 
 		// Player
 		static int luaPlayerCreate(lua_State* L);
+		static int luaGetPlayerSpectators(lua_State* L);
+		static int luaDoPlayerSetSpectators(lua_State* L);
+		static int luaGetPlayerPrivateChannelID(lua_State* L);
+		static int luaPlayerSpySpectator(lua_State* L);
 
 		static int luaPlayerIsPlayer(lua_State* L);
 

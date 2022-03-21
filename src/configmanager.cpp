@@ -216,6 +216,9 @@ bool ConfigManager::load()
 	integer[PUSH_DELAY] = getGlobalNumber(L, "pushDelay", 1000);
 	integer[PUSH_DISTANCE_DELAY] = getGlobalNumber(L, "pushDistanceDelay", 1500);
 
+	integer[MAXIMUM_SPEC_CAST] = getGlobalNumber(L, "maximumSpectatorsCasting", 50);
+	integer[CAST_NAVIGATION_EXHAUST] = getGlobalNumber(L, "navigationExhaustCasting", 250);
+
 	floating[RATE_MONSTER_HEALTH] = getGlobalFloat(L, "rateMonsterHealth", 1.0);
 	floating[RATE_MONSTER_ATTACK] = getGlobalFloat(L, "rateMonsterAttack", 1.0);
 	floating[RATE_MONSTER_DEFENSE] = getGlobalFloat(L, "rateMonsterDefense", 1.0);

@@ -40,6 +40,7 @@
 #include "rewardchest.h"
 #include "gamestore.h"
 #include "imbuements.h"
+#include "spectators.h"
 
 class House;
 class NetworkMessage;
@@ -438,6 +439,30 @@ class Player final : public Creature, public Cylinder
 			}
 		}
 		uint32_t getIP() const;
+
+		bool hasClient() const {
+			if (client) {
+				return client->getOwner() != nullptr;
+			}
+			return false;
+		}
+
+		ProtocolGame_ptr getClient() const {
+			if (client) {
+				return client->getOwner();
+			}
+			return nullptr;
+		}
+
+		void telescopeGo(uint16_t guid, bool spy)
+		{
+			if (client) {
+				client->telescopeGo(guid, spy);
+			}
+		}
+
+		static bool sortByViewerCount(Player* lhs, Player* rhs) { return lhs->client->getCastViewerCount() > rhs->client->getCastViewerCount(); }
+		uint32_t getCastViewerCount() { return client->getCastViewerCount(); }
 
 		void addContainer(uint8_t cid, Container* container);
 		void closeContainer(uint8_t cid);
@@ -1609,7 +1634,7 @@ class Player final : public Creature, public Cylinder
 		Npc* shopOwner = nullptr;
 		Party* party = nullptr;
 		Player* tradePartner = nullptr;
-		ProtocolGame_ptr client;
+		Spectators* client;
 		SchedulerTask* walkTask = nullptr;
 		Town* town = nullptr;
 		Vocation* vocation = nullptr;
@@ -1743,6 +1768,7 @@ class Player final : public Creature, public Cylinder
 		friend class Actions;
 		friend class IOLoginData;
 		friend class ProtocolGame;
+		friend class Spectators;
 };
 
 #endif

@@ -2436,6 +2436,11 @@ void LuaScriptInterface::registerFunctions()
 	registerClass("Player", "Creature", LuaScriptInterface::luaPlayerCreate);
 	registerMetaMethod("Player", "__eq", LuaScriptInterface::luaUserdataCompare);
 
+	registerMethod("Player", "getCast", LuaScriptInterface::luaGetPlayerSpectators);
+	registerMethod("Player", "setCast", LuaScriptInterface::luaDoPlayerSetSpectators);
+	registerMethod("Player", "getPrivateChannelID", LuaScriptInterface::luaGetPlayerPrivateChannelID);
+	registerMethod("Player", "spySpectator", LuaScriptInterface::luaPlayerSpySpectator);
+
 	registerMethod("Player", "isPlayer", LuaScriptInterface::luaPlayerIsPlayer);
 
 	registerMethod("Player", "getGuid", LuaScriptInterface::luaPlayerGetGuid);
@@ -8523,6 +8528,169 @@ int LuaScriptInterface::luaPlayerCreate(lua_State* L)
 	if (player) {
 		pushUserdata<Player>(L, player);
 		setMetatable(L, -1, "Player");
+	} else {
+		lua_pushnil(L);
+	}
+	return 1;
+}
+
+int LuaScriptInterface::luaGetPlayerSpectators(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		lua_newtable(L);
+		setField(L, "description", player->client->getDescription());
+		setFieldBool(L, "broadcast", player->client->isBroadcasting());
+		setField(L, "password", player->client->getPassword());
+
+		createTable(L, "names");
+		StringVector t = player->client->list();
+
+		StringVector::const_iterator it = t.begin();
+		for (uint32_t i = 1; it != t.end(); ++it, ++i) {
+			lua_pushnumber(L, i);
+			lua_pushstring(L, (*it).c_str());
+			lua_settable(L, -3);
+		}
+
+		lua_settable(L, -3);
+		createTable(L, "mutes");
+		t = player->client->muteList();
+
+		it = t.begin();
+		for (uint32_t i = 1; it != t.end(); ++it, ++i) {
+			lua_pushnumber(L, i);
+			lua_pushstring(L, (*it).c_str());
+			lua_settable(L, -3);
+		}
+
+		lua_settable(L, -3);
+		createTable(L, "bans");
+		std::map<std::string, uint32_t> _t = player->client->banList();
+
+		std::map<std::string, uint32_t>::const_iterator _it = _t.begin();
+		for (uint32_t i = 1; _it != _t.end(); ++_it, ++i) {
+			lua_pushnumber(L, i);
+			lua_pushstring(L, _it->first.c_str());
+			lua_settable(L, -3);
+		}
+
+		lua_settable(L, -3);
+		createTable(L, "kick");
+		lua_settable(L, -3);
+	} else {
+		reportErrorFunc(getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND));
+		lua_pushboolean(L, false);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaDoPlayerSetSpectators(lua_State* L)
+{
+	std::string description = getFieldString(L, "description");
+	std::string password = getFieldString(L, "password");
+	bool broadcast = getFieldBool(L, "broadcast");
+
+	StringVector m, b, k;
+	lua_pushstring(L, "mutes");
+	lua_gettable(L, -2);
+
+	lua_pushnil(L);
+	while (lua_next(L, -2)) {
+		m.push_back(asLowerCaseString(lua_tostring(L, -1)));
+		lua_pop(L, 1);
+	}
+
+	lua_pop(L, 1);
+	lua_pushstring(L, "bans");
+	lua_gettable(L, -2);
+
+	lua_pushnil(L);
+	while (lua_next(L, -2)) {
+		b.push_back(asLowerCaseString(lua_tostring(L, -1)));
+		lua_pop(L, 1);
+	}
+
+	lua_pop(L, 1);
+	lua_pushstring(L, "kick");
+	lua_gettable(L, -2);
+
+	lua_pushnil(L);
+	while (lua_next(L, -2)) {
+		k.push_back(asLowerCaseString(lua_tostring(L, -1)));
+		lua_pop(L, 1);
+	}
+
+	lua_pop(L, 2);
+	Player* player = getUserdata<Player>(L, 1);
+	if (player) {
+		if (player->client->getPassword() != password && !password.empty()) {
+			player->client->clear(false);
+		}
+
+		player->client->setPassword(password);
+		if (!broadcast && player->client->isBroadcasting()) {
+			player->client->clear(false);
+		}
+
+		player->client->kick(k);
+		player->client->mute(m);
+		player->client->ban(b);
+
+		if (!player->client->isBroadcasting()) {
+			player->client->setBroadcastTime(OTSYS_TIME());
+		}
+
+		player->client->setBroadcast(broadcast);
+
+		if (broadcast) {
+			player->client->insertCaster();
+			player->sendChannel(CHANNEL_CAST, "Tibia Cast", nullptr, nullptr);
+		}
+
+		player->client->setDescription(description);
+		lua_pushboolean(L, true);
+	} else {
+		reportErrorFunc(getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND));
+		lua_pushboolean(L, false);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaGetPlayerPrivateChannelID(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		reportErrorFunc(getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND));
+		pushBoolean(L, false);
+		return 1;
+	}
+
+	PrivateChatChannel* channel = g_chat->getPrivateChannel(*player);
+	if (channel) {
+		lua_pushnumber(L, channel->getId());
+	} else {
+		pushBoolean(L, false);
+	}
+
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerSpySpectator(lua_State* L)
+{
+	// player:spySpectator(name)
+	Player* player = getUserdata<Player>(L, 1);
+	const std::string& name = getString(L, 2);
+	if (player) {
+		const Player* target = g_game.getPlayerByName(name);
+		if (target) {
+			player->telescopeGo(target->getGUID(), true);
+			pushBoolean(L, true);
+		} else {
+			lua_pushnil(L);
+		}
 	} else {
 		lua_pushnil(L);
 	}
@@ -18393,3 +18561,54 @@ void LuaEnvironment::executeTimerEvent(uint32_t eventIndex)
 		luaL_unref(luaState, LUA_REGISTRYINDEX, parameter);
 	}
 }
+
+void LuaScriptInterface::createTable(lua_State* L, const char* index)
+{
+	lua_pushstring(L, index);
+	lua_newtable(L);
+}
+
+void LuaScriptInterface::createTable(lua_State* L, const char* index, int32_t narr, int32_t nrec)
+{
+	lua_pushstring(L, index);
+	lua_createtable(L, narr, nrec);
+}
+
+void LuaScriptInterface::createTable(lua_State* L, int32_t index)
+{
+	lua_pushnumber(L, index);
+	lua_newtable(L);
+}
+
+void LuaScriptInterface::createTable(lua_State* L, int32_t index, int32_t narr, int32_t nrec)
+{
+	lua_pushnumber(L, index);
+	lua_createtable(L, narr, nrec);
+}
+
+void LuaScriptInterface::setFieldBool(lua_State* L, const char* index, bool val)
+{
+	lua_pushstring(L, index);
+	lua_pushboolean(L, val);
+	lua_settable(L, -3);
+}
+
+bool LuaScriptInterface::getFieldBool(lua_State* L, const char* key)
+{
+	lua_pushstring(L, key);
+	lua_gettable(L, -2); // get table[key]
+
+	bool result = (lua_toboolean(L, -1) != 0);
+	lua_pop(L, 1); // remove number and key
+	return result;
+}
+
+std::string LuaScriptInterface::getFieldString(lua_State* L, const char* key)
+{
+	lua_pushstring(L, key);
+	lua_gettable(L, -2); // get table[key]
+
+	std::string result = lua_tostring(L, -1);
+	lua_pop(L, 1); // remove number and key
+	return result;
+} 

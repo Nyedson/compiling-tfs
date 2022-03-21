@@ -29,6 +29,7 @@
 #include "iologindata.h"
 #include "ban.h"
 #include "game.h"
+#include "protocolgame.h"
 
 extern ConfigManager g_config;
 extern Game g_game;
@@ -103,6 +104,46 @@ void ProtocolLogin::getCharacterList(const std::string& accountName, const std::
 	send(output);
 
 	disconnect();
+}
+
+void ProtocolLogin::getCastsList(const std::string& password)
+{
+    auto output = OutputMessagePool::getOutputMessage();
+    // Add session key
+    output->addByte(0x28);
+    output->addString("\n" + password);
+
+    output->addByte(0x64);
+    output->addByte(1);  // number of worlds
+    output->addByte(0);  // world id
+    output->addString(g_config.getString(ConfigManager::SERVER_NAME));
+    output->addString(g_config.getString(ConfigManager::IP));
+    output->add<uint16_t>(g_config.getShortNumber(ConfigManager::GAME_PORT));
+    output->addByte(0);
+
+    PlayerVector players;
+    for (const auto& cast : ProtocolGame::getLiveCasts()) {
+        //if (!canWatch(cast.first)) { continue; }
+        players.emplace_back(cast.first);
+    }
+
+    uint8_t size = std::min<size_t>(std::numeric_limits<uint8_t>::max(),
+                                  players.size());
+    output->addByte(size);
+    for (uint8_t i = 0; i < size; i++) {
+        output->addByte(0);
+        std::ostringstream ss;
+        ss << players[i]->getName() << " [Viewers: " << players[i]->getCastViewerCount() << "]";
+        output->addString(ss.str());
+    }
+
+    // Add fake premium stuff
+    output->addByte(0);
+    output->addByte(1);
+    output->add<uint32_t>(0);
+    send(output);
+
+    disconnect();
 }
 
 void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
@@ -184,12 +225,14 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 	}
 
 	std::string accountName = msg.getString();
+	std::string password = msg.getString();
 	if (accountName.empty()) {
-		disconnectClient("Invalid account name.", version);
+		//disconnectClient("Invalid account name.", version);
+		auto thisPtr = std::static_pointer_cast<ProtocolLogin>(shared_from_this());
+		g_dispatcher.addTask(createTask(std::bind(&ProtocolLogin::getCastsList, thisPtr, password)));
 		return;
 	}
 
-	std::string password = msg.getString();
 	if (password.empty()) {
 		disconnectClient("Invalid password.", version);
 		return;

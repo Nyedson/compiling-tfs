@@ -49,7 +49,7 @@ MuteCountMap Player::muteCountMap;
 uint32_t Player::playerAutoID = 0x10010000;
 
 Player::Player(ProtocolGame_ptr p) :
-	Creature(), lastPing(OTSYS_TIME()), lastPong(lastPing), inbox(new Inbox(ITEM_INBOX)), client(std::move(p))
+	Creature(), lastPing(OTSYS_TIME()), lastPong(lastPing), inbox(new Inbox(ITEM_INBOX)), client(new Spectators(p))
 {
 	inbox->incrementReferenceCounter();
 }
@@ -76,6 +76,8 @@ Player::~Player()
 
 	setWriteItem(nullptr);
 	setEditHouse(nullptr);
+
+	delete client;
 }
 
 bool Player::setVocation(uint16_t vocId)
@@ -692,7 +694,7 @@ bool Player::getStorageValue(const uint32_t key, int32_t& value) const
 
 bool Player::canSee(const Position& pos) const
 {
-	if (!client) {
+	if (!hasClient()) {
 		return false;
 	}
 	return client->canSee(pos);
@@ -1021,7 +1023,7 @@ void Player::setEditHouse(House* house, uint32_t listId /*= 0*/)
 
 void Player::sendHouseWindow(House* house, uint32_t listId) const
 {
-	if (!client) {
+	if (!hasClient()) {
 		return;
 	}
 
@@ -1034,7 +1036,7 @@ void Player::sendHouseWindow(House* house, uint32_t listId) const
 //container
 void Player::sendAddContainerItem(const Container* container, const Item* item)
 {
-	if (!client) {
+	if (!hasClient()) {
 		return;
 	}
 
@@ -1063,7 +1065,7 @@ void Player::sendAddContainerItem(const Container* container, const Item* item)
 
 void Player::sendUpdateContainerItem(const Container* container, uint16_t slot, const Item* newItem)
 {
-	if (!client) {
+	if (!hasClient()) {
 		return;
 	}
 
@@ -1088,7 +1090,7 @@ void Player::sendUpdateContainerItem(const Container* container, uint16_t slot, 
 
 void Player::sendRemoveContainerItem(const Container* container, uint16_t slot)
 {
-	if (!client) {
+	if (!hasClient()) {
 		return;
 	}
 
@@ -1434,7 +1436,7 @@ void Player::onRemoveContainerItem(const Container* container, const Item* item)
 
 void Player::onCloseContainer(const Container* container)
 {
-	if (!client) {
+	if (!hasClient()) {
 		return;
 	}
 
@@ -1447,7 +1449,7 @@ void Player::onCloseContainer(const Container* container)
 
 void Player::onSendContainer(const Container* container)
 {
-	if (!client) {
+	if (!hasClient()) {
 		return;
 	}
 
@@ -2326,7 +2328,7 @@ void Player::kickPlayer(bool displayEffect)
 
 void Player::notifyStatusChange(Player* loginPlayer, VipStatus_t status)
 {
-	if (!client) {
+	if (!hasClient()) {
 		return;
 	}
 
@@ -4734,7 +4736,7 @@ void Player::onModalWindowHandled(uint32_t modalWindowId)
 
 void Player::sendModalWindow(const ModalWindow& modalWindow)
 {
-	if (!client) {
+	if (!hasClient()) {
 		return;
 	}
 

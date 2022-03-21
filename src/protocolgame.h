@@ -35,6 +35,7 @@ class Tile;
 class Connection;
 class Quest;
 class ProtocolGame;
+class Spectators;
 using ProtocolGame_ptr = std::shared_ptr<ProtocolGame>;
 
 extern Game g_game;
@@ -76,6 +77,13 @@ class ProtocolGame final : public Protocol
 		uint16_t getVersion() const {
 			return version;
 		}
+
+		Player* getPlayer() const { return player; }
+
+		void insertCaster();
+		void removeCaster();
+		using LiveCastsMap = std::unordered_map<Player*, ProtocolGame*>;
+		static const LiveCastsMap& getLiveCasts() { return liveCasts; }	
 
 	private:
 		ProtocolGame_ptr getThis() {
@@ -181,7 +189,7 @@ class ProtocolGame final : public Protocol
 		void addImbuementInfo(NetworkMessage &msg, uint32_t imbuid);
 
 		//Send functions
-		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel);
+		void sendChannelMessage(const std::string& author, const std::string& text, SpeakClasses type, uint16_t channel, uint32_t spectatorLevel = 0);
 		void sendChannelEvent(uint16_t channelId, const std::string& playerName, ChannelEvent_t channelEvent);
 		void sendClosePrivate(uint16_t channelId);
 		void sendCreatePrivateChannel(uint16_t channelId, const std::string& channelName);
@@ -353,7 +361,18 @@ class ProtocolGame final : public Protocol
 		//reloadCreature
 		void reloadCreature(const Creature *creature);
 
+		void spectatorLogin(const std::string& name, const std::string& password);
+		void sendSpectatorAppear(Player* foundPlayer);
+		void syncOpenContainers();
+		void castNavigation(uint16_t direction);
+		bool canWatch(Player* foundPlayer) const;
+		void spectatorLookAt(const Position& pos, uint8_t stackPos);
+		void telescopeGo(uint16_t guid, bool spy = false);
+		void telescopeBack(bool lostConnection);
+		void parseTelescopeBack(bool lostConnection);	
+
 		friend class Player;
+		friend class Spectators;
 
 		// Helpers so we don't need to bind every time
 		template <typename Callable, typename... Args>
@@ -366,6 +385,7 @@ class ProtocolGame final : public Protocol
 			g_dispatcher.addTask(createTask(delay, std::bind(function, &g_game, std::forward<Args>(args)...)));
 		}
 
+        static LiveCastsMap liveCasts;
 		std::unordered_set<uint32_t> knownCreatureSet;
 		Player* player = nullptr;
 
@@ -381,6 +401,13 @@ class ProtocolGame final : public Protocol
 
 		bool loggedIn = false;
 		bool shouldAddExivaRestrictions = false;
+
+		bool m_spectator = false;
+		int64_t m_lastCastTime = 0;
+		int64_t m_time = 0;
+		uint32_t m_count = 0;
+		std::string twatchername;
+		bool spy = false;	
 
 		void sendInventory();
 };

@@ -137,10 +137,10 @@ bool ChatChannel::hasUser(const Player& player) {
 	return users.find(player.getID()) != users.end();
 }
 
-void ChatChannel::sendToAll(const std::string& message, SpeakClasses type) const
+void ChatChannel::sendToAll(const std::string& message, SpeakClasses type, std::string nick) const
 {
 	for (const auto& it : users) {
-		it.second->sendChannelMessage("", message, type, id);
+		it.second->sendChannelMessage(nick, message, type, id);
 	}
 }
 
