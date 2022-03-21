@@ -442,14 +442,6 @@ public:
         it.first->sendCreatureShield(creature);           
     }
   }  
-  void sendPartyCreatureUpdate(const Creature* creature) const {
-    if (owner) {
-      owner->sendPartyCreatureUpdate(creature);
-
-      for (const auto& it : spectators)
-        it.first->sendPartyCreatureUpdate(creature);      
-    }
-  }
   void sendCreatureSkull(const Creature* creature) const {
     if (owner) {
       owner->sendCreatureSkull(creature);
@@ -712,11 +704,6 @@ public:
       owner->sendSpellGroupCooldown(groupId, time);
       for (const auto& it : spectators)
         it.first->sendSpellGroupCooldown(groupId, time);
-    }
-  }
-  void sendLockerItems(std::map<uint16_t, uint16_t> itemMap, uint16_t count) {
-    if (owner) {
-      owner->sendLockerItems(itemMap, count);
     }
   }
   void sendCoinBalance() {
