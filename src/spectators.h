@@ -396,10 +396,10 @@ public:
   }
   void sendCancelMessage(const std::string& msg) const {
     if (owner) {
-      owner->sendTextMessage(TextMessage(MESSAGE_FAILURE, msg));
+      owner->sendTextMessage(TextMessage(MESSAGE_EVENT_DEFAULT, msg));
 
       for (const auto& it : spectators)
-        it.first->sendTextMessage(TextMessage(MESSAGE_FAILURE, msg));
+        it.first->sendTextMessage(TextMessage(MESSAGE_EVENT_DEFAULT, msg));
     }
   }
   void sendCancelTarget() const {
@@ -426,22 +426,6 @@ public:
         it.first->sendChangeSpeed(creature, newSpeed);
     }
   }
-  void sendPartyPlayerVocation(const Player* player) const {
-    if (owner) {
-      owner->sendPartyPlayerVocation(player);
-
-      for (const auto& it : spectators)
-        it.first->sendPartyPlayerVocation(player);     
-    }
-  }
-  void sendPlayerVocation(const Player* player) const {
-    if (owner) {
-      owner->sendPlayerVocation(player);
-
-      for (const auto& it : spectators)
-        it.first->sendPlayerVocation(player);      
-    }
-  }    
   void sendCreatureHealth(const Creature* creature) const {
     if (owner) {
       owner->sendCreatureHealth(creature);
@@ -474,30 +458,6 @@ public:
         it.first->sendCreatureSkull(creature);
     }   
   }
-  void sendPartyCreatureHealth(const Creature* creature, uint8_t healthPercent) const {
-    if (owner) {
-      owner->sendPartyCreatureHealth(creature, healthPercent);
-
-      for (const auto& it : spectators)
-        it.first->sendPartyCreatureHealth(creature, healthPercent);     
-    }
-  }
-  void sendPartyPlayerMana(const Player* player, uint8_t manaPercent) const {
-    if (owner) {
-      owner->sendPartyPlayerMana(player, manaPercent);
-
-      for (const auto& it : spectators)
-        it.first->sendPartyPlayerMana(player, manaPercent);      
-    }
-  }
-  void sendPartyCreatureShowStatus(const Creature* creature, bool showStatus) const {
-    if (owner) {
-      owner->sendPartyCreatureShowStatus(creature, showStatus);
-
-      for (const auto& it : spectators)
-        it.first->sendPartyCreatureShowStatus(creature, showStatus);         
-    }
-  }      
   void sendDistanceShoot(const Position& from, const Position& to, unsigned char type) const {
     if (owner) {
       owner->sendDistanceShoot(from, to, type);
