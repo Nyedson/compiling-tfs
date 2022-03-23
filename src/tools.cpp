@@ -612,6 +612,7 @@ MagicEffectNames magicEffectNames = {
 	{"watersplash",			CONST_ME_WATERSPLASH},
 	{"whiteenergyspark",	CONST_ME_WHITE_ENERGY_SPARK },
 	{"phantasmal",	CONST_ME_DIVINE_PHANTASMAL },
+	{"nibble",	CONST_ME_DIVINE_NIBBLE },
 };
 
 ShootTypeNames shootTypeNames = {

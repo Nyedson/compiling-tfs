@@ -3988,7 +3988,7 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 	}
 
 	if (channelId == CHANNEL_CAST) {
-		player->sendToChannel(player, TALKTYPE_CHANNEL_R1, text, channelId);
+		player->sendChannelMessage(player->getName(), text, TALKTYPE_CHANNEL_R1, channelId);
 	}
 
 	switch (type) {

@@ -56,7 +56,9 @@ set(otbr_SRC
 	${CMAKE_CURRENT_LIST_DIR}/position.cpp
 	${CMAKE_CURRENT_LIST_DIR}/protocol.cpp
 	${CMAKE_CURRENT_LIST_DIR}/protocolgame.cpp
+	${CMAKE_CURRENT_LIST_DIR}/protocolgamebase.cpp
 	${CMAKE_CURRENT_LIST_DIR}/protocollogin.cpp
+	${CMAKE_CURRENT_LIST_DIR}/protocolspectator.cpp
 	${CMAKE_CURRENT_LIST_DIR}/protocolstatus.cpp
 	${CMAKE_CURRENT_LIST_DIR}/raids.cpp
 	${CMAKE_CURRENT_LIST_DIR}/reward.cpp
@@ -69,7 +71,6 @@ set(otbr_SRC
 	${CMAKE_CURRENT_LIST_DIR}/signals.cpp
 	${CMAKE_CURRENT_LIST_DIR}/spawn.cpp
 	${CMAKE_CURRENT_LIST_DIR}/spells.cpp
-	${CMAKE_CURRENT_LIST_DIR}/spectators.cpp
 	${CMAKE_CURRENT_LIST_DIR}/talkaction.cpp
 	${CMAKE_CURRENT_LIST_DIR}/tasks.cpp
 	${CMAKE_CURRENT_LIST_DIR}/teleport.cpp

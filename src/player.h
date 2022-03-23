@@ -40,7 +40,6 @@
 #include "rewardchest.h"
 #include "gamestore.h"
 #include "imbuements.h"
-#include "spectators.h"
 
 class House;
 class NetworkMessage;
@@ -439,30 +438,6 @@ class Player final : public Creature, public Cylinder
 			}
 		}
 		uint32_t getIP() const;
-
-		bool hasClient() const {
-			if (client) {
-				return client->getOwner() != nullptr;
-			}
-			return false;
-		}
-
-		ProtocolGame_ptr getClient() const {
-			if (client) {
-				return client->getOwner();
-			}
-			return nullptr;
-		}
-
-		void telescopeGo(uint16_t guid, bool spy)
-		{
-			if (client) {
-				client->telescopeGo(guid, spy);
-			}
-		}
-
-		static bool sortByViewerCount(Player* lhs, Player* rhs) { return lhs->client->getCastViewerCount() > rhs->client->getCastViewerCount(); }
-		uint32_t getCastViewerCount() { return client->getCastViewerCount(); }
 
 		void addContainer(uint8_t cid, Container* container);
 		void closeContainer(uint8_t cid);
@@ -1325,9 +1300,9 @@ class Player final : public Creature, public Cylinder
 				client->sendFightModes();
 			}
 		}
-		void sendNetworkMessage(const NetworkMessage& message) {
+		void sendNetworkMessage(const NetworkMessage& message, bool broadcast = true) {
 			if (client) {
-				client->writeToOutputBuffer(message);
+				client->writeToOutputBuffer(message, broadcast);
 			}
 		}
 
@@ -1394,6 +1369,23 @@ class Player final : public Creature, public Cylinder
 		void addAutoLootItem(uint16_t itemId);
 		void removeAutoLootItem(uint16_t itemId);
 		bool getAutoLootItem(uint16_t itemId);
+
+		bool startLiveCast(const std::string& password) {
+			return client && client->startLiveCast(password);
+		}
+		bool stopLiveCast() {
+			return client && client->stopLiveCast();
+		}
+		bool isLiveCaster() const {
+			return client && client->isLiveCaster();
+		}
+		bool getSpectators(std::vector<ProtocolSpectator_ptr>& spectators) const {
+			if (!isLiveCaster()) {
+				return false;
+			}
+			spectators = client->spectators;
+			return true;
+		}
 
 		bool inPushEvent() {
 			return inEventMovePush;
@@ -1480,7 +1472,7 @@ class Player final : public Creature, public Cylinder
 			exhaustItems = OTSYS_TIME() + value;
 		}
 
-		bool updateKillTracker(Container* corpse, const std::string& playerName, const Outfit_t creatureOutfit) const
+   		bool updateKillTracker(Container* corpse, const std::string& playerName, const Outfit_t creatureOutfit) const
  		{
   			if (client && getProtocolVersion() > 1140) {
 				client->sendKillTrackerUpdate(corpse, playerName, creatureOutfit);
@@ -1634,7 +1626,7 @@ class Player final : public Creature, public Cylinder
 		Npc* shopOwner = nullptr;
 		Party* party = nullptr;
 		Player* tradePartner = nullptr;
-		Spectators* client;
+		ProtocolGame_ptr client;
 		SchedulerTask* walkTask = nullptr;
 		Town* town = nullptr;
 		Vocation* vocation = nullptr;
@@ -1768,7 +1760,7 @@ class Player final : public Creature, public Cylinder
 		friend class Actions;
 		friend class IOLoginData;
 		friend class ProtocolGame;
-		friend class Spectators;
+		friend class ProtocolGameBase;
 };
 
 #endif

@@ -140,6 +140,7 @@ enum MagicEffectClasses : uint8_t {
 	CONST_ME_BLUE_FIREWORKS = 199,
 
 	CONST_ME_DIVINE_PHANTASMAL = 206,
+	CONST_ME_DIVINE_NIBBLE = 206,
 
 	CONST_ME_CHIVALRIOUS_CHALLENGE = 219,
 	CONST_ME_DIVINE_DAZZLE = 220,
@@ -710,7 +711,9 @@ enum DailyRewardStorages_t: uint32_t {
 static constexpr int32_t CHANNEL_GUILD = 0x00;
 static constexpr int32_t CHANNEL_PARTY = 0x01;
 static constexpr int32_t CHANNEL_PRIVATE = 0xFFFF;
-static constexpr int32_t CHANNEL_CAST = 0xFFFE;
+
+static constexpr int32_t CHANNEL_CAST = 40;
+const std::string LIVE_CAST_CHAT_NAME = "Live Cast Chat";
 
 static constexpr int32_t STORAGEVALUE_PROMOTION = 30018;
 static constexpr int32_t STORAGEVALUE_EMOTE = 30019;

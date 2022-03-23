@@ -1377,6 +1377,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(CONST_ME_CHIVALRIOUS_CHALLENGE)
 	registerEnum(CONST_ME_DIVINE_DAZZLE)
 	registerEnum(CONST_ME_DIVINE_PHANTASMAL)
+	registerEnum(CONST_ME_DIVINE_NIBBLE)
 
 	registerEnum(CONST_ANI_NONE)
 	registerEnum(CONST_ANI_SPEAR)
@@ -2027,6 +2028,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::WARN_UNSAFE_SCRIPTS)
 	registerEnumIn("configKeys", ConfigManager::CONVERT_UNSAFE_SCRIPTS)
 	registerEnumIn("configKeys", ConfigManager::CLASSIC_EQUIPMENT_SLOTS)
+	registerEnumIn("configKeys", ConfigManager::ENABLE_LIVE_CASTING)
 	registerEnumIn("configKeys", ConfigManager::ALLOW_BLOCK_SPAWN)
 	registerEnumIn("configKeys", ConfigManager::CLASSIC_ATTACK_SPEED)
 	registerEnumIn("configKeys", ConfigManager::REMOVE_WEAPON_AMMO)
@@ -2089,6 +2091,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnumIn("configKeys", ConfigManager::MAX_MARKET_OFFERS_AT_A_TIME_PER_PLAYER)
 	registerEnumIn("configKeys", ConfigManager::EXP_FROM_PLAYERS_LEVEL_RANGE)
 	registerEnumIn("configKeys", ConfigManager::MAX_PACKETS_PER_SECOND)
+	registerEnumIn("configKeys", ConfigManager::LIVE_CAST_PORT)
 	registerEnumIn("configKeys", ConfigManager::VERSION_MIN)
 	registerEnumIn("configKeys", ConfigManager::VERSION_MAX)
 	registerEnumIn("configKeys", ConfigManager::DAY_KILLS_TO_RED)
@@ -2436,11 +2439,6 @@ void LuaScriptInterface::registerFunctions()
 	registerClass("Player", "Creature", LuaScriptInterface::luaPlayerCreate);
 	registerMetaMethod("Player", "__eq", LuaScriptInterface::luaUserdataCompare);
 
-	registerMethod("Player", "getCast", LuaScriptInterface::luaGetPlayerSpectators);
-	registerMethod("Player", "setCast", LuaScriptInterface::luaDoPlayerSetSpectators);
-	registerMethod("Player", "getPrivateChannelID", LuaScriptInterface::luaGetPlayerPrivateChannelID);
-	registerMethod("Player", "spySpectator", LuaScriptInterface::luaPlayerSpySpectator);
-
 	registerMethod("Player", "isPlayer", LuaScriptInterface::luaPlayerIsPlayer);
 
 	registerMethod("Player", "getGuid", LuaScriptInterface::luaPlayerGetGuid);
@@ -2663,6 +2661,11 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Player", "hasChaseMode", LuaScriptInterface::luaPlayerHasChaseMode);
 	registerMethod("Player", "hasSecureMode", LuaScriptInterface::luaPlayerHasSecureMode);
 	registerMethod("Player", "getFightMode", LuaScriptInterface::luaPlayerGetFightMode);
+
+	registerMethod("Player", "startLiveCast", LuaScriptInterface::luaPlayerStartLiveCast);
+	registerMethod("Player", "stopLiveCast", LuaScriptInterface::luaPlayerStopLiveCast);
+	registerMethod("Player", "isLiveCaster", LuaScriptInterface::luaPlayerIsLiveCaster);
+	registerMethod("Player", "getSpectators", LuaScriptInterface::luaPlayerGetSpectators);
 
 	registerMethod("Player", "getBaseXpGain", LuaScriptInterface::luaPlayerGetBaseXpGain);
 	registerMethod("Player", "setBaseXpGain", LuaScriptInterface::luaPlayerSetBaseXpGain);
@@ -8534,169 +8537,6 @@ int LuaScriptInterface::luaPlayerCreate(lua_State* L)
 	return 1;
 }
 
-int LuaScriptInterface::luaGetPlayerSpectators(lua_State* L)
-{
-	Player* player = getUserdata<Player>(L, 1);
-	if (player) {
-		lua_newtable(L);
-		setField(L, "description", player->client->getDescription());
-		setFieldBool(L, "broadcast", player->client->isBroadcasting());
-		setField(L, "password", player->client->getPassword());
-
-		createTable(L, "names");
-		StringVector t = player->client->list();
-
-		StringVector::const_iterator it = t.begin();
-		for (uint32_t i = 1; it != t.end(); ++it, ++i) {
-			lua_pushnumber(L, i);
-			lua_pushstring(L, (*it).c_str());
-			lua_settable(L, -3);
-		}
-
-		lua_settable(L, -3);
-		createTable(L, "mutes");
-		t = player->client->muteList();
-
-		it = t.begin();
-		for (uint32_t i = 1; it != t.end(); ++it, ++i) {
-			lua_pushnumber(L, i);
-			lua_pushstring(L, (*it).c_str());
-			lua_settable(L, -3);
-		}
-
-		lua_settable(L, -3);
-		createTable(L, "bans");
-		std::map<std::string, uint32_t> _t = player->client->banList();
-
-		std::map<std::string, uint32_t>::const_iterator _it = _t.begin();
-		for (uint32_t i = 1; _it != _t.end(); ++_it, ++i) {
-			lua_pushnumber(L, i);
-			lua_pushstring(L, _it->first.c_str());
-			lua_settable(L, -3);
-		}
-
-		lua_settable(L, -3);
-		createTable(L, "kick");
-		lua_settable(L, -3);
-	} else {
-		reportErrorFunc(getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND));
-		lua_pushboolean(L, false);
-	}
-
-	return 1;
-}
-
-int LuaScriptInterface::luaDoPlayerSetSpectators(lua_State* L)
-{
-	std::string description = getFieldString(L, "description");
-	std::string password = getFieldString(L, "password");
-	bool broadcast = getFieldBool(L, "broadcast");
-
-	StringVector m, b, k;
-	lua_pushstring(L, "mutes");
-	lua_gettable(L, -2);
-
-	lua_pushnil(L);
-	while (lua_next(L, -2)) {
-		m.push_back(asLowerCaseString(lua_tostring(L, -1)));
-		lua_pop(L, 1);
-	}
-
-	lua_pop(L, 1);
-	lua_pushstring(L, "bans");
-	lua_gettable(L, -2);
-
-	lua_pushnil(L);
-	while (lua_next(L, -2)) {
-		b.push_back(asLowerCaseString(lua_tostring(L, -1)));
-		lua_pop(L, 1);
-	}
-
-	lua_pop(L, 1);
-	lua_pushstring(L, "kick");
-	lua_gettable(L, -2);
-
-	lua_pushnil(L);
-	while (lua_next(L, -2)) {
-		k.push_back(asLowerCaseString(lua_tostring(L, -1)));
-		lua_pop(L, 1);
-	}
-
-	lua_pop(L, 2);
-	Player* player = getUserdata<Player>(L, 1);
-	if (player) {
-		if (player->client->getPassword() != password && !password.empty()) {
-			player->client->clear(false);
-		}
-
-		player->client->setPassword(password);
-		if (!broadcast && player->client->isBroadcasting()) {
-			player->client->clear(false);
-		}
-
-		player->client->kick(k);
-		player->client->mute(m);
-		player->client->ban(b);
-
-		if (!player->client->isBroadcasting()) {
-			player->client->setBroadcastTime(OTSYS_TIME());
-		}
-
-		player->client->setBroadcast(broadcast);
-
-		if (broadcast) {
-			player->client->insertCaster();
-			player->sendChannel(CHANNEL_CAST, "Tibia Cast", nullptr, nullptr);
-		}
-
-		player->client->setDescription(description);
-		lua_pushboolean(L, true);
-	} else {
-		reportErrorFunc(getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND));
-		lua_pushboolean(L, false);
-	}
-
-	return 1;
-}
-
-int LuaScriptInterface::luaGetPlayerPrivateChannelID(lua_State* L)
-{
-	Player* player = getUserdata<Player>(L, 1);
-	if (!player) {
-		reportErrorFunc(getErrorDesc(LUA_ERROR_PLAYER_NOT_FOUND));
-		pushBoolean(L, false);
-		return 1;
-	}
-
-	PrivateChatChannel* channel = g_chat->getPrivateChannel(*player);
-	if (channel) {
-		lua_pushnumber(L, channel->getId());
-	} else {
-		pushBoolean(L, false);
-	}
-
-	return 1;
-}
-
-int LuaScriptInterface::luaPlayerSpySpectator(lua_State* L)
-{
-	// player:spySpectator(name)
-	Player* player = getUserdata<Player>(L, 1);
-	const std::string& name = getString(L, 2);
-	if (player) {
-		const Player* target = g_game.getPlayerByName(name);
-		if (target) {
-			player->telescopeGo(target->getGUID(), true);
-			pushBoolean(L, true);
-		} else {
-			lua_pushnil(L);
-		}
-	} else {
-		lua_pushnil(L);
-	}
-	return 1;
-}
-
 int LuaScriptInterface::luaPlayerIsPlayer(lua_State* L)
 {
 	// player:isPlayer()
@@ -11532,6 +11372,77 @@ int LuaScriptInterface::luaPlayerCanCast(lua_State* L)
 		lua_pushnil(L);
 	}
 	return 1;
+}
+
+int32_t LuaScriptInterface::luaPlayerStartLiveCast(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	std::string password;
+	if (lua_gettop(L) == 2) {
+		password = getString(L, 2);
+	}
+
+	lua_pushboolean(L, player->startLiveCast(password));
+	return 1;
+}
+
+int32_t LuaScriptInterface::luaPlayerStopLiveCast(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	lua_pushboolean(L, player->stopLiveCast());
+	return 1;
+}
+
+int32_t LuaScriptInterface::luaPlayerIsLiveCaster(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	lua_pushboolean(L, player->isLiveCaster());
+	return 1;
+}
+
+int32_t LuaScriptInterface::luaPlayerGetSpectators(lua_State* L)
+{
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player || !player->isLiveCaster()) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	std::lock_guard<std::mutex> lock(player->client->liveCastLock);
+	std::vector<ProtocolSpectator_ptr> spectators;
+	player->getSpectators(spectators);
+
+	lua_createtable(L, spectators.size(), 0);
+
+	int idx = 0, anonymous = 0;
+	for (const auto spectator : spectators) {
+		std::string specName = spectator->getName();
+		if (specName.empty()) {
+			anonymous += 1;
+		}
+		else {
+			pushString(L, specName);
+			lua_rawseti(L, -2, ++idx);
+		}
+	}
+
+	lua_pushnumber(L, anonymous);
+	return 2;
 }
 
 int LuaScriptInterface::luaPlayerHasChaseMode(lua_State* L)
@@ -18561,54 +18472,3 @@ void LuaEnvironment::executeTimerEvent(uint32_t eventIndex)
 		luaL_unref(luaState, LUA_REGISTRYINDEX, parameter);
 	}
 }
-
-void LuaScriptInterface::createTable(lua_State* L, const char* index)
-{
-	lua_pushstring(L, index);
-	lua_newtable(L);
-}
-
-void LuaScriptInterface::createTable(lua_State* L, const char* index, int32_t narr, int32_t nrec)
-{
-	lua_pushstring(L, index);
-	lua_createtable(L, narr, nrec);
-}
-
-void LuaScriptInterface::createTable(lua_State* L, int32_t index)
-{
-	lua_pushnumber(L, index);
-	lua_newtable(L);
-}
-
-void LuaScriptInterface::createTable(lua_State* L, int32_t index, int32_t narr, int32_t nrec)
-{
-	lua_pushnumber(L, index);
-	lua_createtable(L, narr, nrec);
-}
-
-void LuaScriptInterface::setFieldBool(lua_State* L, const char* index, bool val)
-{
-	lua_pushstring(L, index);
-	lua_pushboolean(L, val);
-	lua_settable(L, -3);
-}
-
-bool LuaScriptInterface::getFieldBool(lua_State* L, const char* key)
-{
-	lua_pushstring(L, key);
-	lua_gettable(L, -2); // get table[key]
-
-	bool result = (lua_toboolean(L, -1) != 0);
-	lua_pop(L, 1); // remove number and key
-	return result;
-}
-
-std::string LuaScriptInterface::getFieldString(lua_State* L, const char* key)
-{
-	lua_pushstring(L, key);
-	lua_gettable(L, -2); // get table[key]
-
-	std::string result = lua_tostring(L, -1);
-	lua_pop(L, 1); // remove number and key
-	return result;
-} 
