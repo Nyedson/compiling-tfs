@@ -1040,9 +1040,6 @@ void Monster::onThinkDefense(uint32_t interval)
 				continue;
 			}
 
-			if (summons.size() >= mType->info.maxSummons) {
-				continue;
-			}
 
 			if (defenseTicks % summonBlock.speed >= interval) {
 				//already used this spell for this round
@@ -1056,7 +1053,11 @@ void Monster::onThinkDefense(uint32_t interval)
 				}
 			}
 
-			if (summonCount >= summonBlock.max || summonCount >= mType->info.maxSummons) {
+			if (summonCount >= summonBlock.max) {
+				continue;
+			}
+
+			if (summons.size() >= mType->info.maxSummons) {
 				continue;
 			}
 
