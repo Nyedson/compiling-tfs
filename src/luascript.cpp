@@ -15015,6 +15015,7 @@ int LuaScriptInterface::luaMonsterTypeGetSummonList(lua_State* L)
 		setField(L, "name", summonBlock.name);
 		setField(L, "speed", summonBlock.speed);
 		setField(L, "chance", summonBlock.chance);
+		setField(L, "max", summonBlock.max);
 		lua_rawseti(L, -2, ++index);
 	}
 	return 1;
@@ -15027,8 +15028,9 @@ int LuaScriptInterface::luaMonsterTypeAddSummon(lua_State* L)
 	if (monsterType) {
 		summonBlock_t summon;
 		summon.name = getString(L, 2);
-		summon.chance = getNumber<int32_t>(L, 3);
-		summon.speed = getNumber<int32_t>(L, 4);
+		summon.speed = getNumber<int32_t>(L, 3);
+		summon.chance = getNumber<int32_t>(L, 4);
+		summon.max = getNumber<int32_t>(L, 5);
 		monsterType->info.summons.push_back(summon);
 		pushBoolean(L, true);
 	} else {
