@@ -2580,8 +2580,36 @@ void ProtocolGame::sendSpellCooldown(uint8_t spellId, uint32_t time)
 {
 	NetworkMessage msg;
 	msg.addByte(0xA4);
-	if (player->getProtocolVersion() < 1120 && spellId >= 170) {
-		spellId = 150;
+	if (player->getProtocolVersion() < 1120) 
+	{
+		if (spellId == 237) {
+			spellId = 75;
+		}
+
+		else if (spellId == 238) {
+			spellId = 75;
+		}
+		else if (spellId == 239) {
+			spellId = 3;
+		}
+		else if (spellId == 240) {
+			spellId = 150;
+		}
+		else if (spellId == 241) {
+			spellId = 3;
+		}
+		else if (spellId == 242) {
+			spellId = 3;
+		}
+		else if (spellId == 243) {
+			spellId = 75;
+		}
+		else if (spellId == 244) {
+			spellId = 75;
+		}
+		else if (spellId == 245) {
+			spellId = 75;
+		}
 	}
 	msg.addByte(spellId);
 	msg.add<uint32_t>(time);
