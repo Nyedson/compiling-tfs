@@ -3999,39 +3999,39 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 	}
 
 	if (channelId == CHANNEL_CAST) {
-		player->sendChannelMessage(player->getName(), text, TALKTYPE_CHANNEL_R1, channelId);
+		player->sendChannelMessage(player->getName(), newText, TALKTYPE_CHANNEL_R1, channelId);
 	}
 
 	switch (type) {
 		case TALKTYPE_SAY:
-			internalCreatureSay(player, TALKTYPE_SAY, text, false);
+			internalCreatureSay(player, TALKTYPE_SAY, newText, false);
 			break;
 
 		case TALKTYPE_WHISPER:
-			playerWhisper(player, text);
+			playerWhisper(player, newText);
 			break;
 
 		case TALKTYPE_YELL:
-			playerYell(player, text);
+			playerYell(player, newText);
 			break;
 
 		case TALKTYPE_PRIVATE_TO:
 		case TALKTYPE_PRIVATE_RED_TO:
-			playerSpeakTo(player, type, receiver, text);
+			playerSpeakTo(player, type, receiver, newText);
 			break;
 
 		case TALKTYPE_CHANNEL_O:
 		case TALKTYPE_CHANNEL_Y:
 		case TALKTYPE_CHANNEL_R1:
-			g_chat->talkToChannel(*player, type, text, channelId);
+			g_chat->talkToChannel(*player, type, newText, channelId);
 			break;
 
 		case TALKTYPE_PRIVATE_PN:
-			playerSpeakToNpc(player, text);
+			playerSpeakToNpc(player, newText);
 			break;
 
 		case TALKTYPE_BROADCAST:
-			playerBroadcastMessage(player, text);
+			playerBroadcastMessage(player, newText);
 			break;
 
 		default:
