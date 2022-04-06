@@ -77,7 +77,8 @@ class ConfigManager
 			MAP_AUTHOR,
 			STORE_IMAGES_URL,
 			VERSION_STR,
-
+			BLOCK_WORD,
+			
 			LAST_STRING_CONFIG /* this must be the last one */
 		};
 
