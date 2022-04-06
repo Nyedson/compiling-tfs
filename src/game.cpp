@@ -3983,6 +3983,17 @@ void Game::playerSay(uint32_t playerId, uint16_t channelId, SpeakClasses type,
 		return;
 	}
 
+	std::string newText = text;
+	std::string words = g_config.getString(ConfigManager::BLOCK_WORD);
+	if (!words.empty()) {
+		StringVector bw = explodeString(words, ";");
+		for (const std::string& block_word : bw) {
+			if (newText.find(block_word) != std::string::npos) {
+				replaceString(newText, block_word, "bobba");
+			}
+		}
+	}
+
 	if (type != TALKTYPE_PRIVATE_PN) {
 		player->removeMessageBuffer();
 	}
