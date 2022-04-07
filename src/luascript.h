@@ -1103,7 +1103,11 @@ class LuaScriptInterface
 
 		static int luaPlayerSendStats(lua_State* L);
 		static int luaPlayerGetFreeBackpackSlots(lua_State* L);
-
+		
+		static int luaPlayerSaveLevelStats(lua_State* L);
+		static int luaPlayerRestoreLevelStats(lua_State* L);
+		static int luaPlayerSetLevelStats(lua_State* L);
+		
 		// Monster
 		static int luaMonsterCreate(lua_State* L);
 

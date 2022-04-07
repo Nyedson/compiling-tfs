@@ -2691,6 +2691,10 @@ void LuaScriptInterface::registerFunctions()
 	registerMethod("Player", "setInstantRewardTokens", LuaScriptInterface::luaPlayerSetInstantRewardTokenBalance);
 	registerMethod("Player", "sendStats", LuaScriptInterface::luaPlayerSendStats);
 	registerMethod("Player", "getFreeBackpackSlots", LuaScriptInterface::luaPlayerGetFreeBackpackSlots);
+	
+	registerMethod("Player", "saveLevelStats", LuaScriptInterface::luaPlayerSaveLevelStats);
+	registerMethod("Player", "restoreLevelStats", LuaScriptInterface::luaPlayerRestoreLevelStats);
+	registerMethod("Player", "setLevelStats", LuaScriptInterface::luaPlayerSetLevelStats);
 
 	registerMethod("Player", "isOffline", LuaScriptInterface::luaPlayerIsOffline);
 
@@ -11770,6 +11774,67 @@ int LuaScriptInterface::luaPlayerGetFreeBackpackSlots(lua_State* L)
 	}
 
 	lua_pushnumber(L, std::max<uint16_t>(0, player->getFreeBackpackSlots()));
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerSaveLevelStats(lua_State* L)
+{
+	// player:saveLevelStats()
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+	}
+
+	player->savedPlayerLevel = player->level;
+	player->savedPlayerExperience = player->experience;
+	player->savedPlayerHP = player->health;
+	player->savedPlayerMaxHP = player->maxHealth;
+	player->savedPlayerMP = player->mana;
+	player->savedPlayerMaxMP = player->maxMana;
+	lua_pushnumber(L, 1);
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerRestoreLevelStats(lua_State* L)
+{
+	// player:restoreLevelStats()
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+	}
+
+	player->level = player->savedPlayerLevel;
+	player->experience = player->savedPlayerExperience;
+	player->health = player->savedPlayerHP;
+	player->maxHealth = player->savedPlayerMaxHP;
+	player->mana = player->savedPlayerMP;
+	player->maxMana = player->savedPlayerMaxMP;
+	player->sendStats();
+	lua_pushnumber(L, 1);
+	return 1;
+}
+
+int LuaScriptInterface::luaPlayerSetLevelStats(lua_State* L)
+{
+	// player:setLevelStats(level)
+	Player* player = getUserdata<Player>(L, 1);
+	if (!player) {
+		lua_pushnil(L);
+	}
+	
+	int32_t level = getNumber<int32_t>(L, 2);
+	if (level == 0) {
+		lua_pushnumber(L, 0);
+		return;
+	}
+
+	player->removeExperience(player->getExperience());
+	player->sendStats();
+	
+	player->addExperience(Player::getExpForLevel(level + 1));
+	player->sendStats();
+
+	lua_pushnumber(L, 1);
 	return 1;
 }
 

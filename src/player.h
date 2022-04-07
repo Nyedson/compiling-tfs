@@ -1504,6 +1504,13 @@ class Player final : public Creature, public Cylinder
  		}
 
 		uint16_t getFreeBackpackSlots() const;
+		
+		int32_t savedPlayerLevel = 0;
+		int64_t savedPlayerExperience = 0;
+		int32_t savedPlayerHP = 0;
+		int32_t savedPlayerMaxHP = 0;
+		int32_t savedPlayerMP = 0;
+		int32_t savedPlayerMaxMP = 0;
 
 	private:
 		std::forward_list<Condition*> getMuteConditions() const;
