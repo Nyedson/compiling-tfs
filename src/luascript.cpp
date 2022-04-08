@@ -11771,6 +11771,7 @@ int LuaScriptInterface::luaPlayerGetFreeBackpackSlots(lua_State* L)
 	Player* player = getUserdata<Player>(L, 1);
 	if (!player) {
 		lua_pushnil(L);
+		return 1;
 	}
 
 	lua_pushnumber(L, std::max<uint16_t>(0, player->getFreeBackpackSlots()));
@@ -11783,14 +11784,15 @@ int LuaScriptInterface::luaPlayerSaveLevelStats(lua_State* L)
 	Player* player = getUserdata<Player>(L, 1);
 	if (!player) {
 		lua_pushnil(L);
+		return 1;
 	}
 
 	player->savedPlayerLevel = player->level;
 	player->savedPlayerExperience = player->experience;
 	player->savedPlayerHP = player->health;
-	player->savedPlayerMaxHP = player->healthMax;
+	player->savedPlayerMaxHP = player->maxHealth;
 	player->savedPlayerMP = player->mana;
-	player->savedPlayerMaxMP = player->manaMax;
+	player->savedPlayerMaxMP = player->maxMana;
 	lua_pushnumber(L, 1);
 	return 1;
 }
@@ -11801,6 +11803,7 @@ int LuaScriptInterface::luaPlayerRestoreLevelStats(lua_State* L)
 	Player* player = getUserdata<Player>(L, 1);
 	if (!player) {
 		lua_pushnil(L);
+		return 1;
 	}
 
 	player->level = player->savedPlayerLevel;
@@ -11820,12 +11823,13 @@ int LuaScriptInterface::luaPlayerSetLevelStats(lua_State* L)
 	Player* player = getUserdata<Player>(L, 1);
 	if (!player) {
 		lua_pushnil(L);
+		return 1;
 	}
 	
 	int32_t level = getNumber<int32_t>(L, 2);
 	if (level == 0) {
 		lua_pushnumber(L, 0);
-		return;
+		return 1;
 	}
 
 	player->removeExperience(player->getExperience());
