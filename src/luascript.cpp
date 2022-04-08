@@ -11835,7 +11835,7 @@ int LuaScriptInterface::luaPlayerSetLevelStats(lua_State* L)
 	player->removeExperience(player->getExperience());
 	player->sendStats();
 	
-	player->addExperience(Player::getExpForLevel(level + 1), false);
+	player->addExperience(nullptr, Player::getExpForLevel(level + 1), false);
 	player->sendStats();
 
 	lua_pushnumber(L, 1);
