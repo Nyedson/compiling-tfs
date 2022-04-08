@@ -2075,6 +2075,16 @@ void Player::death(Creature* lastHitCreature)
 {
 	loginPosition = town->getTemplePosition();
 
+	if (savedPlayerLevel != 0) {
+		level = savedPlayerLevel;
+		experience = savedPlayerExperience;
+		health = savedPlayerHP;
+		healthMax = savedPlayerMaxHP;
+		mana = savedPlayerMP;
+		manaMax = savedPlayerMaxMP;
+		savedPlayerLevel = 0;
+	}
+
 	if (skillLoss) {
 		uint8_t unfairFightReduction = 100;
 		int playerDmg = 0;
