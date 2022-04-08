@@ -11790,9 +11790,9 @@ int LuaScriptInterface::luaPlayerSaveLevelStats(lua_State* L)
 	player->savedPlayerLevel = player->level;
 	player->savedPlayerExperience = player->experience;
 	player->savedPlayerHP = player->health;
-	player->savedPlayerMaxHP = player->maxHealth;
+	player->savedPlayerMaxHP = player->healthMax;
 	player->savedPlayerMP = player->mana;
-	player->savedPlayerMaxMP = player->maxMana;
+	player->savedPlayerMaxMP = player->manaMax;
 	lua_pushnumber(L, 1);
 	return 1;
 }
@@ -11835,7 +11835,7 @@ int LuaScriptInterface::luaPlayerSetLevelStats(lua_State* L)
 	player->removeExperience(player->getExperience());
 	player->sendStats();
 	
-	player->addExperience(Player::getExpForLevel(level + 1));
+	player->addExperience(Player:getExpForLevel(level + 1));
 	player->sendStats();
 
 	lua_pushnumber(L, 1);
