@@ -1605,7 +1605,7 @@ void Player::onThink(uint32_t interval)
 	}
 
 	int32_t antiIdle;
-	player->getStorageValue(81731, antiIdle);
+	getStorageValue(81731, antiIdle);
 
 	if (!getTile()->hasFlag(TILESTATE_NOLOGOUT) && !isAccessPlayer()) {
 		if (antiIdle > 0) {
