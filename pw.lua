@@ -58,7 +58,7 @@ local function creatureSayCallback(cid, type, msg)
 		if entrosaNameToNumber(msg) ~= 0 then
 			entrosa_city_id = entrosaNameToNumber(msg)
 			
-			npcHandler:say("All right, you've selected {"..msg.."} as your desired city to fight, do you would like to have the {area spells} (AOES) enabled on your fight? {yes} or {no}", cid)
+			npcHandler:say("All right, you've selected {"..msg.."} as your desired city to fight, do you would like to have the {area spells} (including diamond arrow) enabled on your fight? {yes} or {no}", cid)
 			npcHandler.topic[cid] = 3
 		else
 			npcHandler:say('That city name is invalid, try again between the available cities: '..cities..'.', cid)
@@ -78,8 +78,8 @@ local function creatureSayCallback(cid, type, msg)
 		elseif npcHandler.topic[cid] == 5 then
 			entrosa_new_potions = true
 			
-			npcHandler:say("You've chosen {yes}, what maximum level you would like to set? {100}, {150}, {200}, {250}, {300} or {limitless}?", cid)
-			npcHandler.topic[cid] = 7
+			npcHandler:say("You've chosen {yes}, what limit of frags you would like to set? {50}, {100} or {150}", cid)
+			npcHandler.topic[cid] = 8
 		elseif npcHandler.topic[cid] == 11 then			
 			npcHandler:say("Ok, and the enemy guild name is?", cid)
 			npcHandler.topic[cid] = 12
@@ -98,27 +98,17 @@ local function creatureSayCallback(cid, type, msg)
 		elseif npcHandler.topic[cid] == 5 then
 			entrosa_new_potions = false
 			
-			npcHandler:say("You've chosen {no}, what maximum level you would like to set? {100}, {150}, {200}, {250}, {300} or {limitless}?", cid)
-			npcHandler.topic[cid] = 7
+			npcHandler:say("You've chosen {no}, what limit of frags you would like to set? {50}, {100} or {150}", cid)
+			npcHandler.topic[cid] = 8
 		-- End conversation
 		elseif npcHandler.topic[cid] == 11 then
 			npcHandler:say("Then let's start again to setup your {fight}.", cid)
 			npcHandler.topic[cid] = 0
 		end
-	elseif npcHandler.topic[cid] == 7 then
-		if isInArray({"100", "150", "200", "250", "300", "limitless"}, msg) then
-			entrosa_maximum_level = msg
-			
-			npcHandler:say("Ok, and the maximum frags for the fight? {50}, {100} or {150}", cid)
-			npcHandler.topic[cid] = 8
-		else
-			npcHandler:say("Sorry, your answer wasn't clear, what maximum level you would like to set? {100}, {150}, {200}, {250} or {300}", cid)
-			npcHandler.topic[cid] = 7
-		end
 	elseif npcHandler.topic[cid] == 8 then	
 		if isInArray({"50", "100", "150"}, msg) then
 			entrosa_frag_limit = msg
-			npcHandler:say("Ok, and the exhausted for rings and amulets? {1}, {2}, {3}, {4}, {5} seconds or {no-limit}", cid)
+			npcHandler:say("Ok, and the exhausted for rings and amulets? {3}, {4}, {5}, {100} seconds or {no-limit}", cid)
 			npcHandler.topic[cid] = 9
 		
 		else
@@ -126,21 +116,22 @@ local function creatureSayCallback(cid, type, msg)
 			npcHandler.topic[cid] = 8
 		end
 	elseif npcHandler.topic[cid] == 9 then	
-		if isInArray({"1", "2", "3", "4", "5", "limitless"}, msg) then
+		if isInArray({"3", "4", "5", "10", "100", "limitless"}, msg) then
 			if msg == "limitless" then
 				entrosa_exhausted = 0
+				Game.setStorageValue(34378, 1)
 			else
 				entrosa_exhausted = tonumber(msg)
 			end
 			
-			npcHandler:say("Ok, and the maximum players allowed at entrosa? {4}, {30}, {40}, {50}, {100}, or {unlimited} players", cid)
+			npcHandler:say("Ok, and the maximum players allowed at entrosa? {3}, {10}, {15}, {20}, {30}, {40}, {50} or {unlimited} players", cid)
 			npcHandler.topic[cid] = 10
 		else
-			npcHandler:say("Sorry, your answer wasn't clear, what exhausted do you want for rings and amulets? {1}, {2}, {3}, {4}, {5} seconds or {limitless}", cid)
+			npcHandler:say("Sorry, your answer wasn't clear, what exhausted do you want for rings and amulets? {1}, {2}, {3}, {4}, {5}, {10} seconds or {limitless}", cid)
 			npcHandler.topic[cid] = 8
 		end
 	elseif npcHandler.topic[cid] == 10 then
-		if isInArray({"4", "30", "40", "50", "100", "unlimited"}, msg) then
+		if isInArray({"3", "10", "15", "20", "30", "40", "50", "unlimited"}, msg) then
 			if msg == "unlimited" then
 				entrosa_player_limit = 0
 			else
@@ -189,11 +180,11 @@ local function creatureSayCallback(cid, type, msg)
 				maxPlayers = "maximum "..entrosa_player_limit.." players inside per team"
 			end
 			
-			npcHandler:say("Ok, then, you've selected "..entrosaCityName(entrosa_city_id).." as the city to fight with the following options: "..areaSpells..", "..e_runes..", "..imbuements..", "..amuletsAndRings.." and "..newPotions.."... With a "..entrosa_maximum_level.." level to participate, "..maxPlayers.." and "..entrosa_frag_limit.." as maximum frags, everything is correct to start?", cid)
+			npcHandler:say("Ok, then, you've selected "..entrosaCityName(entrosa_city_id).." as the city to fight with the following options: "..areaSpells..", "..e_runes..", "..imbuements..", "..amuletsAndRings.." and "..newPotions.."... With "..maxPlayers.." and "..entrosa_frag_limit.." as maximum frags, everything is correct to start?", cid)
 
 			npcHandler.topic[cid] = 11
 		else
-			npcHandler:say("Sorry, your answer wasn't clear, what maximum players should allowed at entrosa? {4}, {30}, {40}, {50}, {100}, or {unlimited} players", cid)
+			npcHandler:say("Sorry, your answer wasn't clear, what maximum players should allowed at entrosa? {3}, {20}, {30}, {40}, {50}, {100}, or {unlimited} players", cid)
 			npcHandler.topic[cid] = 10
 		end
 	elseif npcHandler.topic[cid] == 12 then
@@ -220,7 +211,7 @@ local function creatureSayCallback(cid, type, msg)
 				local entrosa_war_guild = e_getGuildId(msg)
 				npcHandler:say("All right, the battle is set and the invitation has been sent, keep on mind that the enemy leader must {accept} the invitation between the following {5 minutes}, after that you will need to create another setup for another fight.", cid)
 				setEntrosaOptions(entrosa_city_id, entrosa_guild_id, entrosa_war_guild, 1, 0, entrosa_area_spells, entrosa_runes, entrosa_new_potions, e_level, entrosa_frag_limit, e_exhausted * 1000, e_max_players, entrosa_imbuements)
-				sendEntrosaInvitation(msg, entrosa_guild_id, entrosa_city_id, entrosa_frag_limit, entrosa_maximum_level, e_max_players, entrosa_imbuements, e_exhausted)
+				sendEntrosaInvitation(msg, entrosa_guild_id, entrosa_city_id, entrosa_frag_limit, e_max_players, entrosa_imbuements, e_exhausted)
 				npcHandler.topic[cid] = 0
 			else
 				npcHandler:say("Sorry, you can't invite a guild that isn't at a war with you.", cid)

@@ -1604,7 +1604,13 @@ void Player::onThink(uint32_t interval)
 		addMessageBuffer();
 	}
 
+	int32_t antiIdle;
+	player->getStorageValue(81731, antiIdle);
+
 	if (!getTile()->hasFlag(TILESTATE_NOLOGOUT) && !isAccessPlayer()) {
+		if (antiIdle > 0) {
+			return;
+		}
 		idleTime += interval;
 		const int32_t kickAfterMinutes = g_config.getNumber(ConfigManager::KICK_AFTER_MINUTES);
 		if (idleTime > (kickAfterMinutes * 60000) + 60000) {
