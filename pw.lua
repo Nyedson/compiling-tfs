@@ -17,7 +17,7 @@ local function creatureSayCallback(cid, type, msg)
 	local guild = player:getGuild()
 	local city = {}
 			
-	if msgcontains(msg, 'fight') then
+	if msgcontains(msg, 'fights') then
 		if Game.getStorageValue(PrivateWar.ActiveWar) < 1 then
 		if guild then
 			local guildId = guild:getId()
