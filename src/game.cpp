@@ -4711,22 +4711,6 @@ bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage
 				message.primary.value = manaDamage;
 				message.primary.color = TEXTCOLOR_BLUE;
 
-
-				int32_t fireResilience;
-				int32_t iceResilience;
-				int32_t earthResilience;
-				int32_t energyResilience;
-				int32_t holyResilience;
-				int32_t deathResilience;
-				int32_t physicalResilience;
-				getStorageValue(69804, fireResilience);
-				getStorageValue(69805, iceResilience);
-				getStorageValue(69806, earthResilience);
-				getStorageValue(69807, energyResilience);
-				getStorageValue(69808, holyResilience);
-				getStorageValue(69809, deathResilience);
-				getStorageValue(69810, physicalResilience);
-
 				for (Creature* spectator : spectators) {
 					Player* tmpPlayer = spectator->getPlayer();
 					if (tmpPlayer->getPosition().z != targetPos.z) {
@@ -4746,61 +4730,7 @@ bool Game::combatChangeHealth(Creature* attacker, Creature* target, CombatDamage
 						} else if (targetPlayer == attackerPlayer) {
 							ss << " due to your own attack.";
 						} else {
-							if (damage.primary.type != COMBAT_FIREDAMAGE) {
-								if (fireResilience > 0) {
-									ss << " due to an attack by " << attacker->getNameDescription() << '. (active elemental resilience)';
-								}
-
-								ss << " due to an attack by " << attacker->getNameDescription() << '.';
-							{
-
-							if (damage.primary.type != COMBAT_ICEDAMAGE) {
-								if (iceResilience > 0) {
-									ss << " due to an attack by " << attacker->getNameDescription() << '. (active elemental resilience)';
-								}
-
-								ss << " due to an attack by " << attacker->getNameDescription() << '.';
-							{
-
-						    if (damage.primary.type != COMBAT_EARTHDAMAGE) {
-								if (earthResilience > 0) {
-									ss << " due to an attack by " << attacker->getNameDescription() << '. (active elemental resilience)';
-								}
-
-								ss << " due to an attack by " << attacker->getNameDescription() << '.';
-							{
-
-						    if (damage.primary.type != COMBAT_ENERGYDAMAGE) {
-								if (energyResilience > 0) {
-									ss << " due to an attack by " << attacker->getNameDescription() << '. (active elemental resilience)';
-								}
-
-								ss << " due to an attack by " << attacker->getNameDescription() << '.';
-							{
-
-						    if (damage.primary.type != COMBAT_HOLYDAMAGE) {
-								if (holyResilience > 0) {
-									ss << " due to an attack by " << attacker->getNameDescription() << '. (active elemental resilience)';
-								}
-
-								ss << " due to an attack by " << attacker->getNameDescription() << '.';
-							{
-
-							if (damage.primary.type != COMBAT_DEATHDAMAGE) {
-								if (deathResilience > 0) {
-									ss << " due to an attack by " << attacker->getNameDescription() << '. (active elemental resilience)';
-								}
-
-								ss << " due to an attack by " << attacker->getNameDescription() << '.';
-							{
-
-							if (damage.primary.type != COMBAT_PHYSICALDAMAGE) {
-								if (physicalResilience > 0) {
-									ss << " due to an attack by " << attacker->getNameDescription() << '. (active elemental resilience)';
-								}
-
-								ss << " due to an attack by " << attacker->getNameDescription() << '.';
-							{
+							ss << " due to an attack by " << attacker->getNameDescription() << '.';
 						}
 						message.type = MESSAGE_DAMAGE_RECEIVED;
 						message.text = ss.str();
