@@ -330,7 +330,7 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 
 				it->second.insert(attackerPlayer->getID());
 
-				if (it->second.size() >= 2) {
+				if (it->second.size() >= 3) {
 					targetPlayer->antiMCAttacks[attackerPlayer->getIP()].clear();
 					return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
 				}
