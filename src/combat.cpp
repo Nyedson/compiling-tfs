@@ -325,6 +325,7 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 				if (it == targetPlayer->antiMCAttacks.end()) {
 					// initialize first set entry
 					targetPlayer->antiMCAttacks[attackerPlayer->getIP()] = {};
+					it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
 				}
 
 				it->second.insert(attackerPlayer->getID());
