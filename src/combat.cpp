@@ -315,6 +315,22 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 				} else if (attackerPlayer->getTile()->hasFlag(TILESTATE_NOPVPZONE) && !targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE | TILESTATE_PROTECTIONZONE)) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
+
+				if (targetPlayer->antiMCTimeout >= OTSYS_TIME()) {
+					targetPlayer->antiMCAttacks.clear();
+					targetPlayer->antiMCTimeout = OTSYS_TIME() + 2000;
+				}
+
+				auto& it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
+				if (it == targetPlayer->antiMCAttacks.end()) {
+					targetPlayer->antiMCAttacks[attackerPlayer->getIP()] = 0;
+				}
+
+				it.second++;
+
+				if (it.second >= 3) {
+					return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
+				}
 			}
 
 			if (attacker->isSummon()) {
