@@ -317,18 +317,20 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 				}
 
 				if (targetPlayer->antiMCTimeout >= OTSYS_TIME()) {
-					targetPlayer->antiMCAttacks.clear();
-					targetPlayer->antiMCTimeout = OTSYS_TIME() + 2000;
+				//	targetPlayer->antiMCAttacks.clear();
+				//	targetPlayer->antiMCTimeout = OTSYS_TIME() + 2000;
 				}
 
 				auto& it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
 				if (it == targetPlayer->antiMCAttacks.end()) {
-					targetPlayer->antiMCAttacks[attackerPlayer->getIP()] = 0;
+					// initialize first set entry
+					targetPlayer->antiMCAttacks[attackerPlayer->getIP()] = {};
 				}
 
-				it.second++;
+				it->second.insert(attackerPlayer->getID());
 
-				if (it.second >= 3) {
+				if (it->second.size() >= 2) {
+					targetPlayer->antiMCAttacks[attackerPlayer->getIP()].clear();
 					return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
 				}
 			}
