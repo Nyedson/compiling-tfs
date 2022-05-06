@@ -319,6 +319,7 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 				
 				int32_t storageValue = -1;
 				attackerPlayer->getStorageValue(81708, storageValue);
+				std::cout << "Attacker storage value: " << storageValue << std::endl;
 				if (storageValue != 1) {
 					auto& it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
 					if (it == targetPlayer->antiMCAttacks.end()) {
