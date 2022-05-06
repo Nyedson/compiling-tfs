@@ -317,8 +317,6 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 				}
 
 				if (targetPlayer->antiMCTimeout >= OTSYS_TIME()) {
-				//	targetPlayer->antiMCAttacks.clear();
-				//	targetPlayer->antiMCTimeout = OTSYS_TIME() + 2000;
 				}
 
 				auto& it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
