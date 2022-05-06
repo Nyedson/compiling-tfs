@@ -316,21 +316,23 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				}
 
-				if (targetPlayer->antiMCTimeout >= OTSYS_TIME()) {
-				}
+				
+				int32_t storageValue = -1;
+				attackerPlayer->getStorageValue(1337, storageValue);
+				if (storageValue != 1) {
+					auto& it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
+					if (it == targetPlayer->antiMCAttacks.end()) {
+						// initialize first set entry
+						targetPlayer->antiMCAttacks[attackerPlayer->getIP()] = {};
+						it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
+					}
 
-				auto& it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
-				if (it == targetPlayer->antiMCAttacks.end()) {
-					// initialize first set entry
-					targetPlayer->antiMCAttacks[attackerPlayer->getIP()] = {};
-					it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
-				}
+					it->second.insert(attackerPlayer->getID());
 
-				it->second.insert(attackerPlayer->getID());
-
-				if (it->second.size() >= 3) {
-					targetPlayer->antiMCAttacks[attackerPlayer->getIP()].clear();
-					return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
+					if (it->second.size() >= 3) {
+						targetPlayer->antiMCAttacks[attackerPlayer->getIP()].clear();
+						return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
+					}
 				}
 			}
 

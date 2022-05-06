@@ -1277,6 +1277,16 @@ void Player::onRemoveCreature(Creature* creature, bool isLogout)
 			g_game.internalCloseTrade(this);
 		}
 
+		if (savedPlayerLevel != 0) {
+			level = savedPlayerLevel;
+			experience = savedPlayerExperience;
+			health = savedPlayerHP;
+			healthMax = savedPlayerMaxHP;
+			mana = savedPlayerMP;
+			manaMax = savedPlayerMaxMP;
+			savedPlayerLevel = 0;
+		}
+
 		closeShopWindow();
 
 		clearPartyInvitations();
