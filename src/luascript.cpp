@@ -11832,9 +11832,13 @@ int LuaScriptInterface::luaPlayerSetLevelStats(lua_State* L)
 		return 1;
 	}
 
-	player->removeExperience(player->getExperience());
-	player->sendStats();
-	
+	player->level = 8;
+	player->experience = 4200;
+	player->health = 185;
+	player->healthMax = 185;
+	player->mana = 35;
+	player->manaMax = 35;
+
 	player->addExperience(nullptr, Player::getExpForLevel(level + 1), false);
 	player->sendStats();
 
