@@ -58,7 +58,7 @@ local function creatureSayCallback(cid, type, msg)
 		if entrosaNameToNumber(msg) ~= 0 then
 			entrosa_city_id = entrosaNameToNumber(msg)
 			
-			npcHandler:say("All right, you've selected {"..msg.."} as your desired city to fight, do you would like to have the {area spells} (AOES) enabled on your fight? {yes} or {no}", cid)
+			npcHandler:say("All right, you've selected {"..msg.."} as your desired city to fight, do you would like to have the {area spells} (including diamond arrow) enabled on your fight? {yes} or {no}", cid)
 			npcHandler.topic[cid] = 3
 		else
 			npcHandler:say('That city name is invalid, try again between the available cities: '..cities..'.', cid)
@@ -78,7 +78,7 @@ local function creatureSayCallback(cid, type, msg)
 		elseif npcHandler.topic[cid] == 5 then
 			entrosa_new_potions = true
 			
-			npcHandler:say("You've chosen {yes}, what will be the maximum frags for the fight? {50}, {100} or {150}", cid)
+			npcHandler:say("You've chosen {yes}, what limit of frags you would like to set? {50}, {100} or {150}", cid)
 			npcHandler.topic[cid] = 8
 		elseif npcHandler.topic[cid] == 11 then			
 			npcHandler:say("Ok, and the enemy guild name is?", cid)
@@ -98,7 +98,7 @@ local function creatureSayCallback(cid, type, msg)
 		elseif npcHandler.topic[cid] == 5 then
 			entrosa_new_potions = false
 			
-			npcHandler:say("You've chosen {no}, hat will be the maximum frags for the fight? {50}, {100} or {150}", cid)
+			npcHandler:say("You've chosen {no}, what limit of frags you would like to set? {50}, {100} or {150}", cid)
 			npcHandler.topic[cid] = 8
 		-- End conversation
 		elseif npcHandler.topic[cid] == 11 then
@@ -108,7 +108,7 @@ local function creatureSayCallback(cid, type, msg)
 	elseif npcHandler.topic[cid] == 8 then	
 		if isInArray({"50", "100", "150"}, msg) then
 			entrosa_frag_limit = msg
-			npcHandler:say("Ok, and the exhausted for rings and amulets? {1}, {2}, {3}, {4}, {5} seconds or {no-limit}", cid)
+			npcHandler:say("Ok, and the exhausted for rings and amulets? {3}, {4}, {5}, {100} seconds or {no-limit}", cid)
 			npcHandler.topic[cid] = 9
 		
 		else
@@ -116,7 +116,7 @@ local function creatureSayCallback(cid, type, msg)
 			npcHandler.topic[cid] = 8
 		end
 	elseif npcHandler.topic[cid] == 9 then	
-		if isInArray({"1", "2", "3", "4", "5", "limitless"}, msg) then
+		if isInArray({"3", "4", "5", "10", "100", "limitless"}, msg) then
 			if msg == "limitless" then
 				entrosa_exhausted = 0
 				Game.setStorageValue(34378, 1)
@@ -124,18 +124,18 @@ local function creatureSayCallback(cid, type, msg)
 				entrosa_exhausted = tonumber(msg)
 			end
 			
-			npcHandler:say("Ok, and the maximum players allowed at entrosa? {4}, {10}, {15}, {20}, {30}, {40}, {50}, {100} or {unlimited} players", cid)
+			npcHandler:say("Ok, and the maximum players allowed at entrosa? {3}, {10}, {15}, {20}, {30}, {40}, {50} or {unlimited} players", cid)
 			npcHandler.topic[cid] = 10
 		else
-			npcHandler:say("Sorry, your answer wasn't clear, what exhausted do you want for rings and amulets? {1}, {2}, {3}, {4}, {5} seconds or {limitless}", cid)
+			npcHandler:say("Sorry, your answer wasn't clear, what exhausted do you want for rings and amulets? {1}, {2}, {3}, {4}, {5}, {10} seconds or {limitless}", cid)
 			npcHandler.topic[cid] = 8
 		end
 	elseif npcHandler.topic[cid] == 10 then
-		if isInArray({"4", "10", "15", "20", "30", "40", "50", "100", "unlimited"}, msg) then
+		if isInArray({"3", "10", "15", "20", "30", "40", "50", "unlimited"}, msg) then
 			if msg == "unlimited" then
 				entrosa_player_limit = 0
 			else
-				entrosa_player_limit = tonumber(msg*2)
+				entrosa_player_limit = tonumber(msg)
 			end
 			
 			if entrosa_area_spells == false then
@@ -162,6 +162,12 @@ local function creatureSayCallback(cid, type, msg)
 				imbuements = "Imbuements Enabled"
 			end
 			
+			if e_isString(entrosa_maximum_level) then
+				entranceLevel = "limitless level"
+			else
+				entranceLevel = "maximum level of ["..entrosa_maximum_level.."]"
+			end
+			
 			if (entrosa_exhausted == 0) then
 				amuletsAndRings = "no-limit to equip items"
 			else
@@ -178,7 +184,7 @@ local function creatureSayCallback(cid, type, msg)
 
 			npcHandler.topic[cid] = 11
 		else
-			npcHandler:say("Sorry, your answer wasn't clear, what maximum players should allowed at entrosa? {4}, {10}, {15}, {20}, {30}, {40}, {50}, {100}, or {unlimited} players", cid)
+			npcHandler:say("Sorry, your answer wasn't clear, what maximum players should allowed at entrosa? {3}, {20}, {30}, {40}, {50}, {100}, or {unlimited} players", cid)
 			npcHandler.topic[cid] = 10
 		end
 	elseif npcHandler.topic[cid] == 12 then
@@ -205,7 +211,7 @@ local function creatureSayCallback(cid, type, msg)
 				local entrosa_war_guild = e_getGuildId(msg)
 				npcHandler:say("All right, the battle is set and the invitation has been sent, keep on mind that the enemy leader must {accept} the invitation between the following {5 minutes}, after that you will need to create another setup for another fight.", cid)
 				setEntrosaOptions(entrosa_city_id, entrosa_guild_id, entrosa_war_guild, 1, 0, entrosa_area_spells, entrosa_runes, entrosa_new_potions, e_level, entrosa_frag_limit, e_exhausted * 1000, e_max_players, entrosa_imbuements)
-				sendEntrosaInvitation(msg, entrosa_guild_id, entrosa_city_id, entrosa_frag_limit, entrosa_maximum_level, e_max_players, entrosa_imbuements, e_exhausted)
+				sendEntrosaInvitation(msg, entrosa_guild_id, entrosa_city_id, entrosa_frag_limit, e_max_players, entrosa_imbuements, e_exhausted)
 				npcHandler.topic[cid] = 0
 			else
 				npcHandler:say("Sorry, you can't invite a guild that isn't at a war with you.", cid)
@@ -218,7 +224,7 @@ local function creatureSayCallback(cid, type, msg)
 	end
 end
 
-npcHandler:setMessage(MESSAGE_GREET, "Hello |PLAYERNAME|, I'm the NPC that's a charge of the {private war}, do you want to setup a {fight}?")
+npcHandler:setMessage(MESSAGE_GREET, "Hello |PLAYERNAME|, I'm the NPC that's a charge of the War AntiEntrosa, do you want to setup a {fight}?")
 npcHandler:setMessage(MESSAGE_FAREWELL, 'Good bye, |PLAYERNAME|!')
 npcHandler:setMessage(MESSAGE_WALKAWAY, 'How rude!')
 

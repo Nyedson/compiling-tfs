@@ -294,7 +294,7 @@ bool Combat::isProtected(const Player* attacker, const Player* target)
 ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 {
 	if (attacker) {
-		if (Player* targetPlayer = target->getPlayer()) {
+		if (const Player* targetPlayer = target->getPlayer()) {
 			if (targetPlayer->hasFlag(PlayerFlag_CannotBeAttacked)) {
 				return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
 			}
@@ -314,26 +314,6 @@ ReturnValue Combat::canDoCombat(Creature* attacker, Creature* target)
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
 				} else if (attackerPlayer->getTile()->hasFlag(TILESTATE_NOPVPZONE) && !targetPlayerTile->hasFlag(TILESTATE_NOPVPZONE | TILESTATE_PROTECTIONZONE)) {
 					return RETURNVALUE_ACTIONNOTPERMITTEDINANOPVPZONE;
-				}
-
-				
-				int32_t storageValue = -1;
-				attackerPlayer->getStorageValue(81708, storageValue);
-				std::cout << "Attacker storage value: " << storageValue << std::endl;
-				if (storageValue != 1) {
-					auto& it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
-					if (it == targetPlayer->antiMCAttacks.end()) {
-						// initialize first set entry
-						targetPlayer->antiMCAttacks[attackerPlayer->getIP()] = {};
-						it = targetPlayer->antiMCAttacks.find(attackerPlayer->getIP());
-					}
-
-					it->second.insert(attackerPlayer->getID());
-
-					if (it->second.size() >= 3) {
-						targetPlayer->antiMCAttacks[attackerPlayer->getIP()].clear();
-						return RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER;
-					}
 				}
 			}
 

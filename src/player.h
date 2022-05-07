@@ -1512,11 +1512,6 @@ class Player final : public Creature, public Cylinder
 		int32_t savedPlayerMP = 0;
 		int32_t savedPlayerMaxMP = 0;
 
-		uint64_t antiMCTimeout = 0;
-		uint32_t antiMCTarget = 0;
-		uint32_t antiMCIP = 0;
-		std::unordered_map<uint32_t, std::set<uint32_t>> antiMCAttacks;
-
 	private:
 		std::forward_list<Condition*> getMuteConditions() const;
 
