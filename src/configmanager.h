@@ -132,6 +132,9 @@ class ConfigManager
 			PUSH_DELAY,
 			PUSH_DISTANCE_DELAY,
 
+			DAT_SIGNATURE,
+			SPR_SIGNATURE,
+
 			LAST_INTEGER_CONFIG /* this must be the last one */
 		};
 
