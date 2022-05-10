@@ -11812,6 +11812,7 @@ int LuaScriptInterface::luaPlayerRestoreLevelStats(lua_State* L)
 	player->healthMax = player->savedPlayerMaxHP;
 	player->mana = player->savedPlayerMP;
 	player->manaMax = player->savedPlayerMaxMP;
+	player->savedPlayerLevel = 0;
 	player->sendStats();
 	lua_pushnumber(L, 1);
 	return 1;
