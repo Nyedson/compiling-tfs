@@ -11845,8 +11845,8 @@ int LuaScriptInterface::luaPlayerSetLevelStats(lua_State* L)
 	player->experience = Player::getExpForLevel(level + 1);
 	player->health += player->getVocation()->getHPGain() * (level - 8);
 	player->healthMax += player->getVocation()->getHPGain() * (level - 8);
-	player->mana += player->getVocation()->getMPGain() * (level - 8);
-	player->manaMax += player->getVocation()->getMPGain() * (level - 8);
+	player->mana += player->getVocation()->getManaGain() * (level - 8);
+	player->manaMax += player->getVocation()->getManaGain() * (level - 8);
 	player->sendStats();
 
 	lua_pushnumber(L, 1);
