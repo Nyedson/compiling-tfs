@@ -2582,10 +2582,24 @@ void ProtocolGame::sendSpellCooldown(uint8_t spellId, uint32_t time)
 	msg.addByte(0xA4);
 	if (player->getProtocolVersion() < 1120) 
 	{
+		else if (spellId == 193) {
+			spellId = 3;
+		}
+		else if (spellId == 194) {
+			spellId = 3;
+		}
+		else if (spellId == 195) {
+			spellId = 3;
+		}
+		else if (spellId == 196) {
+			spellId = 3;
+		}
+		else if (spellId == 197) {
+			spellId = 3;
+		}
 		if (spellId == 237) {
 			spellId = 75;
 		}
-
 		else if (spellId == 238) {
 			spellId = 75;
 		}
