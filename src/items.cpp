@@ -801,6 +801,30 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 			it.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());
 		} else if (tmpStrValue == "absorbpercenthealing") {
 			it.getAbilities().absorbPercent[combatTypeToIndex(COMBAT_HEALING)] += pugi::cast<int16_t>(valueAttribute.value());
+		//} else if (tmpStrValue == "deathmagiclevelpoints") {
+		//	it.getAbilities().specializedMagicLevel[combatTypeToIndex(COMBAT_DEATHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());
+		//} else if (tmpStrValue == "energymagiclevelpoints") {
+		//	it.getAbilities().specializedMagicLevel[combatTypeToIndex(COMBAT_ENERGYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());
+		//} else if (tmpStrValue == "earthmagiclevelpoints") {
+		//	it.getAbilities().specializedMagicLevel[combatTypeToIndex(COMBAT_EARTHDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());
+		//} else if (tmpStrValue == "firemagiclevelpoints") {
+		//	it.getAbilities().specializedMagicLevel[combatTypeToIndex(COMBAT_FIREDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());
+		//} else if (tmpStrValue == "healingmagiclevelpoints") {
+		//	it.getAbilities().specializedMagicLevel[combatTypeToIndex(COMBAT_HEALING)] += pugi::cast<int16_t>(valueAttribute.value());
+		//} else if (tmpStrValue == "holymagiclevelpoints") {
+		//	it.getAbilities().specializedMagicLevel[combatTypeToIndex(COMBAT_HOLYDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());
+		//} else if (tmpStrValue == "icemagiclevelpoints") {
+		//	it.getAbilities().specializedMagicLevel[combatTypeToIndex(COMBAT_ICEDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());
+		//} else if (tmpStrValue == "physicalmagiclevelpoints") {
+		//	it.getAbilities().specializedMagicLevel[combatTypeToIndex(COMBAT_PHYSICALDAMAGE)] += pugi::cast<int16_t>(valueAttribute.value());
+		} else if (tmpStrValue == "perfectshotdamage") {
+			it.getAbilities().perfectShotDamage = pugi::cast<int16_t>(valueAttribute.value());
+		} else if (tmpStrValue == "perfectshotrange") {
+			it.getAbilities().perfectShotRange = pugi::cast<int16_t>(valueAttribute.value());
+		} else if (tmpStrValue == "cleavepercent") {
+			it.getAbilities().cleavePercent += pugi::cast<int16_t>(valueAttribute.value());
+		} else if (tmpStrValue == "damagereflection") {
+			it.getAbilities().damageReflection += pugi::cast<int16_t>(valueAttribute.value());
 		} else if (tmpStrValue == "suppressdrunk") {
 			if (valueAttribute.as_bool()) {
 				it.getAbilities().conditionSuppressions |= CONDITION_DRUNK;

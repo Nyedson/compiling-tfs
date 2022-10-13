@@ -153,13 +153,13 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 		enableCompact();
 	}
 
-	msg.skipBytes(4); // protocol version skipped
-
-	uint32_t datSignature = msg.get<uint32_t>();
-	uint32_t sprSignature = msg.get<uint32_t>();
-	uint32_t picSignature = msg.get<uint32_t>();
-	
-	msg.getByte();
+	msg.skipBytes(17);
+	/*
+	 * Skipped bytes:
+	 * 4 bytes: protocolVersion
+	 * 12 bytes: dat, spr, pic signatures (4 bytes each)
+	 * 1 byte: 0
+	 */
 
 	if (version <= 760) {
 		std::ostringstream ss;
@@ -186,12 +186,6 @@ void ProtocolLogin::onRecvFirstMessage(NetworkMessage& msg)
 		std::ostringstream ss;
 		ss << "Only clients with protocol " << g_config.getString(ConfigManager::VERSION_STR) << " allowed!";
 		disconnectClient(ss.str(), version);
-		return;
-	}
-
-	if (sprSignature != g_config.getNumber(ConfigManager::SPR_SIGNATURE) ||
-		datSignature != g_config.getNumber(ConfigManager::DAT_SIGNATURE)) {
-		disconnectClient("Your client version is outdated. Download a new version on our website.", version);
 		return;
 	}
 

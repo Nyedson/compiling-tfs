@@ -413,7 +413,8 @@ class Creature : virtual public Thing
 		virtual void onRemoveCreature(Creature* creature, bool isLogout);
 		virtual void onCreatureMove(Creature* creature, const Tile* newTile, const Position& newPos,
 		                            const Tile* oldTile, const Position& oldPos, bool teleport);
-
+		virtual uint32_t getReflectPercent(CombatType_t combatType) const { return 0; }
+		virtual uint32_t getDamageReflection(CombatType_t combatType) const { return 0; }
 		virtual void onAttackedCreatureDisappear(bool) {}
 		virtual void onFollowCreatureDisappear(bool) {}
 

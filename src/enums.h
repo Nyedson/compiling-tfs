@@ -679,6 +679,7 @@ enum CombatOrigin
 	ORIGIN_SPELL,
 	ORIGIN_MELEE,
 	ORIGIN_RANGED,
+	ORIGIN_REFLECT,
 };
 
 struct CombatDamage
@@ -691,6 +692,9 @@ struct CombatDamage
 	CombatOrigin origin;
 	bool critical;
 	int affected;
+	bool extension;
+	bool cleave;
+	std::string exString;
 
 	CombatDamage()
 	{
@@ -699,6 +703,9 @@ struct CombatDamage
 		primary.value = secondary.value = 0;
 		critical = false;
 		affected = 1;
+		cleave = false;
+		extension = false;
+		exString = "";
 	}
 };
 
