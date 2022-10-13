@@ -2585,7 +2585,6 @@ void ProtocolGame::sendSpellCooldown(uint8_t spellId, uint32_t time)
 		if (spellId == 237) {
 			spellId = 75;
 		}
-
 		else if (spellId == 193) {
 			spellId = 9;
 		}
