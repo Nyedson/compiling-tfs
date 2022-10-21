@@ -1378,6 +1378,7 @@ void LuaScriptInterface::registerFunctions()
 	registerEnum(CONST_ME_DIVINE_DAZZLE)
 	registerEnum(CONST_ME_DIVINE_PHANTASMAL)
 	registerEnum(CONST_ME_DIVINE_NIBBLE)
+	registerEnum(CONST_ME_SCRATCH)
 
 	registerEnum(CONST_ANI_NONE)
 	registerEnum(CONST_ANI_SPEAR)
