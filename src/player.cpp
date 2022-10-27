@@ -2077,7 +2077,7 @@ BlockType_t Player::blockHit(Creature* attacker, CombatType_t combatType, int32_
 			CombatParams params;
 			params.combatType = COMBAT_PHYSICALDAMAGE;
 			params.impactEffect = CONST_ME_HITAREA;
-			damageReflected.primary.value = std::max(-static_cast<int32_t>(std::ceil(attacker->getMaxHealth() * 0.01)), std::max(baseDamage, -(static_cast<int32_t>(reflectDamageAccumulated))));
+			reflectDamage.primary.value = std::max(-static_cast<int32_t>(std::ceil(attacker->getMaxHealth() * 0.01)), std::max(baseDamage, -(static_cast<int32_t>(reflectDamageAccumulated))));
 
 			reflectDamage.origin = ORIGIN_REFLECT;
 			reflectDamage.primary.type = COMBAT_PHYSICALDAMAGE;
