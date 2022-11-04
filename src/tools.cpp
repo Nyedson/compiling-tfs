@@ -614,6 +614,9 @@ MagicEffectNames magicEffectNames = {
 	{"phantasmal",	CONST_ME_DIVINE_PHANTASMAL },
 	{"nibble",	CONST_ME_DIVINE_NIBBLE },
 	{"scratch",	CONST_ME_SCRATCH },
+	{"fatal",	CONST_ME_FATAL },
+	{"dodge",	CONST_ME_DODGE },
+	{"momentum",	CONST_ME_MOMENTUM },
 };
 
 ShootTypeNames shootTypeNames = {
