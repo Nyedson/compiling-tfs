@@ -717,6 +717,7 @@ if Modules == nil then
 						Spdlog.warn("[ShopModule:parseBuyable] - " .. Npc():getName() .. "] NpcSystem: SubType missing for parameter item:", item)
 					else
 						self:addBuyableItem(nil, itemid, cost, subType, realName)
+	
 					end
 				else
 					Spdlog.warn("[ShopModule:parseBuyable] - " .. Npc():getName() .. "] NpcSystem: Parameter(s) missing for item:", itemid, cost)
@@ -729,10 +730,12 @@ if Modules == nil then
 					elseif itemid == VIAL then
 						local vials = {"vial of water","vial of blood", nil, "vial of slime", nil, nil, nil, nil, nil, nil, "vial of oil", nil, "vial of urine", nil, "vial of oil"}
 						self:addBuyableItem(nil, itemid, cost, subType, vials[subType])
+						
 					else
 						local names = {}
 						names[#names + 1] = name
 						self:addBuyableItem(names, itemid, cost, subType, realName)
+						
 					end
 				else
 					Spdlog.warn("[ShopModule:parseBuyable] - " .. Npc():getName() .. "] NpcSystem: Parameter(s) missing for item:", name, itemid, cost)
@@ -772,6 +775,7 @@ if Modules == nil then
 			if SHOPMODULE_MODE == SHOPMODULE_MODE_TRADE then
 				if itemid and cost then
 					self:addSellableItem(nil, itemid, cost, realName, subType)
+				
 				else
 					Spdlog.warn("[ShopModule:parseSellable] - " .. Npc():getName() .. "] NpcSystem: Parameter(s) missing for item:", itemid, cost)
 				end
@@ -780,6 +784,7 @@ if Modules == nil then
 					local names = {}
 					names[#names + 1] = name
 					self:addSellableItem(names, itemid, cost, realName, subType)
+				
 				else
 					Spdlog.warn("[ShopModule:parseSellable] - " .. Npc():getName() .. "] NpcSystem: Parameter(s) missing for item:", name, itemid, cost)
 				end
