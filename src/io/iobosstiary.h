@@ -17,33 +17,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef SRC_BOSSTIARY_H_LL0TBRNCOPYlMVlLL
+#define SRC_BOSSTIARY_H_LL0TBRNCOPYlMVlLL
 
-// Definitions should be global.
-#include "utils/definitions.h"
-
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
 #include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
 #include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
 
-#include <boost/asio.hpp>
+#include "utils/enums.h"
+#include "creatures/monsters/monster.h"
+#include "creatures/monsters/monsters.h"
+#include "game/game.h"
+#include "creatures/players/player.h"
+#include "lua/scripts/luascript.h"
 
-#include <pugixml.hpp>
+class Game;
 
-#include "spdlog/spdlog.h"
+class IOBosstiary
+{
+	public:
+		void addBosstiaryKill(Player* player, MonsterType* mtype, uint32_t amount = 1);
+		void addBossPoints(Player* player, uint32_t amount);
+        BosstiaryProgress_t getBosstiaryProgress(Player* player, uint32_t kills, BosstiaryCategory_t category);
+        uint32_t getRemovalCost(uint16_t removals);
+        uint16_t getLevelByBossPoints(uint32_t bossPoints);
+        uint32_t getBossPointsForLevel(uint16_t level);
+
+};
 
 #endif

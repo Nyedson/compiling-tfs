@@ -17,33 +17,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef FS_DATABASEMANAGER_H_2B75821C555E4D1D83E32B20D683217C
+#define FS_DATABASEMANAGER_H_2B75821C555E4D1D83E32B20D683217C
+#include "database/database.h"
 
-// Definitions should be global.
-#include "utils/definitions.h"
+class DatabaseManager
+{
+	public:
+		static bool tableExists(const std::string& table);
 
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
+		static int32_t getDatabaseVersion();
+		static bool isDatabaseSetup();
 
-#include <boost/asio.hpp>
+		static bool optimizeTables();
+		static void updateDatabase();
 
-#include <pugixml.hpp>
-
-#include "spdlog/spdlog.h"
-
+		static bool getDatabaseConfig(const std::string& config, int32_t& value);
+		static void registerDatabaseConfig(const std::string& config, int32_t value);
+};
 #endif

@@ -17,33 +17,43 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef FS_THREAD_HOLDER_H_BEB56FC46748E71D15A5BF0773ED2E67
+#define FS_THREAD_HOLDER_H_BEB56FC46748E71D15A5BF0773ED2E67
 
-// Definitions should be global.
-#include "utils/definitions.h"
-
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <string>
 #include <thread>
-#include <unordered_map>
-#include <vector>
+#include <atomic>
+#include "utils/enums.h"
 
-#include <boost/asio.hpp>
+template <typename Derived>
+class ThreadHolder
+{
+	public:
+		ThreadHolder() {}
+		void start() {
+			setState(THREAD_STATE_RUNNING);
+			thread = std::thread(&Derived::threadMain, static_cast<Derived*>(this));
+		}
 
-#include <pugixml.hpp>
+		void stop() {
+			setState(THREAD_STATE_CLOSING);
+		}
 
-#include "spdlog/spdlog.h"
+		void join() {
+			if (thread.joinable()) {
+				thread.join();
+			}
+		}
+	protected:
+		void setState(ThreadState newState) {
+			threadState.store(newState, std::memory_order_relaxed);
+		}
+
+		ThreadState getState() const {
+			return threadState.load(std::memory_order_relaxed);
+		}
+	private:
+		std::atomic<ThreadState> threadState{THREAD_STATE_TERMINATED};
+		std::thread thread;
+};
 
 #endif

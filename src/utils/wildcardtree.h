@@ -17,33 +17,33 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef FS_WILDCARDTREE_H_054C9BA46A1D4EA4B7C77ECE60ED4DEB
+#define FS_WILDCARDTREE_H_054C9BA46A1D4EA4B7C77ECE60ED4DEB
 
-// Definitions should be global.
-#include "utils/definitions.h"
+#include "utils/enums.h"
 
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
+class WildcardTreeNode
+{
+	public:
+		explicit WildcardTreeNode(bool initBreakpoint) : breakpoint(initBreakpoint) {}
+		WildcardTreeNode(WildcardTreeNode&& other) = default;
 
-#include <boost/asio.hpp>
+		// non-copyable
+		WildcardTreeNode(const WildcardTreeNode&) = delete;
+		WildcardTreeNode& operator=(const WildcardTreeNode&) = delete;
 
-#include <pugixml.hpp>
+		WildcardTreeNode* getChild(char ch);
+		const WildcardTreeNode* getChild(char ch) const;
+		WildcardTreeNode* addChild(char ch, bool breakpoint);
 
-#include "spdlog/spdlog.h"
+		void insert(const std::string& str);
+		void remove(const std::string& str);
+
+		ReturnValue findOne(const std::string& query, std::string& result) const;
+
+	private:
+		std::map<char, WildcardTreeNode> children;
+		bool breakpoint;
+};
 
 #endif

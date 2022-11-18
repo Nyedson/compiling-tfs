@@ -17,33 +17,42 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef FS_BAN_H_CADB975222D745F0BDA12D982F1006E3
+#define FS_BAN_H_CADB975222D745F0BDA12D982F1006E3
 
-// Definitions should be global.
-#include "utils/definitions.h"
+struct BanInfo {
+	std::string bannedBy;
+	std::string reason;
+	time_t expiresAt;
+};
 
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
+struct ConnectBlock {
+	constexpr ConnectBlock(uint64_t lastAttempt, uint64_t blockTime, uint32_t count) :
+		lastAttempt(lastAttempt), blockTime(blockTime), count(count) {}
 
-#include <boost/asio.hpp>
+	uint64_t lastAttempt;
+	uint64_t blockTime;
+	uint32_t count;
+};
 
-#include <pugixml.hpp>
+using IpConnectMap = std::map<uint32_t, ConnectBlock>;
 
-#include "spdlog/spdlog.h"
+class Ban
+{
+	public:
+		bool acceptConnection(uint32_t clientIP);
+
+	private:
+		IpConnectMap ipConnectMap;
+		std::recursive_mutex lock;
+};
+
+class IOBan
+{
+	public:
+		static bool isAccountBanned(uint32_t accountId, BanInfo& banInfo);
+		static bool isIpBanned(uint32_t clientIP, BanInfo& banInfo);
+		static bool isPlayerNamelocked(uint32_t playerId);
+};
 
 #endif

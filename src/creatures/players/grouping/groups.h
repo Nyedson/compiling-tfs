@@ -17,33 +17,26 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef FS_GROUPS_H_EE39438337D148E1983FB79D936DD8F3
+#define FS_GROUPS_H_EE39438337D148E1983FB79D936DD8F3
 
-// Definitions should be global.
-#include "utils/definitions.h"
+struct Group {
+	std::string name;
+	uint64_t flags;
+	uint64_t customflags;
+	uint32_t maxDepotItems;
+	uint32_t maxVipEntries;
+	uint16_t id;
+	bool access;
+};
 
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
+class Groups {
+	public:
+		bool load();
+		Group* getGroup(uint16_t id);
 
-#include <boost/asio.hpp>
-
-#include <pugixml.hpp>
-
-#include "spdlog/spdlog.h"
+	private:
+		std::vector<Group> groups;
+};
 
 #endif

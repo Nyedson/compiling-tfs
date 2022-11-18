@@ -17,33 +17,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef FS_IOGUILD_H_EF9ACEBA0B844C388B70FF52E69F1AFF
+#define FS_IOGUILD_H_EF9ACEBA0B844C388B70FF52E69F1AFF
 
-// Definitions should be global.
-#include "utils/definitions.h"
+class Guild;
+using GuildWarVector = std::vector<uint32_t>;
 
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
-
-#include <boost/asio.hpp>
-
-#include <pugixml.hpp>
-
-#include "spdlog/spdlog.h"
+class IOGuild
+{
+	public:
+		static Guild* loadGuild(uint32_t guildId);
+    static void saveGuild(Guild* guild);
+		static uint32_t getGuildIdByName(const std::string& name);
+		static void getWarList(uint32_t guildId, GuildWarVector& guildWarVector);
+};
 
 #endif

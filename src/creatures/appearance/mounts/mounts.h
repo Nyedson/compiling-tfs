@@ -17,33 +17,42 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef FS_MOUNTS_H_73716D11906A4C5C9F4A7B68D34C9BA6
+#define FS_MOUNTS_H_73716D11906A4C5C9F4A7B68D34C9BA6
 
-// Definitions should be global.
-#include "utils/definitions.h"
-
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
+#include <utility>
 #include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
 
-#include <boost/asio.hpp>
+struct Mount
+{
+	Mount(uint8_t initId, uint16_t initClientId, std::string initName, int32_t initSpeed, bool initPremium,
+																							std::string initType) :
+		name(initName), speed(initSpeed), clientId(initClientId), id(initId), premium(initPremium),
+		type(initType) {}
 
-#include <pugixml.hpp>
+	std::string name;
+	int32_t speed;
+	uint16_t clientId;
+	uint8_t id;
+	bool premium;
+	std::string type;
+};
 
-#include "spdlog/spdlog.h"
+class Mounts
+{
+	public:
+		bool reload();
+		bool loadFromXml();
+		Mount* getMountByID(uint8_t id);
+		Mount* getMountByName(const std::string& name);
+		Mount* getMountByClientID(uint16_t clientId);
+
+		const std::vector<Mount>& getMounts() const {
+			return mounts;
+		}
+
+	private:
+		std::vector<Mount> mounts;
+};
 
 #endif

@@ -17,33 +17,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef FS_PUGICAST_H_07810DF7954D411EB14A16C3ED2A7548
+#define FS_PUGICAST_H_07810DF7954D411EB14A16C3ED2A7548
 
-// Definitions should be global.
-#include "utils/definitions.h"
+#include <boost/lexical_cast.hpp>
 
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
-
-#include <boost/asio.hpp>
-
-#include <pugixml.hpp>
-
-#include "spdlog/spdlog.h"
+namespace pugi {
+	template<typename T>
+	T cast(const pugi::char_t* str)
+	{
+		T value;
+		try {
+			value = boost::lexical_cast<T>(str);
+		} catch (boost::bad_lexical_cast&) {
+			value = T();
+		}
+		return value;
+	}
+}
 
 #endif

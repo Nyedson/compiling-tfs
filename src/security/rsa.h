@@ -17,33 +17,27 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
-#define FS_OTPCH_H_F00C737DA6CA4C8D90F57430C614367F
+#ifndef FS_RSA_H_C4E277DA8E884B578DDBF0566F504E91
+#define FS_RSA_H_C4E277DA8E884B578DDBF0566F504E91
 
-// Definitions should be global.
-#include "utils/definitions.h"
+#include <cryptopp/rsa.h>
 
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <forward_list>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
 #include <string>
-#include <thread>
-#include <unordered_map>
-#include <vector>
 
-#include <boost/asio.hpp>
+class RSA2
+{
+	public:
+		RSA2() = default;
 
-#include <pugixml.hpp>
+		// non-copyable
+		RSA2(const RSA2&) = delete;
+		RSA2& operator=(const RSA2&) = delete;
 
-#include "spdlog/spdlog.h"
+		void loadPEM(const std::string& filename);
+		void decrypt(char* msg) const;
+
+	private:
+		CryptoPP::RSA::PrivateKey pk;
+};
 
 #endif
