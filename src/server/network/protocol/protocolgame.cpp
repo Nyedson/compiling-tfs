@@ -4152,7 +4152,9 @@ void ProtocolGame::sendSaleItemList(const std::vector<ShopInfo> &shop, const std
 	}
 
 	msg.addByte(0x7B);
-	msg.add<uint64_t>(version >= 1200 ? playerMoney : (playerMoney + player->getBankBalance()));
+	if (version < 1200) {
+		msg.add<uint64_t>(playerMoney);
+	}
 
 	uint8_t itemsToSend = 0;
 	auto msgPosition = msg.getBufferPosition();
