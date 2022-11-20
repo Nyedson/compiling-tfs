@@ -224,13 +224,13 @@ void mainLoader(int, char*[], ServiceManager* services) {
 	SetConsoleTitle(STATUS_SERVER_NAME);
 #endif
 #if defined(GIT_RETRIEVED_STATE) && GIT_RETRIEVED_STATE
-	SPDLOG_INFO("{} - [{}] dated [{}]",
+	SPDLOG_INFO("{} - Based on [{}] dated [{}]",
                 STATUS_SERVER_NAME, STATUS_SERVER_VERSION, GIT_COMMIT_DATE_ISO8601);
 	#if GIT_IS_DIRTY
 	SPDLOG_WARN("DIRTY - NOT OFFICIAL RELEASE");
 	#endif
 #else
-	SPDLOG_INFO("{} - {}", STATUS_SERVER_NAME, STATUS_SERVER_VERSION);
+	SPDLOG_INFO("{} - Based on {}", STATUS_SERVER_NAME, STATUS_SERVER_VERSION);
 #endif
 
 	SPDLOG_INFO("Compiled with {}", BOOST_COMPILER);
@@ -252,9 +252,9 @@ void mainLoader(int, char*[], ServiceManager* services) {
 	SPDLOG_INFO("Linked with {} for Lua support", LUAJIT_VERSION);
 #endif
 
-	SPDLOG_INFO("A server developed by: {}", STATUS_SERVER_DEVELOPERS);
-	SPDLOG_INFO("For support, and resources: "
-		"Visit harderarpg.com");
+	SPDLOG_INFO("aA server developed by: {}", STATUS_SERVER_DEVELOPERS);
+	SPDLOG_INFO("Para updates, support, and resources: "
+		"visit https://discord.gg/Sh8UGMBfZw - contat Theusz#7670 ");
 
 	// check if config.lua or config.lua.dist exist
 	std::ifstream c_test("./config.lua");
