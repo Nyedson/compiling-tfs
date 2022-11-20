@@ -20,9 +20,9 @@
 #ifndef FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 #define FS_DEFINITIONS_H_877452FEC245450C9F96B8FD268D8963
 
-static constexpr auto STATUS_SERVER_NAME = "Ngc-solutions, developed by: Theusz#7670";
-static constexpr auto STATUS_SERVER_VERSION = "TFS 1.3 -- ";
-static constexpr auto STATUS_SERVER_DEVELOPERS = "Ngc-solutions, developed by: Theusz#7670";
+static constexpr auto STATUS_SERVER_NAME = "Prometheus Engine";
+static constexpr auto STATUS_SERVER_VERSION = "1.5";
+static constexpr auto STATUS_SERVER_DEVELOPERS = "Prometheus Team Developers";
 
 static constexpr auto AUTHENTICATOR_DIGITS = 6U;
 static constexpr auto AUTHENTICATOR_PERIOD = 30U;

@@ -224,7 +224,7 @@ void mainLoader(int, char*[], ServiceManager* services) {
 	SetConsoleTitle(STATUS_SERVER_NAME);
 #endif
 #if defined(GIT_RETRIEVED_STATE) && GIT_RETRIEVED_STATE
-	SPDLOG_INFO("{} - Based on [{}] dated [{}]",
+	SPDLOG_INFO("{} [{}] dated [{}]",
                 STATUS_SERVER_NAME, STATUS_SERVER_VERSION, GIT_COMMIT_DATE_ISO8601);
 	#if GIT_IS_DIRTY
 	SPDLOG_WARN("DIRTY - NOT OFFICIAL RELEASE");
@@ -254,7 +254,7 @@ void mainLoader(int, char*[], ServiceManager* services) {
 
 	SPDLOG_INFO("aA server developed by: {}", STATUS_SERVER_DEVELOPERS);
 	SPDLOG_INFO("Para updates, support, and resources: "
-		"visit https://discord.gg/Sh8UGMBfZw - contat Theusz#7670 ");
+		"visit www.prometheusdev.com");
 
 	// check if config.lua or config.lua.dist exist
 	std::ifstream c_test("./config.lua");
