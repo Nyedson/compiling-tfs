@@ -4339,7 +4339,7 @@ void Game::internalCloseTrade(Player* player)
 	}
 }
 
-void Game::playerBuyItem(uint32_t playerId, uint16_t spriteId, uint8_t count, uint8_t amount,
+void Game::playerBuyItem(uint32_t playerId, uint16_t spriteId, uint8_t count, uint16_t amount,
 							  bool ignoreCap/* = false*/, bool inBackpacks/* = false*/)
 {
 	if (amount == 0 || amount > 100) {
@@ -4377,7 +4377,7 @@ void Game::playerBuyItem(uint32_t playerId, uint16_t spriteId, uint8_t count, ui
 	merchant->onPlayerTrade(player, onBuy, it.id, subType, amount, ignoreCap, inBackpacks);
 }
 
-void Game::playerSellItem(uint32_t playerId, uint16_t spriteId, uint8_t count, uint8_t amount, bool ignoreEquipped)
+void Game::playerSellItem(uint32_t playerId, uint16_t spriteId, uint8_t count, uint16_t amount, bool ignoreEquipped)
 {
 	if (amount == 0 || amount > 100) {
 		return;
@@ -6991,6 +6991,10 @@ void Game::ReleaseCreature(Creature* creature)
 
 void Game::ReleaseItem(Item* item)
 {
+	if (!item) {
+		return;
+	}
+	
 	ToReleaseItems.push_back(item);
 }
 
