@@ -183,7 +183,13 @@ FILELOADER_ERRORS Items::loadFromOtb(const std::string& file)
 		uint8_t lightLevel = 0;
 		uint8_t lightColor = 0;
 		uint8_t alwaysOnTopOrder = 0;
-    bool isPodium = false;
+		bool isPodium = false;
+
+		// 12.90
+		bool wearOut = false;
+		bool clockExpire = false;
+		bool expire = false;
+		bool expireStop = false;
 
 		if (clientId == 35973 || clientId == 35974) {
 			  isPodium = true;
@@ -534,6 +540,14 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 			it.moveable = valueAttribute.as_bool();
 		} else if (tmpStrValue == "ispodium") {
 			it.isPodium = valueAttribute.as_bool();
+		} else if (tmpStrValue == "wearout") {
+			it.wearOut = valueAttribute.as_bool();
+		} else if (tmpStrValue == "clockexpire") {
+			it.clockExpire = valueAttribute.as_bool();
+		} else if (tmpStrValue == "expire") {
+			it.expire = valueAttribute.as_bool();
+		} else if (tmpStrValue == "expirestop") {
+			it.expireStop = valueAttribute.as_bool();
 		} else if (tmpStrValue == "blockprojectile") {
 			it.blockProjectile = valueAttribute.as_bool();
 		} else if (tmpStrValue == "allowpickupable" || tmpStrValue == "pickupable") {

@@ -222,6 +222,10 @@ class ItemType
 		bool stackable = false;
 		bool isAnimation = false;
 		bool isPodium = false;
+		bool wearOut = false;
+		bool clockExpire = false;
+		bool expire = false;
+		bool expireStop = false;
 
 		std::string name;
 		std::string article;

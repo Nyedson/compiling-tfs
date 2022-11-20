@@ -110,9 +110,21 @@ void ProtocolGame::AddItem(NetworkMessage &msg, uint16_t id, uint8_t count)
 			msg.addByte(2);
 			msg.addByte(0x01);
 		}
+
 		if (version >= 1280 && it.classification > 0) {
 			msg.addByte(0);
 		}
+
+		if (version >= 1280 || it.expire || it.expireStop || it.clockExpire) {
+			msg.add<uint32_t>(it.decayTime);
+			msg.addByte(0x01); // Brand-new
+		}
+
+		if (version >= 1280 && it.wearOut) {
+			msg.add<uint32_t>(it.charges);
+			msg.addByte(0x01); // Brand-new
+		}
+
 		if (version >= 1290 && it.showInfo) {
 			if (it.stopTime || it.decayTime > 0 || it.decayTo != -1) {
 				msg.add<uint32_t>(it.decayTime);
@@ -262,6 +274,26 @@ void ProtocolGame::AddItem(NetworkMessage &msg, const Item *item)
 
 			msg.addByte(lookDirection ? static_cast<uint8_t>(boost::get<int64_t>(lookDirection->value)) : 2);
 			msg.addByte(podiumVisible ? static_cast<uint8_t>(boost::get<int64_t>(podiumVisible->value)) : 0x01);
+		}
+
+		if (it.expire || it.expireStop || it.clockExpire) {
+			if (item->hasAttribute(ITEM_ATTRIBUTE_DURATION)) {
+				msg.add<uint32_t>(item->getDuration() / 1000);
+				msg.addByte((item->getDuration() / 1000) == it.decayTime ? 0x01 : 0x00); // Brand-new
+			} else {
+				msg.add<uint32_t>(it.decayTime);
+				msg.addByte(0x01); // Brand-new
+			}
+		}
+
+		if (it.wearOut) {
+			if (item->getSubType() == 0) {
+				msg.add<uint32_t>(it.charges);
+				msg.addByte(0x01);
+			} else {
+				msg.add<uint32_t>(static_cast<uint32_t>(item->getSubType()));
+				msg.addByte(item->getSubType() == it.charges ? 0x01 : 0x00); // Brand-new
+			}
 		}
 	}
 }
@@ -4153,7 +4185,7 @@ void ProtocolGame::sendSaleItemList(const std::vector<ShopInfo> &shop, const std
 
 	msg.addByte(0x7B);
 	if (version < 1200) {
-		msg.add<uint64_t>(playerMoney);
+		msg.add<uint64_t>(playerMoney + player->getBankBalance());
 	}
 
 	uint8_t itemsToSend = 0;
@@ -4173,7 +4205,11 @@ void ProtocolGame::sendSaleItemList(const std::vector<ShopInfo> &shop, const std
 		it = inventoryMap.find(index);
 		if (it != inventoryMap.end()) {
 			msg.addItemId(shopInfo.itemId);
-			msg.addByte(std::min<uint32_t>(it->second, std::numeric_limits<uint8_t>::max()));
+			if (version > 1200) {
+				msg.add<uint16_t>(std::min<uint16_t>(it->second, std::numeric_limits<uint16_t>::max()));
+			} else {
+				msg.addByte(std::min<uint32_t>(it->second, std::numeric_limits<uint8_t>::max()));
+			}
 			if (++itemsToSend >= 0xFF) {
 				break;
 			}

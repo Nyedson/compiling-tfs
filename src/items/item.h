@@ -972,6 +972,18 @@ class Item : virtual public Thing
 		bool isPodium() const {
 			return items[id].isPodium;
 		}
+		bool isWearOut() const {
+			return items[id].wearOut;
+		}
+		bool isClockExpire() const {
+			return items[id].clockExpire;
+		}
+		bool isExpire() const {
+			return items[id].expire;
+		}
+		bool isExpireStop() const {
+			return items[id].expireStop;
+		}
 		bool isWrapable() const {
 			return items[id].wrapable && items[id].wrapableTo;
 		}
